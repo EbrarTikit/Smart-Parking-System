@@ -1,6 +1,8 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.hilt.android.plugin)
+    id("kotlin-kapt")
 }
 
 android {
@@ -45,4 +47,13 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
+
+    //Dagger-Hilt
+    implementation(libs.hilt.android)
+    kapt(libs.hilt.compiler)
+
+}
+
+kapt{
+    correctErrorTypes = true
 }

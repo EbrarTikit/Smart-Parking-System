@@ -8,4 +8,7 @@
     <color name="background">#FFFFFF</color>
     <color name="surface">#BBCFF3</color>
     <color name="text">#6A7277</color>
+    <color name="text_primary">#1A1D1E</color>
+    <color name="text_secondary">#6A7277</color>
+    <color name="indicator_inactive">#BBCFF3</color>
 </resources>

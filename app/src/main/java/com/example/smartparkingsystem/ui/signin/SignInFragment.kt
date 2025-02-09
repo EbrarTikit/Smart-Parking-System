@@ -30,7 +30,7 @@ class SignInFragment : Fragment(R.layout.fragment_sign_in) {
 
     fun setupClickListeners() {
         binding.loginButton.setOnClickListener {
-
+            findNavController().navigate(R.id.action_signInFragment_to_locationAccessFragment)
         }
 
         binding.createAccountText.setOnClickListener {

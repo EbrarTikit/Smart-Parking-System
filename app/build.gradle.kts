@@ -60,6 +60,9 @@ dependencies {
 
     //Lottie
     implementation(libs.lottie)
+
+    //Material
+    implementation(libs.material)
 }
 
 kapt {

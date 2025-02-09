@@ -9,6 +9,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
+import androidx.navigation.fragment.findNavController
 import com.example.smartparkingsystem.R
 import com.example.smartparkingsystem.databinding.FragmentAuthBinding
 
@@ -37,12 +38,16 @@ class AuthFragment : Fragment(R.layout.fragment_auth) {
 
         binding.welcomeText.text = spannableString
 
-        binding.signUpButton.setOnClickListener {
+        setupClickListeners()
+    }
 
+    fun setupClickListeners() {
+        binding.signUpButton.setOnClickListener {
+            findNavController().navigate(R.id.action_authFragment_to_signUpFragment)
         }
 
         binding.signInButton.setOnClickListener {
-
+            findNavController().navigate(R.id.action_authFragment_to_signInFragment)
         }
     }
 

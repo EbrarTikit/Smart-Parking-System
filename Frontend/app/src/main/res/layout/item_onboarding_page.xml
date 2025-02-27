@@ -9,12 +9,12 @@
         android:id="@+id/animationView"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:layout_marginTop="64dp"
+        android:layout_marginTop="100dp"
         app:layout_constraintDimensionRatio="1:1"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintWidth_percent="0.8"
+        app:layout_constraintWidth_percent="0.7"
         app:lottie_autoPlay="true"
         app:lottie_loop="true" />
 
@@ -22,7 +22,7 @@
         android:id="@+id/titleText"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="48dp"
+        android:layout_marginTop="40dp"
         android:fontFamily="@font/poppins_bold"
         android:textAlignment="center"
         android:textColor="@color/text_primary"
@@ -38,6 +38,8 @@
         android:textAlignment="center"
         android:textColor="@color/text_secondary"
         android:textSize="16sp"
+        android:lineSpacingMultiplier="1.2"
+        android:alpha="0.8"
         app:layout_constraintTop_toBottomOf="@+id/titleText" />
 
 </androidx.constraintlayout.widget.ConstraintLayout> 

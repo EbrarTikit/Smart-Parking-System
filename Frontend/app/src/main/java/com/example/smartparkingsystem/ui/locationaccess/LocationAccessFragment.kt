@@ -33,7 +33,7 @@ class LocationAccessFragment : Fragment(R.layout.fragment_location_access) {
 
     fun setupClickListeners() {
         binding.allowLocationButton.setOnClickListener {
-
+            findNavController().navigate(R.id.action_locationAccessFragment_to_homeFragment)
         }
 
         binding.enterLocationButton.setOnClickListener {

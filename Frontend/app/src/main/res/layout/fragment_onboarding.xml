@@ -9,46 +9,81 @@
         android:id="@+id/viewPager"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_marginBottom="32dp"
-        app:layout_constraintBottom_toTopOf="@+id/pageIndicator"
+        android:layout_marginBottom="24dp"
+        app:layout_constraintBottom_toTopOf="@+id/indicatorContainer"
         app:layout_constraintTop_toTopOf="parent" />
+
+    <com.airbnb.lottie.LottieAnimationView
+        android:id="@+id/animationView"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginTop="120dp"
+        app:layout_constraintDimensionRatio="1:1"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintWidth_percent="0.7"
+        app:lottie_autoPlay="true"
+        app:lottie_loop="true" />
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/skipButton"
         style="@style/Widget.Material3.Button.TextButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_margin="16dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginTop="28dp"
         android:text="Skip"
         android:textColor="@color/text_secondary"
         android:textSize="16sp"
+        android:alpha="0.7"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
-    <com.google.android.material.tabs.TabLayout
-        android:id="@+id/pageIndicator"
+    <LinearLayout
+        android:id="@+id/indicatorContainer"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:orientation="horizontal"
         android:layout_marginBottom="32dp"
-        android:background="@android:color/transparent"
         app:layout_constraintBottom_toTopOf="@+id/nextButton"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:tabBackground="@drawable/tab_selector"
-        app:tabGravity="center"
-        app:tabIndicatorHeight="0dp" />
+        app:layout_constraintStart_toStartOf="parent">
+
+        <View
+            android:id="@+id/indicator1"
+            android:layout_width="8dp"
+            android:layout_height="8dp"
+            android:layout_marginEnd="8dp"
+            android:background="@drawable/indicator_active" />
+
+        <View
+            android:id="@+id/indicator2"
+            android:layout_width="6dp"
+            android:layout_height="6dp"
+            android:layout_marginEnd="8dp"
+            android:background="@drawable/indicator_inactive" />
+
+        <View
+            android:id="@+id/indicator3"
+            android:layout_width="6dp"
+            android:layout_height="6dp"
+            android:background="@drawable/indicator_inactive" />
+
+    </LinearLayout>
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/nextButton"
         android:layout_width="match_parent"
-        android:layout_height="64dp"
+        android:layout_height="56dp"
         android:layout_marginHorizontal="24dp"
-        android:layout_marginBottom="48dp"
+        android:layout_marginBottom="40dp"
         android:backgroundTint="@color/primary"
         android:text="Next"
         android:textColor="@color/white"
-        android:textSize="18sp"
-        app:cornerRadius="32dp"
+        android:textSize="16sp"
+        app:cornerRadius="28dp"
+        android:elevation="4dp"
         app:layout_constraintBottom_toBottomOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -10,6 +10,8 @@ import com.example.smartparkingsystem.data.model.OnboardingPage
 import com.example.smartparkingsystem.databinding.FragmentOnboardingBinding
 import com.google.android.material.tabs.TabLayoutMediator
 import dagger.hilt.android.AndroidEntryPoint
+import android.content.res.Resources
+import androidx.core.content.ContextCompat
 
 @AndroidEntryPoint
 class OnboardingFragment : Fragment(R.layout.fragment_onboarding) {
@@ -40,14 +42,13 @@ class OnboardingFragment : Fragment(R.layout.fragment_onboarding) {
         _binding = FragmentOnboardingBinding.bind(view)
         
         setupOnboarding()
+        setupPageIndicators()
         setupClickListeners()
     }
 
     private fun setupOnboarding() {
         val adapter = OnboardingPagerAdapter(onboardingPages)
         binding.viewPager.adapter = adapter
-
-        TabLayoutMediator(binding.pageIndicator, binding.viewPager) { _, _ -> }.attach()
 
         binding.viewPager.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
             override fun onPageSelected(position: Int) {
@@ -59,6 +60,28 @@ class OnboardingFragment : Fragment(R.layout.fragment_onboarding) {
                 }
             }
         })
+    }
+
+    private fun setupPageIndicators() {
+        val indicators = listOf(binding.indicator1, binding.indicator2, binding.indicator3)
+        
+        binding.viewPager.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
+            override fun onPageSelected(position: Int) {
+                indicators.forEachIndexed { index, view ->
+                    view.layoutParams.width = if (index == position) 8.dpToPx() else 6.dpToPx()
+                    view.layoutParams.height = if (index == position) 8.dpToPx() else 6.dpToPx()
+                    view.requestLayout()
+                    view.background = if (index == position) 
+                        ContextCompat.getDrawable(requireContext(), R.drawable.indicator_active)
+                    else 
+                        ContextCompat.getDrawable(requireContext(), R.drawable.indicator_inactive)
+                }
+            }
+        })
+    }
+
+    private fun Int.dpToPx(): Int {
+        return (this * Resources.getSystem().displayMetrics.density).toInt()
     }
 
     private fun setupClickListeners() {

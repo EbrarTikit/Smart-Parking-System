@@ -5,6 +5,7 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.navigation.fragment.findNavController
 import com.example.smartparkingsystem.R
 import com.example.smartparkingsystem.databinding.FragmentLocationAccessBinding
 
@@ -36,7 +37,7 @@ class LocationAccessFragment : Fragment(R.layout.fragment_location_access) {
         }
 
         binding.enterLocationButton.setOnClickListener {
-
+            findNavController().navigate(R.id.action_locationAccessFragment_to_locationFragment)
         }
 
     }

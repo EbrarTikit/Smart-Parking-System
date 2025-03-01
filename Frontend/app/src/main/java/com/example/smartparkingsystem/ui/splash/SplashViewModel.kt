@@ -21,7 +21,7 @@ class SplashViewModel @Inject constructor() : ViewModel() {
 
     private fun startSplashScreen() {
         viewModelScope.launch {
-            delay(3000)
+            delay(1500)
             _navigateToOnBoarding.value = true
         }
     }

@@ -93,7 +93,7 @@ class ChatbotFragment : Fragment() {
 
     private fun sendMessage(message: String) {
         addUserMessage(message)
-
+        processMessage(message)
     }
 
     private fun addUserMessage(message: String) {
@@ -111,6 +111,31 @@ class ChatbotFragment : Fragment() {
             binding.recyclerViewChat.smoothScrollToPosition(chatAdapter.itemCount - 1)
         }
     }
+
+    private fun processMessage(message: String) {
+        // Here you would typically call your chatbot API or service
+        // For now, we'll just simulate a response
+
+        // Simulate typing delay
+        binding?.recyclerViewChat?.postDelayed({
+            when {
+                message.contains("parking", ignoreCase = true) -> {
+                    addBotMessage("It is Mark Antalya AVM.\nDo you want me to show the location?")
+                }
+                message.contains("hello", ignoreCase = true) ||
+                        message.contains("hi", ignoreCase = true) -> {
+                    addBotMessage("Hello! How may I assist you today?")
+                }
+                message.contains("location", ignoreCase = true) -> {
+                    addBotMessage("I can help you find parking locations. Which area are you interested in?")
+                }
+                else -> {
+                    addBotMessage("I'm sorry, I don't understand. Can you please rephrase your question?")
+                }
+            }
+        }, 1000) // 1 second delay to simulate typing
+    }
+
 
     private fun showChatbotLayout(){
         binding?.layoutChatbotOpening?.visibility = View.GONE

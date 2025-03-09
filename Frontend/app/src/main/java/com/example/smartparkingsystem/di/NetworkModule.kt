@@ -36,7 +36,7 @@ object NetworkModule {
     fun provideRetrofit(okHttpClient: OkHttpClient): Retrofit {
         return Retrofit.Builder()
             // TODO: Change the base URL to your own server URL
-            .baseUrl("http://10.0.2.2:8000")
+            .baseUrl("http://10.0.2.2:8001")
             .client(okHttpClient)
             .addConverterFactory(GsonConverterFactory.create())
             .build()

@@ -18,11 +18,9 @@ class ChatbotFragment : Fragment() {
 
     private var _binding: FragmentChatbotBinding? = null
     private val binding get() = _binding!!
-
-    private lateinit var sharedPreferences: SharedPreferences
-    private lateinit var chatAdapter: ChatAdapter
     
     private val viewModel: ChatbotViewModel by viewModels()
+    private lateinit var chatAdapter: ChatAdapter
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -35,46 +33,30 @@ class ChatbotFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        sharedPreferences = requireContext().getSharedPreferences("chatbot_prefs", Context.MODE_PRIVATE)
-
-        val hasUsedChatbot = sharedPreferences.getBoolean("has_used_chatbot", false)
-        if (hasUsedChatbot) {
-            showChatbotLayout()
-            // Geçmiş sohbeti yükle
+        setupRecyclerView()
+        setupClickListeners()
+        observeViewModel()
+        
+        // Kullanıcı daha önce chatbot'u kullandıysa, geçmiş mesajları yükle
+        if (hasUsedChatbot()) {
             viewModel.loadChatHistory()
         } else {
-            showOpeningLayout()
+            // İlk kez kullanıyorsa, karşılama mesajını göster
+            showWelcomeMessage()
         }
-
-        setUpRecyclerView()
-        setUpClickListeners()
-        observeViewModel()
     }
 
-    private fun setUpRecyclerView() {
+    private fun setupRecyclerView() {
         chatAdapter = ChatAdapter()
         binding.recyclerViewChat.apply {
             layoutManager = LinearLayoutManager(context).apply {
-                stackFromEnd = true // Mesajlar aşağıdan yukarıya doğru görünür
+                stackFromEnd = true
             }
             adapter = chatAdapter
         }
     }
 
-    private fun setUpClickListeners() {
-        binding.btnStartChat.setOnClickListener {
-            sharedPreferences.edit().putBoolean("has_used_chatbot", true).apply()
-            showChatbotLayout()
-        }
-
-        binding.icBack.setOnClickListener {
-            requireActivity().onBackPressedDispatcher.onBackPressed()
-        }
-
-        binding.btnBack.setOnClickListener {
-            requireActivity().onBackPressedDispatcher.onBackPressed()
-        }
-
+    private fun setupClickListeners() {
         binding.btnSend.setOnClickListener {
             val message = binding.editTextMessage.text.toString().trim()
             if (message.isNotEmpty()) {
@@ -87,11 +69,7 @@ class ChatbotFragment : Fragment() {
     private fun observeViewModel() {
         viewModel.messages.observe(viewLifecycleOwner) { messages ->
             chatAdapter.submitList(messages)
-            if (messages.isNotEmpty()) {
-                binding.recyclerViewChat.post {
-                    binding.recyclerViewChat.smoothScrollToPosition(messages.size - 1)
-                }
-            }
+            scrollToBottom()
         }
         
         viewModel.isLoading.observe(viewLifecycleOwner) { isLoading ->
@@ -106,15 +84,28 @@ class ChatbotFragment : Fragment() {
             }
         }
     }
-
-    private fun showChatbotLayout(){
-        binding.layoutChatbotOpening.visibility = View.GONE
-        binding.layoutChatbot.visibility = View.VISIBLE
+    
+    private fun hasUsedChatbot(): Boolean {
+        val sharedPreferences = requireContext().getSharedPreferences("chatbot_prefs", Context.MODE_PRIVATE)
+        return sharedPreferences.getBoolean("has_used_chatbot", false)
     }
-
-    private fun showOpeningLayout(){
-        binding.layoutChatbotOpening.visibility = View.VISIBLE
-        binding.layoutChatbot.visibility = View.GONE
+    
+    private fun showWelcomeMessage() {
+        viewModel.addBotMessage("Merhaba! Size nasıl yardımcı olabilirim?")
+        
+        // Kullanıcının chatbot'u kullandığını kaydet
+        requireContext().getSharedPreferences("chatbot_prefs", Context.MODE_PRIVATE)
+            .edit()
+            .putBoolean("has_used_chatbot", true)
+            .apply()
+    }
+    
+    private fun scrollToBottom() {
+        binding.recyclerViewChat.post {
+            if (chatAdapter.itemCount > 0) {
+                binding.recyclerViewChat.smoothScrollToPosition(chatAdapter.itemCount - 1)
+            }
+        }
     }
 
     override fun onDestroyView() {

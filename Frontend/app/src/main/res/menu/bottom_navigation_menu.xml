@@ -9,9 +9,9 @@
         android:icon="@drawable/ic_booking"
         android:title="Booking" />
     <item
-        android:id="@+id/placeholder"
-        android:title=""
-        android:enabled="false" />
+        android:id="@+id/navigation_chatbot"
+        android:icon="@drawable/ic_chatbot"
+        android:title="Chat" />
     <item
         android:id="@+id/navigation_favorites"
         android:icon="@drawable/ic_favorite_"

@@ -29,12 +29,13 @@ class ChatbotViewModel @Inject constructor(
 
     fun sendMessage(messageText: String) {
         _isLoading.value = true
-        addMessage(Message(messageText, true))
-
+        
+        addUserMessage(messageText)
+        
         viewModelScope.launch {
             chatbotRepository.sendMessage(messageText, sessionId).fold(
                 onSuccess = { response ->
-                    addMessage(Message(response.response, false))
+                    addBotMessage(response.response)
                     sessionId = response.sessionid
                     _isLoading.value = false
                 },
@@ -69,9 +70,14 @@ class ChatbotViewModel @Inject constructor(
         }
     }
 
-    private fun addMessage(message: Message) {
+    fun addUserMessage(text: String) {
         val currentMessages = _messages.value ?: emptyList()
-        _messages.value = currentMessages + message
+        _messages.value = currentMessages + Message(text, true)
+    }
+
+    fun addBotMessage(text: String) {
+        val currentMessages = _messages.value ?: emptyList()
+        _messages.value = currentMessages + Message(text, false)
     }
 
     fun clearError() {

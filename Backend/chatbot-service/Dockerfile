@@ -14,8 +14,16 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Sonra uygulama kodunu ve .env dosyasını kopyala
 COPY ./app /app/app
 COPY .env .
+COPY __init__.py .
 
 # Debug için
 RUN ls -la /app
+
+# Redis bağlantısı için ortam değişkenleri
+ENV REDIS_HOST=redis_service
+ENV REDIS_PORT=6379
+ENV REDIS_DB=0
+ENV REDIS_PASSWORD=
+ENV REDIS_EXPIRY=1800
 
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]

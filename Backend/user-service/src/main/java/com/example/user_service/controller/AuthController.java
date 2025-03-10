@@ -18,6 +18,7 @@ import com.example.user_service.dto.LoginRequest;
 import com.example.user_service.model.User;
 import com.example.user_service.security.JwtUtil;
 import com.example.user_service.service.CustomUserDetailsService;  
+import com.example.user_service.service.UserService;
 
 
 
@@ -32,6 +33,9 @@ public class AuthController {
 
     @Autowired
     private CustomUserDetailsService userDetailsService;
+
+    @Autowired
+    private UserService userService;
 
     @PostMapping("/signin")
     public ResponseEntity<?> authenticateUser(@RequestBody LoginRequest loginRequest) {
@@ -52,8 +56,9 @@ public class AuthController {
     }
 
     @PostMapping("/signup")
-    public ResponseEntity<?> registerUser(@RequestBody User user) {
-        userDetailsService.saveUser(user);
-        return ResponseEntity.ok("User registered successfully");
+    public ResponseEntity<String> registerUser(@RequestBody User user) {
+        Long userId = userService.registerUser(user);
+        return ResponseEntity.ok("User registered successfully with ID: " + userId);
     }
+    
 }

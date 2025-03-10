@@ -6,6 +6,7 @@ import logging
 from typing import List, Dict
 
 logger = logging.getLogger(__name__)
+
 load_dotenv()
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
@@ -14,16 +15,16 @@ def get_gemini_response(user_message: str, conversation_history: List[Dict]) -> 
  
     url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={GEMINI_API_KEY}"    
     # Geçmiş mesajları formatlama
-    conversation_context = "\n".join([
-        f"{'Kullanıcı' if msg['role'] == 'user' else 'Asistan'}: {msg['content']}"
-        for msg in conversation_history[-6:]  # Son 3 diyaloğu al
-    ])
+    conversation_context = ""
+    if conversation_history:
+        conversation_context = "\n".join([
+            f"{'Kullanıcı' if msg['role'] == 'user' else 'Asistan'}: {msg['content']}"
+            for msg in conversation_history[-6:]  # Son 3 konuşmayı al
+        ])
     
     prompt = f"""Sen Türkiye/Antalya'da çalışan bir otopark asistanısın. Kullanıcılara otopark ile ilgili konularda yardımcı oluyorsun.
 
-Önceki Konuşma:
-{conversation_context}
-
+{f'Önceki Konuşma:\n{conversation_context}\n' if conversation_context else ''}
 Kullanıcı: {user_message}
 
 Lütfen önceki konuşmayı dikkate alarak yanıt ver."""
@@ -58,5 +59,5 @@ Lütfen önceki konuşmayı dikkate alarak yanıt ver."""
         return "Üzgünüm, şu anda yanıt üretemiyorum."
                 
     except Exception as e:
-        logger.error(f"API Error: {str(e)}")
+        logger.error(f"API Hatası: {str(e)}")
         return f"API Hatası: {str(e)}"

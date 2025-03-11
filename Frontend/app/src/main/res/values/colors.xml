@@ -11,4 +11,5 @@
     <color name="text_primary">#1A1D1E</color>
     <color name="text_secondary">#6A7277</color>
     <color name="indicator_inactive">#BBCFF3</color>
+    <color name="box">#D9D9D9</color>
 </resources>

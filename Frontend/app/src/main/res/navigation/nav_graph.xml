@@ -8,10 +8,12 @@
     <fragment
         android:id="@+id/splashFragment"
         android:name="com.example.smartparkingsystem.ui.splash.SplashFragment"
-        android:label="SplashFragment" >
+        android:label="Splash">
         <action
             android:id="@+id/action_splashFragment_to_onboardingFragment"
-            app:destination="@id/onboardingFragment" />
+            app:destination="@id/onboardingFragment"
+            app:popUpTo="@id/splashFragment"
+            app:popUpToInclusive="true" />
     </fragment>
     <fragment
         android:id="@+id/onboardingFragment"
@@ -64,7 +66,7 @@
             app:destination="@id/locationFragment" />
         <action
             android:id="@+id/action_locationAccessFragment_to_homeFragment"
-            app:destination="@id/homeFragment" />
+            app:destination="@id/navigation_home" />
     </fragment>
     <fragment
         android:id="@+id/locationFragment"
@@ -72,23 +74,23 @@
         android:label="fragment_location"
         tools:layout="@layout/fragment_location" />
     <fragment
-        android:id="@+id/homeFragment"
+        android:id="@+id/navigation_home"
         android:name="com.example.smartparkingsystem.ui.home.HomeFragment"
-        android:label="fragment_home"
-        tools:layout="@layout/fragment_home" />
+        android:label="Home" />
     <fragment
-        android:id="@+id/bookingFragment"
+        android:id="@+id/navigation_booking"
         android:name="com.example.smartparkingsystem.ui.booking.BookingFragment"
-        android:label="fragment_booking"
-        tools:layout="@layout/fragment_booking" />
+        android:label="Booking" />
     <fragment
-        android:id="@+id/favoritesFragment"
+        android:id="@+id/navigation_chatbot"
+        android:name="com.example.smartparkingsystem.ui.chatbot.ChatbotFragment"
+        android:label="Chatbot" />
+    <fragment
+        android:id="@+id/navigation_favorites"
         android:name="com.example.smartparkingsystem.ui.favorites.FavoritesFragment"
-        android:label="fragment_favorites"
-        tools:layout="@layout/fragment_favorites" />
+        android:label="Favorites" />
     <fragment
-        android:id="@+id/profileFragment"
+        android:id="@+id/navigation_profile"
         android:name="com.example.smartparkingsystem.ui.profile.ProfileFragment"
-        android:label="fragment_profile"
-        tools:layout="@layout/fragment_profile" />
+        android:label="Profile" />
 </navigation>

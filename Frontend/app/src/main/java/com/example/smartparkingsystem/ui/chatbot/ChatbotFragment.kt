@@ -36,12 +36,10 @@ class ChatbotFragment : Fragment() {
         setupRecyclerView()
         setupClickListeners()
         observeViewModel()
-        
-        // Kullanıcı daha önce chatbot'u kullandıysa, geçmiş mesajları yükle
+
         if (hasUsedChatbot()) {
             viewModel.loadChatHistory()
         } else {
-            // İlk kez kullanıyorsa, karşılama mesajını göster
             showWelcomeMessage()
         }
     }
@@ -64,6 +62,14 @@ class ChatbotFragment : Fragment() {
                 binding.editTextMessage.text.clear()
             }
         }
+
+        binding.btnStartChat.setOnClickListener {
+            viewModel.sendMessage("Hello")
+
+            binding.layoutChatbotOpening.visibility = View.GONE
+            binding.layoutChatbot.visibility = View.VISIBLE
+        }
+
     }
 
     private fun observeViewModel() {
@@ -92,8 +98,7 @@ class ChatbotFragment : Fragment() {
     
     private fun showWelcomeMessage() {
         viewModel.addBotMessage("Merhaba! Size nasıl yardımcı olabilirim?")
-        
-        // Kullanıcının chatbot'u kullandığını kaydet
+
         requireContext().getSharedPreferences("chatbot_prefs", Context.MODE_PRIVATE)
             .edit()
             .putBoolean("has_used_chatbot", true)

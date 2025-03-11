@@ -25,9 +25,9 @@ object NetworkModule {
         
         return OkHttpClient.Builder()
             .addInterceptor(loggingInterceptor)
-            .connectTimeout(30, TimeUnit.SECONDS)
-            .readTimeout(30, TimeUnit.SECONDS)
-            .writeTimeout(30, TimeUnit.SECONDS)
+            .connectTimeout(60, TimeUnit.SECONDS)
+            .readTimeout(60, TimeUnit.SECONDS)
+            .writeTimeout(60, TimeUnit.SECONDS)
             .build()
     }
 
@@ -35,7 +35,7 @@ object NetworkModule {
     @Singleton
     fun provideRetrofit(okHttpClient: OkHttpClient): Retrofit {
         return Retrofit.Builder()
-            // TODO: Change the base URL to your own server URL
+            // TODO: Change the base URL to own server URL
             .baseUrl("http://10.0.2.2:8001")
             .client(okHttpClient)
             .addConverterFactory(GsonConverterFactory.create())

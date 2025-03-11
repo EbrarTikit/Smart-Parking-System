@@ -24,6 +24,7 @@ class ChatbotRepository @Inject constructor(
                     Result.failure(Exception("Error: ${response.code()} - ${response.message()}"))
                 }
             } catch (e: Exception) {
+                e.printStackTrace()
                 Result.failure(e)
             }
         }

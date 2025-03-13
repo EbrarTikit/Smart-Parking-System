@@ -8,6 +8,19 @@ services:
       - backend_network
     restart: always
 
+  rabbit-mq:
+    image: rabbitmq:3-management
+    container_name: rabbit_mq
+    ports:
+      - "5672:5672"   # RabbitMQ mesajlaşma portu
+      - "15672:15672" # Yönetim arayüzü portu
+    environment:
+      - RABBITMQ_DEFAULT_USER=guest
+      - RABBITMQ_DEFAULT_PASS=guest  
+    networks:
+      - backend_network
+    restart: always
+
   redis-commander:
     image: rediscommander/redis-commander:latest
     container_name: redis_commander
@@ -38,6 +51,30 @@ services:
     networks:
       - backend_network
 
+  postgres:
+    image: postgres
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: license_plate_db
+    ports:
+      - "5432:5432"
+    networks:
+      - backend_network
+
+  license-plate-service:
+    build:
+      context: ./license-plate-service
+    ports:
+      - "8002:8000"
+    environment:
+      - DATABASE_URL=postgresql://user:password@postgres/license_plate_db
+    depends_on:
+      - postgres
+    networks:
+      - backend_network
+
 networks:
   backend_network:
     driver: bridge
+

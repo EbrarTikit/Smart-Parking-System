@@ -32,7 +32,7 @@
         android:layout_marginTop="8dp" />
 
     <com.google.android.material.textfield.TextInputLayout
-        android:id="@+id/emailInputLayout"
+        android:id="@+id/usernameInputLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="32dp"
@@ -40,6 +40,28 @@
         app:hintEnabled="true"
         app:hintAnimationEnabled="true"
         app:layout_constraintTop_toBottomOf="@id/createAccountSubtitle"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/usernameEditText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Username"
+            android:inputType="text"
+            android:textColorHint="@color/text_secondary"
+            android:textColor="@color/text_primary" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/emailInputLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="32dp"
+        app:boxStrokeColor="@color/secondary"
+        app:hintEnabled="true"
+        app:hintAnimationEnabled="true"
+        app:layout_constraintTop_toBottomOf="@id/usernameInputLayout"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
@@ -98,6 +120,16 @@
             android:textColor="@color/text_primary" />
     </com.google.android.material.textfield.TextInputLayout>
 
+    <ProgressBar
+        android:id="@+id/progressBar"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:visibility="gone"
+        android:layout_marginTop="16dp"
+        app:layout_constraintTop_toBottomOf="@id/confirmPasswordInputLayout"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
     <com.google.android.material.button.MaterialButton
         android:id="@+id/signUpButton"
         android:layout_width="match_parent"
@@ -119,6 +151,7 @@
         android:text="Already have an account"
         android:textColor="@color/text_secondary"
         android:textSize="14sp"
+
         app:layout_constraintTop_toBottomOf="@id/signUpButton"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"

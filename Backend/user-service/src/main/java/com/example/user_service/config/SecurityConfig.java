@@ -66,7 +66,7 @@ public SecurityFilterChain filterChain(HttpSecurity http, JwtAuthenticationFilte
         .exceptionHandling(exception -> exception.authenticationEntryPoint(unauthorizedHandler()))
         .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
         .authorizeHttpRequests(auth -> 
-            auth.requestMatchers("/api/auth/**").permitAll()
+            auth.requestMatchers("/api/auth/**","/swagger-ui.html", "/v3/api-docs", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
                 .requestMatchers("/api/test/**").permitAll()
                 .requestMatchers("/api/protected/**").authenticated()
                 .anyRequest().authenticated()
@@ -79,7 +79,7 @@ public SecurityFilterChain filterChain(HttpSecurity http, JwtAuthenticationFilte
                 String path = request.getRequestURI();
                 
                 // Skip token validation for public endpoints
-                if (path.startsWith("/api/auth/") || path.startsWith("/api/test/")) {
+                if (path.startsWith("/api/auth/") || path.startsWith("/api/test/")|| path.startsWith("/swagger-ui") || path.startsWith("/v3/api-docs")) {
                     filterChain.doFilter(request, response);
                     return;
                 }

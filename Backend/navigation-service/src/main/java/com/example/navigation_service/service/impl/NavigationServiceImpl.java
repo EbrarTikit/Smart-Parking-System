@@ -9,14 +9,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import com.example.navigation_service.dto.DtoCarPark;
 import com.example.navigation_service.model.CarPark;
-import com.example.navigation_service.repository.ICarParkRepository;
-import com.example.navigation_service.service.ICarParkService;
+import com.example.navigation_service.repository.INavigationRepository;
+import com.example.navigation_service.service.INavigationService;
 
 @Service
-public class CarParkServiceImpl implements ICarParkService{
+public class NavigationServiceImpl implements INavigationService{
 
     @Autowired
-    private ICarParkRepository carParkRepository;
+    private INavigationRepository carParkRepository;
 
     @Override
     public DtoCarPark getParkLocation(Long id) {

@@ -7,16 +7,16 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.example.navigation_service.controller.ICarParkController;
+import com.example.navigation_service.controller.INavigationController;
 import com.example.navigation_service.dto.DtoCarPark;
-import com.example.navigation_service.service.ICarParkService;
+import com.example.navigation_service.service.INavigationService;
 
 @RestController
 @RequestMapping("/rest/api/car_park")
-public class CarParkControllerImpl implements ICarParkController {
+public class NavigationControllerImpl implements INavigationController {
 
     @Autowired
-    private ICarParkService carParkService;
+    private INavigationService carParkService;
 
     @GetMapping(path =  "/list/{id}")
     @Override

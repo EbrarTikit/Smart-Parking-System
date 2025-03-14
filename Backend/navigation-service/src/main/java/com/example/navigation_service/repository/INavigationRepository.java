@@ -6,6 +6,6 @@ import org.springframework.stereotype.Repository;
 import com.example.navigation_service.model.CarPark;
 
 @Repository
-public interface ICarParkRepository extends JpaRepository<CarPark,Long> {
+public interface INavigationRepository extends JpaRepository<CarPark,Long> {
 
 }

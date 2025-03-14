@@ -1,6 +1,7 @@
 package com.example.smartparkingsystem.di
 
 import com.example.smartparkingsystem.data.remote.ChatbotService
+import com.example.smartparkingsystem.data.remote.UserService
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -10,6 +11,7 @@ import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
+import javax.inject.Named
 import javax.inject.Singleton
 
 @Module
@@ -19,24 +21,32 @@ object NetworkModule {
     @Provides
     @Singleton
     fun provideOkHttpClient(): OkHttpClient {
-        val loggingInterceptor = HttpLoggingInterceptor().apply {
-            level = HttpLoggingInterceptor.Level.BODY
-        }
-        
         return OkHttpClient.Builder()
-            .addInterceptor(loggingInterceptor)
-            .connectTimeout(60, TimeUnit.SECONDS)
-            .readTimeout(60, TimeUnit.SECONDS)
-            .writeTimeout(60, TimeUnit.SECONDS)
+            .connectTimeout(30, TimeUnit.SECONDS)
+            .readTimeout(30, TimeUnit.SECONDS)
+            .writeTimeout(30, TimeUnit.SECONDS)
             .build()
     }
 
+    // Chatbot servisi için Retrofit instance'ı
     @Provides
     @Singleton
-    fun provideRetrofit(okHttpClient: OkHttpClient): Retrofit {
+    @Named("chatbotRetrofit")
+    fun provideChatbotRetrofit(okHttpClient: OkHttpClient): Retrofit {
         return Retrofit.Builder()
-            // TODO: Change the base URL to own server URL
             .baseUrl("http://10.0.2.2:8001")
+            .client(okHttpClient)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+    }
+
+    // User servisi için Retrofit instance'ı
+    @Provides
+    @Singleton
+    @Named("userRetrofit")
+    fun provideUserRetrofit(okHttpClient: OkHttpClient): Retrofit {
+        return Retrofit.Builder()
+            .baseUrl("http://10.0.2.2:8080") // User service'in port numarasını doğru şekilde ayarlayın
             .client(okHttpClient)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
@@ -44,7 +54,13 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    fun provideChatbotService(retrofit: Retrofit): ChatbotService {
+    fun provideChatbotService(@Named("chatbotRetrofit") retrofit: Retrofit): ChatbotService {
         return retrofit.create(ChatbotService::class.java)
     }
-} 
+
+    @Provides
+    @Singleton
+    fun provideUserService(@Named("userRetrofit") retrofit: Retrofit): UserService {
+        return retrofit.create(UserService::class.java)
+    }
+}

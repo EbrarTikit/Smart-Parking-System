@@ -1,5 +1,13 @@
 package com.example.navigation_service.service;
 
-public interface ICarParkService {
+import java.util.List;
 
+import com.example.navigation_service.dto.DtoCarPark;
+
+public interface ICarParkService {
+    
+    public DtoCarPark getParkLocation(Long id);
+
+    public List<DtoCarPark> getAllParkLocation();
+   
 }

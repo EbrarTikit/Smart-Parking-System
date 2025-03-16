@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import com.example.user_service.exception.UserNotFoundException;
@@ -15,10 +16,12 @@ import com.example.user_service.repository.UserRepository;
 @Service
 public class UserService {
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
     @Autowired
-    public UserService(UserRepository userRepository) {
+    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     public List<User> findAllUsers() {
@@ -46,8 +49,16 @@ public class UserService {
         if (userRepository.findByUsername(user.getUsername()).isPresent()) {
             throw new UsernameAlreadyExistsException("Username already exists: " + user.getUsername());
         }
-        // User registration logic
+        
+        // Şifreyi kodla
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
+        
+        // Kullanıcıyı kaydet
         return userRepository.save(user);
+    }
+
+    public boolean existsByUsername(String username) {
+        return userRepository.findByUsername(username).isPresent();
     }
 }
 

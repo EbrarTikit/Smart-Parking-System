@@ -1,6 +1,7 @@
 package com.example.user_service.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.example.user_service.dto.JwtResponse;  
 import com.example.user_service.dto.LoginRequest;
+import com.example.user_service.dto.SignupRequest;
 import com.example.user_service.exception.InvalidCredentialsException;
 import com.example.user_service.model.User;
 import com.example.user_service.security.JwtUtil;
@@ -60,9 +62,29 @@ public class AuthController {
     }
 
     @PostMapping("/signup")
-    public ResponseEntity<String> registerUser(@RequestBody User user) {
-        User savedUser = userService.registerUser(user);
-        return ResponseEntity.ok("User registered successfully with ID: " + savedUser.getId());
+    public ResponseEntity<?> registerUser(@RequestBody SignupRequest signupRequest) {
+        try {
+            // Kullanıcı zaten var mı kontrol et
+            if (userService.existsByUsername(signupRequest.getUsername())) {
+                return ResponseEntity
+                    .badRequest()
+                    .body("Error: Username is already taken!");
+            }
+
+            // Yeni kullanıcı oluştur
+            User user = new User();
+            user.setUsername(signupRequest.getUsername());
+            user.setEmail(signupRequest.getEmail());
+            user.setPassword(signupRequest.getPassword());
+            
+            User savedUser = userService.registerUser(user);
+            
+            return ResponseEntity.ok("User registered successfully with ID: " + savedUser.getId());
+        } catch (Exception e) {
+            return ResponseEntity
+                .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body("Error: " + e.getMessage());
+        }
     }
     
 }

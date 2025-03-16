@@ -28,7 +28,7 @@ class SignInFragment : Fragment(R.layout.fragment_sign_in) {
         setupClickListeners()
     }
 
-    fun setupClickListeners() {
+    private fun setupClickListeners() {
         binding.loginButton.setOnClickListener {
             findNavController().navigate(R.id.action_signInFragment_to_locationAccessFragment)
         }

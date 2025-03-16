@@ -1,7 +1,6 @@
 package com.example.user_service.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -16,9 +15,10 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.example.user_service.dto.JwtResponse;  
 import com.example.user_service.dto.LoginRequest;
+import com.example.user_service.exception.InvalidCredentialsException;
 import com.example.user_service.model.User;
 import com.example.user_service.security.JwtUtil;
-import com.example.user_service.service.CustomUserDetailsService;  
+import com.example.user_service.service.CustomUserDetailsService;
 import com.example.user_service.service.UserService;
 
 
@@ -40,30 +40,29 @@ public class AuthController {
 
     @PostMapping("/signin")
     public ResponseEntity<?> authenticateUser(@RequestBody LoginRequest loginRequest) {
-        try{
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                        loginRequest.getUsername(), loginRequest.getPassword()));
+        try {
+            Authentication authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(
+                            loginRequest.getUsername(), loginRequest.getPassword()));
 
-        SecurityContextHolder.getContext().setAuthentication(authentication);
-        String jwt = jwtUtil.generateToken(authentication.getName());
+            SecurityContextHolder.getContext().setAuthentication(authentication);
+            String jwt = jwtUtil.generateToken(authentication.getName());
 
-        User user = userService.findByUsername(authentication.getName())
-                    .orElseThrow(() -> new UsernameNotFoundException("User not found"));
-                    
-        return ResponseEntity.ok(new JwtResponse(jwt, user.getId()));
-    }
+            User user = userService.findByUsername(authentication.getName());
+            if (user == null) {
+                throw new UsernameNotFoundException("User not found");
+            }
 
-    catch (BadCredentialsException e) {
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Error: Incorrect username or password");
-    }
-    
+            return ResponseEntity.ok(new JwtResponse(jwt, user.getId()));
+        } catch (BadCredentialsException e) {
+            throw new InvalidCredentialsException("Invalid username or password");
+        }
     }
 
     @PostMapping("/signup")
     public ResponseEntity<String> registerUser(@RequestBody User user) {
-        Long userId = userService.registerUser(user);
-        return ResponseEntity.ok("User registered successfully with ID: " + userId);
+        User savedUser = userService.registerUser(user);
+        return ResponseEntity.ok("User registered successfully with ID: " + savedUser.getId());
     }
     
 }

@@ -14,14 +14,13 @@ import javax.inject.Inject
 @HiltViewModel
 class SignUpViewModel @Inject constructor(
     private val repository: UserRepository
-): ViewModel(){
+) : ViewModel() {
 
     private val _signUpState = MutableLiveData<UiState<SignUpResponse>>()
-    val signUpState: MutableLiveData<UiState<SignUpResponse>> = _signUpState
+    val signUpState: LiveData<UiState<SignUpResponse>> = _signUpState
 
     private val _validationState = MutableLiveData<ValidationState>()
     val validationState: LiveData<ValidationState> = _validationState
-
 
     fun signUp(username: String, email: String, password: String, confirmPassword: String) {
         if (!validateInput(username, email, password, confirmPassword)) {
@@ -67,7 +66,6 @@ class SignUpViewModel @Inject constructor(
     fun clearValidationState() {
         _validationState.value = ValidationState()
     }
-
 }
 
 data class ValidationState(

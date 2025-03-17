@@ -8,7 +8,9 @@ import com.example.smartparkingsystem.data.remote.UserService
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
+import javax.inject.Singleton
 
+@Singleton
 class UserRepository @Inject constructor(
     private val userService: UserService
 ) {
@@ -33,7 +35,7 @@ class UserRepository @Inject constructor(
     suspend fun signIn(username: String, password: String): Result<SignInResponse> {
         return withContext(Dispatchers.IO) {
             try {
-                val response = userService.signIn(SignInRequest(username,password))
+                val response = userService.signIn(SignInRequest(username, password))
                 if (response.isSuccessful) {
                     response.body()?.let {
                         Result.success(it)
@@ -41,10 +43,9 @@ class UserRepository @Inject constructor(
                 } else {
                     Result.failure(Exception("Error: ${response.code()} - ${response.message()}"))
                 }
-            }catch (e:Exception) {
+            } catch (e: Exception) {
                 Result.failure(e)
             }
         }
     }
-
 }

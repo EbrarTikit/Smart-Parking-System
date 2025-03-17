@@ -12,7 +12,9 @@ import com.example.smartparkingsystem.R
 import com.example.smartparkingsystem.databinding.FragmentSignUpBinding
 import com.example.smartparkingsystem.utils.state.UiState
 import com.google.android.material.snackbar.Snackbar
+import dagger.hilt.android.AndroidEntryPoint
 
+@AndroidEntryPoint
 class SignUpFragment : Fragment() {
 
     private var _binding: FragmentSignUpBinding? = null

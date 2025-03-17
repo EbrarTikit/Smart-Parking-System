@@ -5,18 +5,23 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import com.example.user_service.exception.UserNotFoundException;
+import com.example.user_service.exception.UsernameAlreadyExistsException;
 import com.example.user_service.model.User;
 import com.example.user_service.repository.UserRepository;
 
 @Service
 public class UserService {
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
     @Autowired
-    public UserService(UserRepository userRepository) {
+    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     public List<User> findAllUsers() {
@@ -27,8 +32,9 @@ public class UserService {
         return userRepository.findById(id);
     }
 
-    public Optional<User> findByUsername(String username) {
-        return userRepository.findByUsername(username);
+    public User findByUsername(String username) {
+        return userRepository.findByUsername(username)
+            .orElseThrow(() -> new UserNotFoundException("User not found with username: " + username));
     }
 
     public User saveUser(User user) {
@@ -39,9 +45,20 @@ public class UserService {
         userRepository.deleteById(id);
     }
 
-    public Long registerUser(User user) {
-        User savedUser = userRepository.save(user);
-        return savedUser.getId();
+    public User registerUser(User user) {
+        if (userRepository.findByUsername(user.getUsername()).isPresent()) {
+            throw new UsernameAlreadyExistsException("Username already exists: " + user.getUsername());
+        }
+        
+        // Şifreyi kodla
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
+        
+        // Kullanıcıyı kaydet
+        return userRepository.save(user);
+    }
+
+    public boolean existsByUsername(String username) {
+        return userRepository.findByUsername(username).isPresent();
     }
 }
 

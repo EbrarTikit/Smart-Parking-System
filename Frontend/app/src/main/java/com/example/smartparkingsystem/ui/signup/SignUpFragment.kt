@@ -1,6 +1,7 @@
 package com.example.smartparkingsystem.ui.signup
 
 import android.os.Bundle
+import android.util.Log
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
@@ -9,10 +10,15 @@ import androidx.core.widget.addTextChangedListener
 import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
 import com.example.smartparkingsystem.R
+import com.example.smartparkingsystem.data.model.SignUpResponse
 import com.example.smartparkingsystem.databinding.FragmentSignUpBinding
 import com.example.smartparkingsystem.utils.state.UiState
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
 class SignUpFragment : Fragment() {
@@ -21,11 +27,7 @@ class SignUpFragment : Fragment() {
     private val binding get() = _binding!!
 
     private val viewModel: SignUpViewModel by viewModels()
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-
-    }
+    private val TAG = "SignUpFragment"
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -53,6 +55,7 @@ class SignUpFragment : Fragment() {
 
     private fun setupObservers() {
         viewModel.signUpState.observe(viewLifecycleOwner) { state ->
+            Log.d(TAG, "SignUp state: $state")
             when(state) {
                 is UiState.Error -> {
                     showLoading(false)
@@ -61,8 +64,24 @@ class SignUpFragment : Fragment() {
                 UiState.Loading -> showLoading(true)
                 is UiState.Success<*> -> {
                     showLoading(false)
-                    Snackbar.make(binding.root, "Sign up successfully!", Snackbar.LENGTH_LONG).show()
-                    findNavController().navigate(R.id.action_signUpFragment_to_signInFragment)
+                    val response = state.data as? SignUpResponse
+                    val message = "Sign up successful!"
+                    Log.d(TAG, "SignUp success: $message")
+                    Snackbar.make(binding.root, message, Snackbar.LENGTH_LONG).show()
+                    
+                    // Use a coroutine to delay navigation
+                    CoroutineScope(Dispatchers.Main).launch {
+                        delay(1500)
+                        if (isAdded && !isDetached) {
+                            try {
+                                Log.d(TAG, "Attempting navigation to SignIn")
+                                findNavController().navigate(R.id.action_signUpFragment_to_signInFragment)
+                                Log.d(TAG, "Navigation to SignIn completed")
+                            } catch (e: Exception) {
+                                Log.e(TAG, "Navigation failed", e)
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -91,7 +110,6 @@ class SignUpFragment : Fragment() {
             alreadyHaveAccountText.setOnClickListener {
                 findNavController().navigate(R.id.action_signUpFragment_to_signInFragment)
             }
-
         }
     }
 
@@ -110,5 +128,4 @@ class SignUpFragment : Fragment() {
         super.onDestroyView()
         _binding = null
     }
-
 }

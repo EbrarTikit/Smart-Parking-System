@@ -2,6 +2,9 @@ package com.example.smartparkingsystem.di
 
 import com.example.smartparkingsystem.data.remote.ChatbotService
 import com.example.smartparkingsystem.data.remote.UserService
+import com.example.smartparkingsystem.utils.StringConverterFactory
+import com.google.gson.Gson
+import com.google.gson.GsonBuilder
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -20,23 +23,42 @@ object NetworkModule {
 
     @Provides
     @Singleton
+    fun provideGson(): Gson {
+        return GsonBuilder()
+            .setLenient()
+            .create()
+    }
+
+    @Provides
+    @Singleton
     fun provideOkHttpClient(): OkHttpClient {
+        val logging = HttpLoggingInterceptor().apply {
+            level = HttpLoggingInterceptor.Level.BODY
+        }
+        
         return OkHttpClient.Builder()
+            .addInterceptor(logging)
             .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
             .writeTimeout(30, TimeUnit.SECONDS)
             .build()
     }
 
+    @Provides
+    @Singleton
+    fun provideStringConverterFactory(): StringConverterFactory {
+        return StringConverterFactory()
+    }
+
     // Chatbot servisi için Retrofit instance'ı
     @Provides
     @Singleton
     @Named("chatbotRetrofit")
-    fun provideChatbotRetrofit(okHttpClient: OkHttpClient): Retrofit {
+    fun provideChatbotRetrofit(okHttpClient: OkHttpClient, gson: Gson): Retrofit {
         return Retrofit.Builder()
             .baseUrl("http://10.0.2.2:8001")
             .client(okHttpClient)
-            .addConverterFactory(GsonConverterFactory.create())
+            .addConverterFactory(GsonConverterFactory.create(gson))
             .build()
     }
 
@@ -44,11 +66,16 @@ object NetworkModule {
     @Provides
     @Singleton
     @Named("userRetrofit")
-    fun provideUserRetrofit(okHttpClient: OkHttpClient): Retrofit {
+    fun provideUserRetrofit(
+        okHttpClient: OkHttpClient, 
+        gson: Gson,
+        stringConverterFactory: StringConverterFactory
+    ): Retrofit {
         return Retrofit.Builder()
-            .baseUrl("http://10.0.2.2:8080") // User service'in port numarasını doğru şekilde ayarlayın
+            .baseUrl("http://10.0.2.2:8080")
             .client(okHttpClient)
-            .addConverterFactory(GsonConverterFactory.create())
+            .addConverterFactory(stringConverterFactory)
+            .addConverterFactory(GsonConverterFactory.create(gson))
             .build()
     }
 

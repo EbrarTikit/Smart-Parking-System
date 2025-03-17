@@ -1,5 +1,7 @@
 package com.example.smartparkingsystem.data.remote
 
+import com.example.smartparkingsystem.data.model.SignInRequest
+import com.example.smartparkingsystem.data.model.SignInResponse
 import com.example.smartparkingsystem.data.model.SignUpRequest
 import com.example.smartparkingsystem.data.model.SignUpResponse
 import com.example.smartparkingsystem.utils.Constants.SIGNIN
@@ -17,7 +19,7 @@ interface UserService {
 
     @POST(SIGNIN)
     suspend fun signIn(
-
-    )
+        @Body request: SignInRequest
+    ): Response<SignInResponse>
 
 }

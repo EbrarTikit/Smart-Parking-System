@@ -72,18 +72,17 @@ Aggregates encapsulate the core business logic and ensure data consistency, whil
   - **Usage:**  
     - Confirm session closure and update records accordingly.
 
----
 
-## Visual Representation
+```mermaid
 
 graph TD
-    A[Android App<br>(User Interface)]
-    B[Backend<br>(Spring Boot, Java)]
-    C[ParkingAggregate<br>(Occupancy Management)]
-    D[ParkingSessionAggregate<br>(Session & Fee Calculation)]
-    E[Domain Events<br>(Occupied/Released)]
-    F[Domain Events<br>(Session Started/Ended<br>& Payment Processed)]
-    G[Notification & Payment Service]
+    A["Android App (User Interface)"]
+    B["Backend (Java, Python, Node.js)"]
+    C["ParkingAggregate (Occupancy Management)"]
+    D["ParkingSessionAggregate (Session & Fee Calculation)"]
+    E["Domain Events (Occupied/Released)"]
+    F["Domain Events (Session Started/Ended\n& Payment Processed)"]
+    G["Notification & Payment Service"]
 
     A --> B
     B --> C
@@ -92,6 +91,10 @@ graph TD
     D --> F
     E --> G
     F --> G
+
+
+
+```
 
 ## Conclusion
 

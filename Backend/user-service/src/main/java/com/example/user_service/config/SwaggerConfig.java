@@ -10,8 +10,8 @@ public class SwaggerConfig {
     public GroupedOpenApi publicApi() {
         return GroupedOpenApi.builder()
                 .group("user-service")
-                .packagesToScan("com.example.user_service.controller")  // API controller'larınızın bulunduğu paketi belirtin
-                .pathsToMatch("/api/**")  // API endpoint'lerinizin yollarını belirtin
+                .packagesToScan("com.example.user_service.controller")  
+                .pathsToMatch("/api/**")  // API endpoint'lerinin yolları
                 .build();
     }
 }

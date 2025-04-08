@@ -85,6 +85,16 @@ services:
     networks:
       - backend_network
 
+  navigation-service:
+    build: 
+      context: ./navigation-service
+      dockerfile: Dockerfile
+    container_name: navigation_service
+    ports:
+      - "8003:8080"
+    networks:
+      - backend_network
+    restart: always
 
 networks:
   backend_network:

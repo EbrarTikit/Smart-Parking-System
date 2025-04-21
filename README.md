@@ -88,11 +88,13 @@ Aggregates encapsulate the core business logic and ensure data consistency, whil
 - Reading and storing license plate data at entry and exit
 - Logging timestamps for each entry and exit
 - Calculating total parking duration
+- Calculating total price
 
 **Key Methods:**
 - `logEntry(plateNumber, timestamp)`: Logs vehicle entry.
 - `logExit(plateNumber, timestamp)`: Logs vehicle exit and matches it with the entry.
 - `calculateParkingDuration(plateNumber)`: Calculates the total time spent in the parking lot.
+- `calculateParkingPrice(plateNumber)`: Calculates the total price according the duration of time.
 
 
 ---

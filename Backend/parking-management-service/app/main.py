@@ -5,24 +5,20 @@ import logging
 from datetime import datetime
 from typing import List, Dict, Any, Optional
 
-# Kendi modüllerimizi içe aktar
 from app.sagas.parking_entry_saga import ParkingEntrySagaOrchestrator, VehicleEntry, router as saga_router
 
-# Logger yapılandırması
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
 
-# FastAPI uygulaması oluştur
 app = FastAPI(
     title="Parking Management Service",
     description="Otopark yönetim servisi ve SAGA orchestrator",
     version="1.0.0"
 )
 
-# CORS ayarları
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -31,15 +27,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# SAGA router'ını uygulama router'ına ekle
 app.include_router(saga_router, prefix="/api/v1", tags=["saga"])
 
-# SAGA orchestrator örneği
 orchestrator = ParkingEntrySagaOrchestrator(
     base_url=os.getenv("BASE_URL", "http://localhost")
 )
 
-# Sağlık kontrolü endpoint'i
 @app.get("/health")
 def health_check():
     return {
@@ -48,14 +41,12 @@ def health_check():
         "service": "parking_management_service"
     }
 
-# Test aracı giriş endpoint'i
 @app.post("/test/vehicle-entry", status_code=status.HTTP_202_ACCEPTED)
 async def test_vehicle_entry(
     license_plate: str,
     user_id: Optional[str] = None,
     background_tasks: BackgroundTasks = None
 ):
-    """Test amaçlı araç giriş işlemi başlatır"""
     try:
         vehicle_entry = VehicleEntry(
             license_plate=license_plate,
@@ -77,13 +68,11 @@ async def test_vehicle_entry(
             detail=f"İşlem başlatılamadı: {str(e)}"
         )
 
-# Test aracı çıkış endpoint'i
 @app.post("/test/vehicle-exit", status_code=status.HTTP_202_ACCEPTED)
 async def test_vehicle_exit(
     license_plate: str,
     user_id: Optional[str] = None
 ):
-    """Test amaçlı araç çıkış işlemi başlatır"""
     try:
         saga = await orchestrator.start_vehicle_exit_saga(license_plate, user_id)
         

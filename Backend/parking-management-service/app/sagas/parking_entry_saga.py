@@ -8,14 +8,12 @@ from typing import Optional, Dict, Any, List
 from datetime import datetime
 import uuid
 
-# Logger yapılandırması
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
 
-# Modeller
 class VehicleEntry(BaseModel):
     license_plate: str
     entry_timestamp: datetime = datetime.now()
@@ -26,7 +24,7 @@ class SagaStep(BaseModel):
     step_id: str
     service_name: str
     operation: str
-    status: str = "pending"  # pending, success, failed
+    status: str = "pending"
     compensation_required: bool = False
     request_data: Dict[str, Any] = {}
     response_data: Optional[Dict[str, Any]] = None
@@ -39,11 +37,10 @@ class ParkingEntrySaga(BaseModel):
     user_id: Optional[str] = None
     start_time: datetime = datetime.now()
     end_time: Optional[datetime] = None
-    status: str = "in_progress"  # in_progress, completed, failed
+    status: str = "in_progress"
     steps: List[SagaStep] = []
     current_step_index: int = 0
 
-# SAGA Orchestrator - Araç Giriş İşlemi için
 class ParkingEntrySagaOrchestrator:
     def __init__(self, base_url: str = "http://localhost"):
         self.license_plate_service_url = f"{base_url}:8002"
@@ -53,10 +50,8 @@ class ParkingEntrySagaOrchestrator:
         self.active_sagas: Dict[str, ParkingEntrySaga] = {}
 
     async def start_saga(self, vehicle_entry: VehicleEntry) -> ParkingEntrySaga:
-        """Araç giriş SAGA işlemini başlatır"""
         saga = ParkingEntrySaga(license_plate=vehicle_entry.license_plate, user_id=vehicle_entry.user_id)
         
-        # SAGA adımlarını tanımla
         saga.steps = [
             SagaStep(
                 step_id="verify_license_plate",
@@ -104,21 +99,17 @@ class ParkingEntrySagaOrchestrator:
             )
         ]
         
-        # SAGA'yı aktif SAGA'lar listesine ekle
         self.active_sagas[saga.saga_id] = saga
         logger.info(f"SAGA başlatıldı: {saga.saga_id} - Plaka: {vehicle_entry.license_plate}")
         
-        # SAGA'yı başlat
         asyncio.create_task(self._execute_saga(saga.saga_id))
         
         return saga
     
     async def start_vehicle_exit_saga(self, license_plate: str, user_id: Optional[str] = None) -> ParkingEntrySaga:
-        """Araç çıkış SAGA işlemini başlatır"""
         saga = ParkingEntrySaga(license_plate=license_plate, user_id=user_id)
         saga.status = "in_progress"
         
-        # SAGA adımlarını tanımla
         saga.steps = [
             SagaStep(
                 step_id="verify_license_plate",
@@ -156,17 +147,14 @@ class ParkingEntrySagaOrchestrator:
             )
         ]
         
-        # SAGA'yı aktif SAGA'lar listesine ekle
         self.active_sagas[saga.saga_id] = saga
         logger.info(f"Araç çıkış SAGA başlatıldı: {saga.saga_id} - Plaka: {license_plate}")
         
-        # SAGA'yı başlat
         asyncio.create_task(self._execute_saga(saga.saga_id))
         
         return saga
 
     async def _execute_saga(self, saga_id: str) -> None:
-        """SAGA adımlarını sırayla çalıştırır"""
         saga = self.active_sagas.get(saga_id)
         if not saga:
             logger.error(f"SAGA bulunamadı: {saga_id}")
@@ -177,18 +165,14 @@ class ParkingEntrySagaOrchestrator:
                 current_step = saga.steps[saga.current_step_index]
                 logger.info(f"SAGA adımı çalıştırılıyor: {current_step.step_id}")
                 
-                # Adımı çalıştır
                 success, response = await self._execute_step(current_step)
                 
                 if success:
-                    # Başarılı durumda, sonraki adıma geç
                     current_step.status = "success"
                     current_step.response_data = response
                     saga.current_step_index += 1
                     logger.info(f"SAGA adımı başarılı: {current_step.step_id}")
                     
-                    # Eğer bu ücret hesaplama adımı ise ve başarılı olduysa, 
-                    # çıkış bildiriminin veri alanına ücret bilgisini ekleyelim
                     if current_step.step_id == "calculate_parking_fee" and response.get("fee_amount"):
                         for next_step in saga.steps[saga.current_step_index:]:
                             if next_step.step_id == "send_exit_notification":
@@ -196,7 +180,6 @@ class ParkingEntrySagaOrchestrator:
                                 next_step.request_data["duration_hours"] = response.get("duration_hours")
                                 break
                 else:
-                    # Başarısız durumda, telafi işlemlerini başlat
                     current_step.status = "failed"
                     current_step.error = str(response)
                     logger.error(f"SAGA adımı başarısız: {current_step.step_id} - Hata: {response}")
@@ -205,7 +188,6 @@ class ParkingEntrySagaOrchestrator:
                     saga.end_time = datetime.now()
                     return
             
-            # Tüm adımlar başarılı ise SAGA tamamlandı
             saga.status = "completed"
             saga.end_time = datetime.now()
             logger.info(f"SAGA başarıyla tamamlandı: {saga_id}")
@@ -217,20 +199,16 @@ class ParkingEntrySagaOrchestrator:
             await self._compensate_saga(saga)
 
     async def _execute_step(self, step: SagaStep) -> tuple[bool, Any]:
-        """SAGA adımını çalıştırır"""
         service_url = getattr(self, f"{step.service_name}_url", None)
         if not service_url:
             return False, f"Servis URL'i bulunamadı: {step.service_name}"
         
         endpoint = ""
-        method = "POST"  # Varsayılan metod
+        method = "POST"
         
-        # Operasyona göre endpoint belirle
         if step.service_name == "license_plate_service":
             if step.operation == "verify_license_plate":
                 endpoint = "/recognize/"
-                # Bu adımda normalde bir görüntü gönderilir, burada sadece plakayı doğrulama amaçlı
-                # demo olarak kullanıyoruz
                 method = "GET"
                 endpoint = f"/vehicles/{step.request_data.get('license_plate')}"
             elif step.operation == "create_entry_record":
@@ -242,18 +220,18 @@ class ParkingEntrySagaOrchestrator:
             if step.operation == "check_subscription":
                 user_id = step.request_data.get("user_id")
                 if not user_id:
-                    return True, {"subscription": None}  # Kullanıcı yok, adımı atla
+                    return True, {"subscription": None}
                 endpoint = f"/users/{user_id}/subscription"
                 method = "GET"
             elif step.operation == "update_favorite_parking":
                 user_id = step.request_data.get("user_id")
                 if not user_id:
-                    return True, {}  # Kullanıcı yok, adımı atla
+                    return True, {}
                 endpoint = f"/users/{user_id}/favorites"
             elif step.operation == "update_parking_history":
                 user_id = step.request_data.get("user_id")
                 if not user_id:
-                    return True, {}  # Kullanıcı yok, adımı atla
+                    return True, {}
                 endpoint = f"/users/{user_id}/history"
                 
         elif step.service_name == "parking_mgmt_service":
@@ -275,7 +253,7 @@ class ParkingEntrySagaOrchestrator:
                 
                 if method == "GET":
                     response = await client.get(url, timeout=10.0)
-                else:  # POST
+                else:
                     response = await client.post(url, json=step.request_data, timeout=10.0)
                 
                 if response.status_code < 200 or response.status_code >= 300:
@@ -288,10 +266,8 @@ class ParkingEntrySagaOrchestrator:
             return False, str(e)
 
     async def _compensate_saga(self, saga: ParkingEntrySaga) -> None:
-        """Başarısız SAGA için telafi işlemleri"""
         logger.info(f"SAGA telafi işlemleri başlatılıyor: {saga.saga_id}")
         
-        # Başarılı olan adımları ters sırayla telafi et
         compensation_steps = [
             step for step in saga.steps[:saga.current_step_index] 
             if step.status == "success" and step.compensation_required
@@ -300,18 +276,14 @@ class ParkingEntrySagaOrchestrator:
         for step in reversed(compensation_steps):
             logger.info(f"Telafi işlemi: {step.step_id}")
             
-            # Adıma göre telafi işlemi
             if step.service_name == "license_plate_service" and step.operation == "create_entry_record":
-                # Oluşturulan giriş kaydını iptal et
                 license_plate = step.request_data.get("license_plate")
                 await self._compensate_entry_record(license_plate)
                 
             elif step.service_name == "parking_mgmt_service" and step.operation == "allocate_parking_space":
-                # Tahsis edilen park yerini serbest bırak
                 await self._compensate_parking_allocation(step.response_data)
     
     async def _compensate_entry_record(self, license_plate: str) -> None:
-        """Giriş kaydı telafi işlemi"""
         try:
             async with httpx.AsyncClient() as client:
                 url = f"{self.license_plate_service_url}/vehicles/{license_plate}/cancel-entry"
@@ -322,7 +294,6 @@ class ParkingEntrySagaOrchestrator:
             logger.error(f"Giriş kaydı iptal edilirken hata: {e}")
     
     async def _compensate_parking_allocation(self, allocation_data: Dict[str, Any]) -> None:
-        """Park yeri tahsisi telafi işlemi"""
         try:
             async with httpx.AsyncClient() as client:
                 url = f"{self.parking_mgmt_service_url}/parking-spaces/release"
@@ -333,15 +304,12 @@ class ParkingEntrySagaOrchestrator:
             logger.error(f"Park yeri tahsisi iptal edilirken hata: {e}")
 
     def get_saga_status(self, saga_id: str) -> Optional[ParkingEntrySaga]:
-        """SAGA durumunu döndürür"""
         return self.active_sagas.get(saga_id)
     
     def get_all_sagas(self) -> List[ParkingEntrySaga]:
-        """Tüm SAGA'ları döndürür"""
         return list(self.active_sagas.values())
     
     def cleanup_completed_sagas(self, age_hours: int = 24) -> None:
-        """Tamamlanmış eski SAGA'ları temizler"""
         current_time = datetime.now()
         to_remove = []
         
@@ -355,10 +323,8 @@ class ParkingEntrySagaOrchestrator:
             del self.active_sagas[saga_id]
             logger.info(f"Eski SAGA temizlendi: {saga_id}")
 
-# SAGA Orchestrator örneği
 orchestrator = ParkingEntrySagaOrchestrator()
 
-# FastAPI için endpointler
 router = FastAPI()
 
 @router.post("/parking/entry", status_code=status.HTTP_202_ACCEPTED)
@@ -366,7 +332,6 @@ async def start_parking_entry_saga(
     entry: VehicleEntry, 
     background_tasks: BackgroundTasks
 ):
-    """Araç giriş SAGA işlemini başlatır"""
     try:
         saga = await orchestrator.start_saga(entry)
         return {
@@ -386,7 +351,6 @@ async def start_parking_exit_saga(
     license_plate: str,
     user_id: Optional[str] = None
 ):
-    """Araç çıkış SAGA işlemini başlatır"""
     try:
         saga = await orchestrator.start_vehicle_exit_saga(license_plate, user_id)
         return {
@@ -403,7 +367,6 @@ async def start_parking_exit_saga(
 
 @router.get("/parking/entry/{saga_id}")
 async def get_saga_status(saga_id: str):
-    """SAGA durumunu getirir"""
     saga = orchestrator.get_saga_status(saga_id)
     if not saga:
         raise HTTPException(
@@ -411,7 +374,6 @@ async def get_saga_status(saga_id: str):
             detail=f"SAGA bulunamadı: {saga_id}"
         )
     
-    # Yanıt için SAGA bilgilerini hazırla
     step_details = []
     for step in saga.steps:
         step_details.append({
@@ -434,7 +396,6 @@ async def get_saga_status(saga_id: str):
 
 @router.get("/parking/sagas")
 async def list_sagas():
-    """Tüm SAGA'ları listeler"""
     sagas = orchestrator.get_all_sagas()
     return {
         "sagas": [
@@ -451,6 +412,5 @@ async def list_sagas():
 
 @router.post("/parking/cleanup")
 async def cleanup_sagas(age_hours: int = 24):
-    """Tamamlanmış eski SAGA'ları temizler"""
     orchestrator.cleanup_completed_sagas(age_hours)
     return {"message": f"{age_hours} saatten eski tamamlanmış SAGA'lar temizlendi"} 

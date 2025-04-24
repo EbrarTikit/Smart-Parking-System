@@ -50,3 +50,9 @@ logs/
 .coverage
 htmlcov/
 .pytest_cache/
+
+# Debug images
+debug_images/
+
+# Markdown files
+.doc/

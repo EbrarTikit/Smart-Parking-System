@@ -53,22 +53,33 @@ services:
 
   postgres:
     image: postgres
+    container_name: postgres_db
     environment:
       POSTGRES_USER: user
       POSTGRES_PASSWORD: password
       POSTGRES_DB: license_plate_db
     ports:
       - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
     networks:
       - backend_network
 
   license-plate-service:
     build:
       context: ./license-plate-service
+    container_name: license_plate_service
     ports:
       - "8002:8000"
     environment:
       - DATABASE_URL=postgresql://user:password@postgres/license_plate_db
+      - DEBUG=True
+    volumes:
+      # Kod değişikliklerinin otomatik yansıması için yerel kod dizinini konteyner içine bağla
+      - ./license-plate-service/app:/app/app
+      - ./license-plate-service/.env:/app/.env
+      # Debug görüntülerinin yerel ortamda görülebilmesi için debug klasörünü de bağla
+      - ./license-plate-service/debug_images:/app/debug_images
     depends_on:
       - postgres
     networks:
@@ -77,4 +88,7 @@ services:
 networks:
   backend_network:
     driver: bridge
+
+volumes:
+  postgres_data:
 

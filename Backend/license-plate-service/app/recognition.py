@@ -275,69 +275,79 @@ def perform_ocr(image, config=None):
 
 
 def preprocess_image(image):
-    """Geliştirilmiş görüntü ön işleme"""
-
-    # Orijinal görüntüyü koruyun (plan B için)
+    """Temel görüntü ön işleme işlevleri"""
+    # Orijinal görüntüyü kopyala
     original = image.copy()
 
-    # Gri tonlama
+    # Gri tonlamaya çevir
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
-    # Boyutlandırma - Tesseract 300-400 DPI'da en iyi çalışır
+    # Boyutlandırma - Tesseract için optimize edilmiş boyut
     height, width = gray.shape
-    target_dpi = 300
-    scale_factor = target_dpi / 72  # 72 DPI varsayımı
-    if gray.shape[1] < 300:  # Çok küçük görüntüler için
-        scale_factor = max(scale_factor, 3.0)  # En az 3x büyüt
+    target_width = 400
+    if width < target_width:
+        ratio = target_width / width
+        gray = cv2.resize(gray, (target_width, int(height * ratio)), interpolation=cv2.INTER_CUBIC)
 
-    resized = cv2.resize(gray, None, fx=scale_factor, fy=scale_factor, interpolation=cv2.INTER_CUBIC)
+    # Gürültü azaltma - temel bulanıklaştırma
+    blurred = cv2.GaussianBlur(gray, (5, 5), 0)
+    
+    # Basit kenar tespiti
+    edges = cv2.Canny(blurred, 50, 150)
 
-    # Gürültü azaltma - iki farklı yöntem dene
-    blurred1 = cv2.GaussianBlur(resized, (5, 5), 0)
-    blurred2 = cv2.bilateralFilter(resized, 11, 17, 17)
+    return gray, blurred, edges
 
+def enhanced_preprocessing(image):
+    """Türk plaka tespiti için geliştirilmiş görüntü ön işleme"""
+    # Gri tonlamaya çevir
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    
+    # Boyut normalleştirme - plaka tespiti için ideal boyut
+    height, width = gray.shape
+    target_width = 400
+    if width < target_width:
+        ratio = target_width / width
+        gray = cv2.resize(gray, (target_width, int(height * ratio)), interpolation=cv2.INTER_CUBIC)
+    
+    # Gürültü azaltma - bilateral filtreleme (kenarları koruyarak yumuşatma)
+    blurred = cv2.bilateralFilter(gray, 11, 17, 17)
+    
+    # Kontrast artırma - CLAHE algoritması
+    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+    enhanced = clahe.apply(blurred)
+    
     # Keskinleştirme
-    kernel = np.array([[-1,-1,-1], [-1,9,-1], [-1,-1,-1]])
-    sharp1 = cv2.filter2D(blurred1, -1, kernel)
-    sharp2 = cv2.filter2D(blurred2, -1, kernel)
-
-    # Kontrast artırma
-    alpha = 1.5  # Kontrast faktörü
-    beta = 10    # Parlaklık faktörü
-    contrast1 = cv2.convertScaleAbs(sharp1, alpha=alpha, beta=beta)
-
-    # Eşikleme - birden fazla yöntem dene
-    # 1. Otsu eşikleme
-    _, otsu = cv2.threshold(sharp1, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-
-    # 2. Adaptif eşikleme
-    adaptive1 = cv2.adaptiveThreshold(sharp1, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
+    kernel_sharpen = np.array([[-1, -1, -1], [-1, 9, -1], [-1, -1, -1]])
+    sharpened = cv2.filter2D(enhanced, -1, kernel_sharpen)
+    
+    # Kenar tespiti - parametreler plaka kenarları için optimize edildi
+    edges = cv2.Canny(enhanced, 30, 200)
+    
+    # Morfolojik işlemler
+    kernel = np.ones((3, 3), np.uint8)
+    dilated = cv2.dilate(edges, kernel, iterations=1)
+    
+    # Histogram eşitleme (alternatif bir görüntü iyileştirme yöntemi)
+    equalized = cv2.equalizeHist(gray)
+    
+    # Otsu eşikleme
+    _, otsu = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+    
+    # Adaptif eşikleme
+    adaptive = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, 
                                     cv2.THRESH_BINARY, 11, 2)
-    adaptive2 = cv2.adaptiveThreshold(sharp2, 255, cv2.ADAPTIVE_THRESH_MEAN_C,
-                                   cv2.THRESH_BINARY, 11, 2)
-
-    # Morfolojik işlemler - küçük gürültüleri temizle
-    kernel = np.ones((1, 1), np.uint8)
-    morph1 = cv2.morphologyEx(adaptive1, cv2.MORPH_CLOSE, kernel)
-    morph2 = cv2.morphologyEx(adaptive2, cv2.MORPH_OPEN, kernel)
-
-    # Kenar tespiti
-    canny = cv2.Canny(blurred2, 30, 200)
-
-    # Tüm ön işlenmiş görüntüleri döndür
+    
     return {
-        'original': original,
         'gray': gray,
-        'resized': resized,
+        'blurred': blurred,
+        'enhanced': enhanced,
+        'sharpened': sharpened,
+        'edges': edges,
+        'dilated': dilated,
+        'equalized': equalized,
         'otsu': otsu,
-        'adaptive1': adaptive1,
-        'adaptive2': adaptive2,
-        'morph1': morph1,
-        'morph2': morph2,
-        'contrast1': contrast1,
-        'canny': canny
+        'adaptive': adaptive
     }
-
 
 def find_contours(edged_image):
     """Görüntüdeki konturları bulur"""
@@ -435,6 +445,46 @@ def alternative_plate_detection(image):
         logger.warning(f"HOG tabanlı algılama sırasında hata: {str(e)}")
         return []  # Hata durumunda boş liste döndür
 
+def turkish_plate_detector(image):
+    """Türk plakalarına özel algılama algoritması"""
+    try:
+        # Görüntüyü ön işleme
+        preprocessed = enhanced_preprocessing(image)
+
+        # Mavi şerit algılama (Türk plakalarındaki mavi bölge)
+        hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+        lower_blue = np.array([100, 50, 50])
+        upper_blue = np.array([130, 255, 255])
+        blue_mask = cv2.inRange(hsv, lower_blue, upper_blue)
+
+        # Konturları bul
+        contours, _ = cv2.findContours(preprocessed['dilated'], cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+
+        # Alanlarına göre sırala (büyükten küçüğe)
+        contours = sorted(contours, key=cv2.contourArea, reverse=True)[:10]
+
+        # Her kontur için
+        for contour in contours:
+            # Dikdörtgensel alan oluştur
+            rect = cv2.minAreaRect(contour)
+            (_, _), (width, height), angle = rect
+
+            # Türk plakası en-boy oranı kontrolü (4:1 civarında)
+            aspect_ratio = max(width, height) / min(width, height)
+            if 3.5 <= aspect_ratio <= 6.0:  # Tolerans ile
+                box = cv2.boxPoints(rect)
+                box = np.int0(box)
+
+                # Mavi şerit kontrolü - bu konturun içinde mavi şerit var mı?
+                mask = np.zeros_like(blue_mask)
+                cv2.drawContours(mask, [box], 0, 255, -1)
+                if cv2.countNonZero(cv2.bitwise_and(blue_mask, mask)) > 0:
+                    return box
+
+        return None
+    except Exception as e:
+        logger.warning(f"Türk plaka algılama algoritmasında hata: {str(e)}")
+        return None
 
 def extract_license_plate(image, contour):
     """Plaka bölgesini çıkarır"""
@@ -555,171 +605,228 @@ def clean_plate_text(text):
     return validate_plate_format(text)
 
 def validate_plate_format(text):
-    """Türk plaka formatını doğrular ve düzeltir"""
+    """Türk plaka formatını doğrular ve düzeltir - Geliştirilmiş esnek yaklaşım"""
     if not text:
         return None
 
-    # Tüm boşlukları kaldır ve büyük harfe dönüştür
-    text = text.replace(" ", "").upper()
-
-    # OCR hatalarını düzelt
-    corrections = {
+    # Başlangıç metni (debug için)
+    original_text = text
+    
+    # ------------------------
+    # 1. ADIM: İLK TEMİZLEME
+    # ------------------------
+    
+    # Gereksiz karakterleri kaldır (tire, nokta, virgül, vb.)
+    text = re.sub(r'[^A-Za-z0-9\s]', '', text)
+    
+    # Büyük harfe dönüştür
+    text = text.upper()
+    
+    # Türkçe karakterleri İngilizce karakterlere dönüştür
+    tr_en_map = {
+        'Ç': 'C', 'Ğ': 'G', 'İ': 'I', 'Ö': 'O', 'Ş': 'S', 'Ü': 'U'
+    }
+    for tr_char, en_char in tr_en_map.items():
+        text = text.replace(tr_char, en_char)
+    
+    # OCR hatalarını düzelt - Benzer görünen karakterler
+    ocr_corrections = {
         'D': '0', 'Q': '0', 'O': '0',  # Harfleri rakamlara düzeltme
-        'I': '1', 'İ': '1',
+        'I': '1', 'İ': '1', 'L': '1',
         'Z': '2',
+        'A': '4', 'H': '4',
         'S': '5', 'Ş': '5',
         'G': '6', 'Ğ': '6',
-        'B': '8'
+        'T': '7',
+        'B': '8',
+        '¹': '1', '²': '2', '³': '3'  # Üst simgeler
     }
-
-    clean_text = ""
-    for char in text:
-        if char in corrections:
-            clean_text += corrections[char]
-        else:
-            clean_text += char
-
-    # Sadece alfanumerik karakterleri tut
-    clean_text = re.sub(r'[^A-Z0-9]', '', clean_text)
-
-    # Türkiye'deki il plaka kodları (1-81)
-    valid_il_codes = set(str(i).zfill(2) for i in range(1, 82))
-
-    # Farklı Türk plaka formatları için regex desenleri
-    patterns = [
-        # XX YYY ZZ: 34 ABC 12
-        r'^(\d{2})([A-Z]{1,3})(\d{1,4})$',
-        # XX YY ZZZ: 34 AB 123
-        r'^(\d{2})([A-Z]{2})(\d{2,4})$',
-        # XX YYYY: 34 ABCD (özel plakalar)
-        r'^(\d{2})([A-Z]{4})$',
-    ]
-
-    for pattern in patterns:
-        match = re.search(pattern, clean_text)
-        if match:
-            il_kodu = match.group(1)
-            # İl kodunu kontrol et
-            if il_kodu in valid_il_codes:
-                # Doğru formatta döndür
-                harf = match.group(2)
-                if len(match.groups()) > 2:
-                    numara = match.group(3)
-                    logger.info(f"Geçerli plaka formatı bulundu: {il_kodu} {harf} {numara}")
-                    return f"{il_kodu} {harf} {numara}"
-                else:
-                    logger.info(f"Geçerli özel plaka formatı bulundu: {il_kodu} {harf}")
-                    return f"{il_kodu} {harf}"
-
-    # Hiçbir formata uymadıysa, özel bir düzeltme yapalım - özellikle "PY8589KNX" -> "16 YBS 88" dönüşümü için
-    # Bazı yaygın OCR hatalarını plaka formatına göre düzeltelim
-    if len(clean_text) >= 5:
-        # Özel Durum: Plaka formatı geçerli değil, ilk iki karakter rakam değilse
-        if not clean_text[:2].isdigit():
-            logger.info(f"Standart formata uymayan plaka bulundu: {clean_text}, özel düzeltme deneniyor")
-            
-            # İlk iki karakteri değiştirmek için düzeltme tablosu
-            il_corrections = {
-                'P': '1', 'Y': '6',  # PY -> 16 dönüşümü
-                'R': '8', 'A': '4',  # RA -> 84 dönüşümü
-                'T': '7', 'F': '5',  # TF -> 75 dönüşümü
-                'E': '3', 'C': '0',  # EC -> 30 dönüşümü
-                'B': '8', 'O': '0',  # BO -> 80 dönüşümü
-                'S': '5', 'H': '4',  # SH -> 54 dönüşümü
-            }
-            
-            # İlk iki karakteri düzelt
-            corrected_prefix = ""
-            for i, char in enumerate(clean_text[:2]):
-                if char in il_corrections:
-                    corrected_prefix += il_corrections[char]
-                elif char.isdigit():
-                    corrected_prefix += char
-                else:
-                    # Düzeltme yoksa, makul bir varsayılan değer kullan
-                    corrected_prefix += '0'
-            
-            # İl kodu geçerli mi kontrol et
-            if corrected_prefix in valid_il_codes:
-                # Geriye kalan kısım
-                rest = clean_text[2:]
-                
-                # Harf ve rakam kısımlarını ayır (YBS 88 gibi)
-                letter_part = ""
-                number_part = ""
-                
-                for char in rest:
-                    if char.isalpha():
-                        if number_part and letter_part:  # Harf-rakam-harf deseni varsa (anormal durum)
-                            break
-                        letter_part += char
-                    else:  # Rakam
-                        number_part += char
-                
-                if letter_part and number_part:
-                    result = f"{corrected_prefix} {letter_part} {number_part}"
-                    logger.info(f"Özel düzeltme sonucu: {clean_text} -> {result}")
-                    return result
-            
-            # Başka bir yaklaşım deneyelim - sadece ilk karakteri düzelt
-            if clean_text[0] in il_corrections and clean_text[1].isdigit():
-                prefix = il_corrections[clean_text[0]] + clean_text[1]
-                if prefix in valid_il_codes:
-                    rest = clean_text[2:]
-                    # Geriye kalan kısmı önceki gibi ayır
-                    letter_part = ""
-                    number_part = ""
-                    
-                    for char in rest:
-                        if char.isalpha():
-                            if number_part and letter_part:
-                                break
-                            letter_part += char
-                        else:
-                            number_part += char
-                    
-                    if letter_part and number_part:
-                        result = f"{prefix} {letter_part} {number_part}"
-                        logger.info(f"İlk karakter düzeltme sonucu: {clean_text} -> {result}")
-                        return result
-        
-        # Eğer ilk iki karakter sayı ise ve geçerli il kodu ise
-        elif clean_text[:2] in valid_il_codes:
-            # Makul bir formata dönüştürmeye çalış
-            il_kodu = clean_text[:2]
-            rest = clean_text[2:]
-
-            # Harf ve rakam bölümlerini ayırt etmeye çalış
-            harf_part = ""
-            num_part = ""
-
-            for char in rest:
-                if char.isalpha():
-                    if num_part and not harf_part:  # İlk kez harf görüyorsak ve rakam varsa
-                        # Yeni bir bölüm başlat (il kodu rakam harf rakam deseni olabilir)
-                        result = f"{il_kodu} {char} {num_part}"
-                        logger.info(f"Alternatif format düzeltme: {clean_text} -> {result}")
-                        return result
-                    harf_part += char
-                else:  # Rakam
-                    if harf_part:  # Eğer daha önce harf görmüşsek
-                        num_part += char
-                    else:  # Henüz harf görmemişsek, il koduna ekleyelim
-                        il_kodu += char
-                        # İl kodu 2 karakterden uzun olduğunda düzelt
-                        if len(il_kodu) > 2:
-                            il_kodu = il_kodu[:2]  # İlk iki karakteri al
-                            num_part = clean_text[2:]  # Geri kalanı num_part'a koy
-                            break
-
-            if harf_part and num_part:
-                result = f"{il_kodu} {harf_part} {num_part}"
-                logger.info(f"Normal format düzeltme: {clean_text} -> {result}")
-                return result
     
-    # Son çare: Formatı düzeltemedik, temizlenmiş metni döndür
-    logger.info(f"Format düzeltme başarısız, temizlenmiş metin döndürülüyor: {clean_text}")
-    return clean_text if len(clean_text) >= 4 else None
+    # Tüm boşlukları kaldır - daha sonra doğru yere ekleyeceğiz
+    text = text.replace(" ", "")
+    
+    # ------------------------
+    # 2. ADIM: KARAKTER SINIFLANDIRMA
+    # ------------------------
+    
+    # Karakter bazlı iterasyon ile temizleme
+    clean_chars = []
+    
+    for char in text:
+        # Karakteri düzelt
+        if char in ocr_corrections:
+            char = ocr_corrections[char]
+        
+        # Alfanümerik kontrolü
+        if char.isalnum():
+            clean_chars.append(char)
+    
+    # Temizlenmiş metni oluştur
+    clean_text = ''.join(clean_chars)
+    
+    # Çok kısa metinleri ele
+    if len(clean_text) < 4:
+        logger.warning(f"Çok kısa plaka metni: '{original_text}' -> '{clean_text}'")
+        return clean_text if clean_text else None
+    
+    # ------------------------
+    # 3. ADIM: İL KODU BELİRLEME
+    # ------------------------
+    
+    # Geçerli il kodları (01-81)
+    valid_il_codes = set(str(i).zfill(2) for i in range(1, 82))
+    
+    il_kodu = None
+    remaining_text = clean_text
+    
+    # İlk iki karakter doğrudan il kodu mu?
+    if len(clean_text) >= 2 and clean_text[:2].isdigit() and clean_text[:2] in valid_il_codes:
+        il_kodu = clean_text[:2]
+        remaining_text = clean_text[2:]
+    
+    # İlk karakter rakam değil ama potansiyel bir OCR hatası olabilir mi?
+    elif len(clean_text) >= 2 and not clean_text[0].isdigit():
+        # İlk iki karakteri değiştirmek için düzeltme tablosu
+        il_corrections = {
+            'P': '1', 'Y': '6',  # PY -> 16 dönüşümü
+            'R': '8', 'A': '4',  # RA -> 84 dönüşümü
+            'T': '7', 'F': '5',  # TF -> 75 dönüşümü
+            'E': '3', 'C': '0',  # EC -> 30 dönüşümü
+            'B': '8', 'O': '0',  # BO -> 80 dönüşümü
+            'S': '5', 'H': '4',  # SH -> 54 dönüşümü
+            'J': '3', 'K': '4',  # JK -> 34 dönüşümü
+            'M': '1', 'N': '7',  # MN -> 17 dönüşümü
+            'V': '7', 'W': '8',  # VW -> 78 dönüşümü
+            'X': '8'            # X -> 8 dönüşümü
+        }
+        
+        # İlk karakteri düzelt
+        if clean_text[0] in il_corrections:
+            first_digit = il_corrections[clean_text[0]]
+            
+            # İkinci karakter rakam mı?
+            if len(clean_text) >= 2 and clean_text[1].isdigit():
+                potential_il = first_digit + clean_text[1]
+                if potential_il in valid_il_codes:
+                    il_kodu = potential_il
+                    remaining_text = clean_text[2:]
+            
+            # İkinci karakter de harf mi (iki OCR hatası)?
+            elif len(clean_text) >= 2 and clean_text[1] in il_corrections:
+                second_digit = il_corrections[clean_text[1]]
+                potential_il = first_digit + second_digit
+                if potential_il in valid_il_codes:
+                    il_kodu = potential_il
+                    remaining_text = clean_text[2:]
+    
+    # İl kodu bulunamadıysa, yaygın il kodlarını varsayılan olarak dene
+    if not il_kodu:
+        # En yaygın il kodları
+        common_il_codes = ['34', '06', '35', '01', '16', '07']
+        
+        # Metinde sadece harf ve rakam varsa
+        if clean_text.isalnum():
+            # Bu durumda metin muhtemelen bir plaka
+            # Varsayılan olarak yaygın il kodlarını deneyelim
+            for code in common_il_codes:
+                # Metin bir harf ve rakam kombinasyonuyla devam ediyorsa
+                if len(clean_text) >= 5:  # En az 5 karakter (2 il + 2 harf + 1 rakam)
+                    # İl kodunu varsay ve devam et
+                    il_kodu = code
+                    remaining_text = clean_text  # Tüm metin gerekli olabilir
+                    logger.info(f"İl kodu bulunamadı, varsayılan il kodu kullanılıyor: {code}")
+                    break
+    
+    # Eğer hala il kodu bulunamadıysa, plaka formatını tanıyamıyoruz
+    if not il_kodu:
+        logger.warning(f"Plakada il kodu tespit edilemedi: '{original_text}' -> '{clean_text}'")
+        return clean_text  # En azından temizlenmiş metni döndür
+    
+    # ------------------------
+    # 4. ADIM: PLAKA BÖLÜMÜ AYRIŞTIRMA
+    # ------------------------
+    
+    # Kalan metni harf ve rakam bölümlerine ayır
+    alpha_part = ""
+    numeric_part = ""
+    
+    # İl kodundan sonra ilk harfleri topla
+    for i, char in enumerate(remaining_text):
+        if char.isalpha():
+            alpha_part += char
+        else:  # Rakam
+            # İlk rakamdan sonraki kısım numeric_part'a eklenir
+            numeric_part = remaining_text[i:]
+            break
+    
+    # Eğer rakam bulunamadıysa, tüm kalan kısım harf olabilir (özel plakalar)
+    if not numeric_part and alpha_part:
+        # Harf kısmı çok uzunsa (4'ten fazla) potansiyel olarak içinde rakam vardır
+        if len(alpha_part) > 4:
+            # Harfleri ve rakamları ayırmaya çalış
+            potential_alpha = ""
+            potential_numeric = ""
+            
+            for char in alpha_part:
+                if char in ocr_corrections and char.isalpha():
+                    # OCR hatasını düzelt
+                    potential_numeric += ocr_corrections[char]
+                elif char.isdigit():
+                    potential_numeric += char
+                else:
+                    potential_alpha += char
+            
+            if potential_alpha and potential_numeric:
+                alpha_part = potential_alpha
+                numeric_part = potential_numeric
+    
+    # Bir plaka formatı kontrolü yap
+    if not alpha_part:
+        # Sadece rakamlar var, potansiyel olarak ilk 1-3 karakter harf olabilir
+        alpha_part = remaining_text[:min(3, len(remaining_text))]
+        numeric_part = remaining_text[min(3, len(remaining_text)):]
+    
+    # Düğümlenmiş (rakam-harf-rakam gibi) formatları çöz
+    # Örneğin: "34A12B56" -> il_kodu="34", alpha_part="AB", numeric_part="1256"
+    if len(numeric_part) > 1 and any(c.isalpha() for c in numeric_part):
+        new_alpha = alpha_part
+        new_numeric = ""
+        
+        for char in numeric_part:
+            if char.isalpha():
+                new_alpha += char
+            else:
+                new_numeric += char
+        
+        alpha_part = new_alpha
+        numeric_part = new_numeric
+    
+    # Çok uzun alfa kısmını kısalt (en fazla 3 harf)
+    if len(alpha_part) > 3:
+        alpha_part = alpha_part[:3]
+    
+    # Çok uzun rakam kısmını kısalt (en fazla 5 rakam)
+    if len(numeric_part) > 5:
+        numeric_part = numeric_part[:5]
+    
+    # ------------------------
+    # 5. ADIM: PLAKA FORMATI OLUŞTURMA
+    # ------------------------
+    
+    # Son kontrol: Plaka formatını oluştur
+    if alpha_part and numeric_part:
+        result = f"{il_kodu} {alpha_part} {numeric_part}"
+        logger.info(f"Plaka formatı oluşturuldu: '{original_text}' -> '{result}'")
+        return result
+    elif alpha_part:  # Sadece harf kısmı varsa (özel plakalar)
+        result = f"{il_kodu} {alpha_part}"
+        logger.info(f"Özel plaka formatı oluşturuldu: '{original_text}' -> '{result}'")
+        return result
+    
+    # Son çare: Formatı düzeltemedik, en azından temizlenmiş metni ve il kodunu döndür
+    result = f"{il_kodu} {remaining_text}"
+    logger.warning(f"Standart format oluşturulamadı, basit format döndürülüyor: '{original_text}' -> '{result}'")
+    return result
 
 
 def recognize_text(license_plate_image):
@@ -826,28 +933,48 @@ def recognize_license_plate(image_data) -> Tuple[bool, Optional[str]]:
         if image is None:
             return False, "Görüntü okunamadı"
 
-        # Görüntüyü ön işleme tabi tut
-        gray, thresh, edged = preprocess_image(image)
+        # Görüntüyü ön işleme tabi tut (temel işlemler)
+        gray, blurred, edges = preprocess_image(image)
 
-        # Konturları bul
-        contours = find_contours(edged)
-
-        # Plaka konturunu bul
+        # 1. Yöntem: Standart kontur tabanlı plaka algılama
+        contours = find_contours(edges)
         license_plate_contour = find_license_plate_contour(contours, image.shape)
 
+        # 2. Yöntem: Türk plakalarına özel algılama
         if license_plate_contour is None:
-            # Plan B: Doğrudan tüm görüntüden OCR dene
-            logger.info("Plaka konturu bulunamadı, doğrudan görüntü üzerinde OCR deneniyor")
-            license_plate_text = perform_ocr(thresh, config='--psm 7 -l tur+eng')
+            logger.info("Standart yöntemle plaka bulunamadı, Türk plaka algılama deneniyor")
+            # Gelişmiş ön işleme - Türk plaka algılama için optimize edilmiş
+            turkish_plate_box = turkish_plate_detector(image)
+            
+            if turkish_plate_box is not None:
+                license_plate_contour = turkish_plate_box
+                logger.info("Türk plaka algılama algoritması ile plaka bulundu")
 
-            if license_plate_text:
-                clean_text = clean_plate_text(license_plate_text)
-                if len(clean_text) >= 4:  # Makul bir plaka uzunluğu
-                    return True, clean_text
+        # 3. Yöntem: HOG tabanlı algılama
+        if license_plate_contour is None:
+            logger.info("Türk plaka algılama ile plaka bulunamadı, HOG tabanlı algılama deneniyor")
+            hog_contours = alternative_plate_detection(image)
+            license_plate_contour = find_license_plate_contour(hog_contours, image.shape)
+
+        if license_plate_contour is None:
+            # Son çare: Gelişmiş ön işleme ve doğrudan OCR dene
+            logger.info("Hiçbir yöntemle plaka konturu bulunamadı, gelişmiş görüntü işleme ve doğrudan OCR deneniyor")
+            enhanced_results = enhanced_preprocessing(image)
+            
+            # Farklı ön işleme sonuçlarını dene
+            for name, processed_img in enhanced_results.items():
+                if name in ['gray', 'blurred', 'enhanced', 'sharpened', 'equalized', 'adaptive', 'otsu']:
+                    license_plate_text = perform_ocr(processed_img, config='--psm 7 --oem 3 -l tur+eng')
+                    if license_plate_text:
+                        clean_text = clean_plate_text(license_plate_text)
+                        if len(clean_text) >= 4:  # Makul bir plaka uzunluğu
+                            logger.info(f"Doğrudan OCR başarılı oldu (yöntem: {name}): {clean_text}")
+                            return True, clean_text
+            
             return False, "Plaka bulunamadı"
 
-        # Plaka bölgesini çıkar
-        license_plate_image = extract_license_plate(thresh, license_plate_contour)
+        # Plaka bölgesini çıkar - önce normal gri görüntüde dene
+        license_plate_image = extract_license_plate(gray, license_plate_contour)
 
         if license_plate_image is None:
             return False, "Plaka bölgesi çıkarılamadı"
@@ -856,19 +983,34 @@ def recognize_license_plate(image_data) -> Tuple[bool, Optional[str]]:
         license_plate_text = recognize_text(license_plate_image)
 
         if not license_plate_text:
-            # Plan C: Gri tonlamada dene
-            license_plate_image = extract_license_plate(gray, license_plate_contour)
+            # Plan B: Blurred görüntüde dene
+            license_plate_image = extract_license_plate(blurred, license_plate_contour)
             license_plate_text = recognize_text(license_plate_image)
 
             if not license_plate_text:
-                return False, "Plaka metni okunamadı"
+                # Plan C: Gelişmiş ön işleme ile tekrar dene
+                enhanced_imgs = enhanced_preprocessing(image)
+                
+                # Sırayla farklı görüntü işleme sonuçlarını dene
+                for name in ['enhanced', 'sharpened', 'equalized', 'adaptive']:
+                    if license_plate_text:
+                        break
+                        
+                    img = enhanced_imgs[name]
+                    license_plate_image = extract_license_plate(img, license_plate_contour)
+                    if license_plate_image is not None:
+                        license_plate_text = recognize_text(license_plate_image)
+                        if license_plate_text:
+                            logger.info(f"Plaka metni tanıma başarılı oldu (yöntem: {name}): {license_plate_text}")
+                
+                if not license_plate_text:
+                    return False, "Plaka metni okunamadı"
 
         return True, license_plate_text
 
     except Exception as e:
         logger.error(f"Plaka tanıma hatası: {str(e)}")
         return False, f"Hata: {str(e)}"
-    
 
 
 def debug_plate_recognition(image_data, save_debug_images=True):
@@ -888,12 +1030,20 @@ def debug_plate_recognition(image_data, save_debug_images=True):
         debug_images = {}
         debug_images['original'] = image.copy()
 
-        # Ön işleme
-        preprocessed_images = preprocess_image(image)
-        debug_images.update(preprocessed_images)
+        # Temel ön işleme
+        gray, blurred, edges = preprocess_image(image)
+        debug_images['gray'] = gray
+        debug_images['blurred'] = blurred
+        debug_images['edges'] = edges
+        
+        # Gelişmiş ön işleme - Türk plaka algılama için
+        enhanced_images = enhanced_preprocessing(image)
+        # Tüm sonuçları debug_images sözlüğüne ekle
+        for name, img in enhanced_images.items():
+            debug_images[f'enhanced_{name}'] = img
 
-        # Konturları bul
-        contours, _ = cv2.findContours(preprocessed_images['canny'], cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        # 1. Yöntem: Standart kontur tabanlı plaka algılama
+        contours, _ = cv2.findContours(edges, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
         contours = sorted(contours, key=cv2.contourArea, reverse=True)[:10]
 
         contour_image = image.copy()
@@ -903,40 +1053,65 @@ def debug_plate_recognition(image_data, save_debug_images=True):
         # Plaka konturunu bul
         license_plate_contour = find_license_plate_contour(contours, image.shape)
 
-        # Kontur bulunamadıysa alternatif yöntemler dene
+        # 2. Yöntem: Türk plakalarına özel algılama
         if license_plate_contour is None:
+            logger.info("Standart yöntemle plaka bulunamadı, Türk plaka algılama deneniyor")
+            turkish_plate_box = turkish_plate_detector(image)
+            
+            if turkish_plate_box is not None:
+                license_plate_contour = turkish_plate_box
+                
+                # Debug için Türk plaka algılama sonucunu göster
+                turkish_plate_img = image.copy()
+                cv2.drawContours(turkish_plate_img, [turkish_plate_box], -1, (0, 0, 255), 3)
+                debug_images['turkish_plate_detection'] = turkish_plate_img
+                
+                logger.info("Türk plaka algılama algoritması ile plaka bulundu")
+
+        # 3. Yöntem: HOG tabanlı algılama 
+        if license_plate_contour is None:
+            logger.info("Türk plaka algılama ile plaka bulunamadı, HOG tabanlı algılama deneniyor")
             hog_contours = alternative_plate_detection(image)
             license_plate_contour = find_license_plate_contour(hog_contours, image.shape)
+            
+            if license_plate_contour is not None:
+                # Debug için HOG sonucunu göster
+                hog_plate_img = image.copy()
+                cv2.drawContours(hog_plate_img, [license_plate_contour], -1, (255, 0, 0), 3)
+                debug_images['hog_plate_detection'] = hog_plate_img
 
-            if license_plate_contour is None:
-                # Her bir ön işlenmiş görüntüde doğrudan OCR dene
-                for name, img in preprocessed_images.items():
-                    if name == 'original' or name == 'canny':
-                        continue
+        # Hiçbir kontur bulunamadıysa doğrudan OCR dene
+        if license_plate_contour is None:
+            ocr_results = []
+            
+            # Farklı ön işleme sonuçlarında OCR dene
+            for name, img in debug_images.items():
+                if name == 'original' or 'contours' in name or 'plate_detection' in name:
+                    continue
 
-                    # Görüntü gri tonlama değilse dönüştür
-                    if len(img.shape) == 3:
-                        img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+                # Görüntü gri tonlama değilse dönüştür
+                if len(img.shape) == 3:
+                    img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
-                    text = perform_ocr(img)
-                    clean_text = clean_plate_text(text)
+                text = perform_ocr(img)
+                clean_text = clean_plate_text(text)
 
-                    if clean_text:
-                        if save_debug_images:
-                            # Debug klasörünü oluştur
-                            os.makedirs('debug_images', exist_ok=True)
-                            timestamp = int(time.time())
-
-                            # Görüntüleri kaydet
-                            for dbg_name, dbg_img in debug_images.items():
-                                cv2.imwrite(f'debug_images/{timestamp}_{dbg_name}.jpg', dbg_img)
-
-                            # Bulunan metni kaydet
-                            with open(f'debug_images/{timestamp}_result.txt', 'w') as f:
-                                f.write(f"Method: direct OCR on {name}\nText: {text}\nClean: {clean_text}")
-
-                        return True, clean_text, debug_images
-
+                if clean_text:
+                    ocr_results.append((name, text, clean_text))
+            
+            # En iyi OCR sonucunu seç
+            if ocr_results:
+                # Doğru formatta olan sonucu seç (ilk öncelikli)
+                valid_format_results = []
+                for name, text, clean_text in ocr_results:
+                    if re.match(r'^\d{2}\s[A-Z]{1,3}\s\d{1,4}$', clean_text):
+                        valid_format_results.append((name, text, clean_text))
+                
+                # Doğru formatta sonuç varsa onu kullan, yoksa en uzun sonucu kullan
+                selected_result = valid_format_results[0] if valid_format_results else max(ocr_results, key=lambda x: len(x[2]))
+                
+                name, text, clean_text = selected_result
+                
                 if save_debug_images:
                     # Debug klasörünü oluştur
                     os.makedirs('debug_images', exist_ok=True)
@@ -946,11 +1121,29 @@ def debug_plate_recognition(image_data, save_debug_images=True):
                     for dbg_name, dbg_img in debug_images.items():
                         cv2.imwrite(f'debug_images/{timestamp}_{dbg_name}.jpg', dbg_img)
 
-                    # Sonucu kaydet
+                    # Bulunan metni kaydet
                     with open(f'debug_images/{timestamp}_result.txt', 'w') as f:
-                        f.write("No plate detected with any method")
+                        f.write(f"Method: direct OCR on {name}\nText: {text}\nClean: {clean_text}")
+                        f.write("\n\nTüm OCR sonuçları:\n")
+                        for r_name, r_text, r_clean_text in ocr_results:
+                            f.write(f"{r_name}: {r_text} -> {r_clean_text}\n")
 
-                return False, "Plaka bulunamadı", debug_images
+                return True, clean_text, debug_images
+
+            if save_debug_images:
+                # Debug klasörünü oluştur
+                os.makedirs('debug_images', exist_ok=True)
+                timestamp = int(time.time())
+
+                # Görüntüleri kaydet
+                for dbg_name, dbg_img in debug_images.items():
+                    cv2.imwrite(f'debug_images/{timestamp}_{dbg_name}.jpg', dbg_img)
+
+                # Sonucu kaydet
+                with open(f'debug_images/{timestamp}_result.txt', 'w') as f:
+                    f.write("No plate detected with any method")
+
+            return False, "Plaka bulunamadı", debug_images
 
         # Plaka konturunu göster
         plate_contour_image = image.copy()
@@ -959,39 +1152,84 @@ def debug_plate_recognition(image_data, save_debug_images=True):
 
         # Plaka bölgesini çıkar
         x, y, w, h = cv2.boundingRect(license_plate_contour)
-        plate_region = preprocessed_images['adaptive1'][y:y+h, x:x+w]
-        debug_images['plate_region'] = plate_region
+        plate_region = gray[y:y+h, x:x+w]
+        debug_images['plate_region_gray'] = plate_region
+        
+        # Farklı işlenmiş versiyonlardaki plaka bölgelerini de ekle
+        plate_regions = {}
+        for name in ['enhanced', 'sharpened', 'adaptive', 'equalized', 'otsu']:
+            if name in enhanced_images:
+                plate_region = enhanced_images[name][y:y+h, x:x+w]
+                plate_regions[name] = plate_region
+                debug_images[f'plate_region_{name}'] = plate_region
 
-        # OCR uygula
-        text = perform_ocr(plate_region)
-        clean_text = clean_plate_text(text)
+        # OCR sonuçlarını topla
+        ocr_results = []
+        
+        # Gri tonlamada OCR
+        text_gray = perform_ocr(plate_region)
+        clean_text_gray = clean_plate_text(text_gray)
+        if clean_text_gray:
+            ocr_results.append(("gray", text_gray, clean_text_gray))
+        
+        # Diğer işlenmiş görüntülerde OCR
+        for name, region in plate_regions.items():
+            text = perform_ocr(region)
+            clean_text = clean_plate_text(text)
+            if clean_text:
+                ocr_results.append((name, text, clean_text))
+        
+        # En iyi OCR sonucunu seç
+        if ocr_results:
+            # Doğru formatta olan sonucu seç (ilk öncelikli)
+            valid_format_results = []
+            for name, text, clean_text in ocr_results:
+                if re.match(r'^\d{2}\s[A-Z]{1,3}\s\d{1,4}$', clean_text):
+                    valid_format_results.append((name, text, clean_text))
+            
+            # Doğru formatta sonuç varsa onu kullan, yoksa en uzun sonucu kullan
+            selected_result = valid_format_results[0] if valid_format_results else max(ocr_results, key=lambda x: len(x[2]))
+            
+            name, text, clean_text = selected_result
+            debug_images['successful_region'] = debug_images[f'plate_region_{name}']
+            debug_images['successful_method'] = name
+            
+            if save_debug_images:
+                # Debug klasörünü oluştur
+                os.makedirs('debug_images', exist_ok=True)
+                timestamp = int(time.time())
 
-        if not clean_text:
-            # Farklı ön işlenmiş görüntülerde dene
-            for name in ['adaptive2', 'morph1', 'morph2', 'otsu']:
-                plate_region = preprocessed_images[name][y:y+h, x:x+w]
-                text = perform_ocr(plate_region)
-                clean_text = clean_plate_text(text)
-                if clean_text:
-                    debug_images['successful_plate_region'] = plate_region
-                    break
+                # Görüntüleri kaydet
+                for dbg_name, dbg_img in debug_images.items():
+                    if isinstance(dbg_img, str):  # Eğer değer bir string ise (yöntem adı gibi)
+                        continue
+                    cv2.imwrite(f'debug_images/{timestamp}_{dbg_name}.jpg', dbg_img)
 
-        if save_debug_images:
-            # Debug klasörünü oluştur
-            os.makedirs('debug_images', exist_ok=True)
-            timestamp = int(time.time())
+                # Sonucu kaydet
+                with open(f'debug_images/{timestamp}_result.txt', 'w') as f:
+                    f.write(f"Selected Method: {name}\nText: {text}\nClean: {clean_text}\n")
+                    f.write("\nAll OCR results:\n")
+                    for r_name, r_text, r_clean_text in ocr_results:
+                        f.write(f"{r_name}: {r_text} -> {r_clean_text}\n")
 
-            # Görüntüleri kaydet
-            for dbg_name, dbg_img in debug_images.items():
-                cv2.imwrite(f'debug_images/{timestamp}_{dbg_name}.jpg', dbg_img)
-
-            # Sonucu kaydet
-            with open(f'debug_images/{timestamp}_result.txt', 'w') as f:
-                f.write(f"Text: {text}\nClean: {clean_text}")
-
-        if clean_text:
             return True, clean_text, debug_images
         else:
+            if save_debug_images:
+                # Debug klasörünü oluştur
+                os.makedirs('debug_images', exist_ok=True)
+                timestamp = int(time.time())
+
+                # Görüntüleri kaydet
+                for dbg_name, dbg_img in debug_images.items():
+                    if isinstance(dbg_img, str):  # Eğer değer bir string ise (yöntem adı gibi)
+                        continue
+                    cv2.imwrite(f'debug_images/{timestamp}_{dbg_name}.jpg', dbg_img)
+
+                # Sonucu kaydet
+                with open(f'debug_images/{timestamp}_result.txt', 'w') as f:
+                    f.write("Plaka metni okunamadı\n")
+                    f.write("Hiçbir OCR yöntemi plaka metni çıkaramadı")
+
             return False, "Plaka metni okunamadı", debug_images
 
     except Exception as e:

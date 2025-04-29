@@ -1,0 +1,27 @@
+version: "3.8"
+services:
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+
+  parking-management-service:
+    build:
+      context: ./parking-management-service
+    container_name: parking-service
+    depends_on:
+      - rabbitmq
+    ports:
+      - "8081:8081"
+
+  navigation-service:
+    build:
+      context: ./navigation-service
+    container_name: navigation-service
+    depends_on:
+      - rabbitmq
+    ports:
+      - "8082:8080"

@@ -45,7 +45,7 @@ public class ParkingController {
         Parking parking = parkingService.getParkingById(id);
         return ResponseEntity.ok(parking);
     }
-
+    
     //Create Parking
     @Operation(
         summary = "Create a new parking lot",
@@ -75,7 +75,7 @@ public class ParkingController {
         Parking newParking = parkingService.createParking(parking);
         return ResponseEntity.ok(newParking);
     }
-
+    
     //Update Parking Infos
     @Operation(summary = "Update parking lot", description = "Updates an existing parking lot with new details")
     @PutMapping("/admin/parkings/{id}")

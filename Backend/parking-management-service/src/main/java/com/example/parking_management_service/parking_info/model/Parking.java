@@ -34,16 +34,14 @@ public class Parking {
     private double rate;
     
     @Column(name = "latitude", nullable = true)
-    private Double latitude;  // Coğrafi enlem değeri
+    private Double latitude;  
     
     @Column(name = "longitude", nullable = true)
-    private Double longitude;  // Coğrafi boylam değeri
+    private Double longitude;  
     
-    // Empty Constructor
     public Parking() {
     }
     
-    // Parameterized Constructor
     public Parking(String name, String location, int capacity, String openingHours, String closingHours, double rate) {
         this.name = name;
         this.location = location;
@@ -53,7 +51,7 @@ public class Parking {
         this.rate = rate;
     }
     
-    // Extended Parameterized Constructor with Lat/Lng
+   
     public Parking(String name, String location, int capacity, String openingHours, String closingHours, double rate, Double latitude, Double longitude) {
         this.name = name;
         this.location = location;

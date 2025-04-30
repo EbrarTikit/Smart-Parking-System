@@ -85,6 +85,21 @@ services:
     networks:
       - backend_network
 
+  parking-management-service:
+    build: 
+      context: ./parking-management-service
+      dockerfile: Dockerfile
+    container_name: parking_management_service
+    ports:
+      - "8080:8080"
+    environment:
+      - REDIS_HOST=redis_service
+    depends_on:
+      - redis
+    restart: always
+    networks:
+      - backend_network
+
   navigation-service:
     build: 
       context: ./navigation-service

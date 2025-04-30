@@ -1,11 +1,14 @@
 package com.example.parking_management_service.parking_info.service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.example.parking_management_service.dto.LocationDto;
 import com.example.parking_management_service.parking_info.exception.ResourceNotFoundException;
 import com.example.parking_management_service.parking_info.model.Parking;
 import com.example.parking_management_service.parking_info.repository.ParkingRepository;
@@ -15,6 +18,28 @@ public class ParkingService {
 
     @Autowired
     private ParkingRepository parkingRepository;
+
+    public LocationDto getParkingLocation(Long id) {
+        Optional<Parking> optionalParking = parkingRepository.findById(id);
+        LocationDto locationDto = new LocationDto();
+        if (optionalParking.isPresent()) {
+            Parking parking = optionalParking.get();
+            BeanUtils.copyProperties(parking, locationDto);
+            return locationDto;
+        }
+        return null;
+    }
+
+    public List<LocationDto> getAllParkingLocations() {
+        List<Parking> parkings = parkingRepository.findAll();
+        List<LocationDto> locationDtos = new ArrayList<>();
+        for (Parking parking : parkings) {
+            LocationDto locationDto = new LocationDto();
+            BeanUtils.copyProperties(parking, locationDto);
+            locationDtos.add(locationDto);
+        }
+        return locationDtos;
+    }
 
     //Get All Parkings
     public List<Parking> getAllParkings() {

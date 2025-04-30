@@ -1,21 +1,23 @@
-FROM python:3.9-slim
+# Use a base image with Java
+FROM openjdk:17-jdk-alpine
 
+# Set the working directory
 WORKDIR /app
 
-# Sistem bağımlılıklarını kur
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
-    && rm -rf /var/lib/apt/lists/*
+# Copy the Maven build file and the source code
+COPY mvnw .
+COPY .mvn .mvn
+COPY pom.xml .
+COPY src ./src
 
-# Python bağımlılıklarını kopyala ve kur
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Package the application
+RUN ./mvnw package
 
-# Uygulama kodunu kopyala
-COPY ./app /app/app
+# Copy the jar file to the container
+COPY target/*.jar app.jar
 
-# Port aç
-EXPOSE 8000
+# Expose the port the app runs on
+EXPOSE 8081
 
-# Uygulama başlat
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"] 
+# Run the jar file
+ENTRYPOINT ["java", "-jar", "app.jar"]

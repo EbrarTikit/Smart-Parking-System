@@ -15,12 +15,15 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.example.parking_management_service.dto.LocationDto;
 import com.example.parking_management_service.parking_info.model.Parking;
 import com.example.parking_management_service.parking_info.service.ParkingService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
+import org.springframework.web.bind.annotation.RequestParam;
+
 
 
 @RestController
@@ -29,6 +32,16 @@ public class ParkingController {
 
     @Autowired
     private ParkingService parkingService;
+
+    @GetMapping("/parkings/location/{id}")
+    public LocationDto getParkingLocation(@PathVariable Long id) {
+        return parkingService.getParkingLocation(id);
+    }
+    
+    @GetMapping("/parkings/location/list")
+    public List<LocationDto> getAllParkingLocations() {
+        return parkingService.getAllParkingLocations();
+    }
 
     //Get All Parkings
     @Operation(summary = "Get all parking lots", description = "Returns a list of all available parking lots")

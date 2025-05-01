@@ -34,13 +34,15 @@ public class ParkingController {
     private ParkingService parkingService;
 
     @GetMapping("/parkings/location/{id}")
-    public LocationDto getParkingLocation(@PathVariable Long id) {
-        return parkingService.getParkingLocation(id);
+    public ResponseEntity<LocationDto> getParkingLocation(@PathVariable Long id) {
+        LocationDto locationDto = parkingService.getParkingLocation(id);
+        return ResponseEntity.ok(locationDto);
     }
     
     @GetMapping("/parkings/location/list")
-    public List<LocationDto> getAllParkingLocations() {
-        return parkingService.getAllParkingLocations();
+    public ResponseEntity<List<LocationDto>> getAllParkingLocations() {
+        List<LocationDto> locations = parkingService.getAllParkingLocations();
+        return ResponseEntity.ok(locations);
     }
 
     //Get All Parkings

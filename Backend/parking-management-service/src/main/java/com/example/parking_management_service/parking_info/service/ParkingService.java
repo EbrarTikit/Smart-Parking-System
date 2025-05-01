@@ -21,9 +21,9 @@ public class ParkingService {
 
     public LocationDto getParkingLocation(Long id) {
         Optional<Parking> optionalParking = parkingRepository.findById(id);
-        LocationDto locationDto = new LocationDto();
         if (optionalParking.isPresent()) {
             Parking parking = optionalParking.get();
+            LocationDto locationDto = new LocationDto();
             BeanUtils.copyProperties(parking, locationDto);
             return locationDto;
         }

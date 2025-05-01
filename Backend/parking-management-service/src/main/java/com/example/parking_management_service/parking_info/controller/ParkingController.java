@@ -22,7 +22,6 @@ import com.example.parking_management_service.parking_info.service.ParkingServic
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
-import org.springframework.web.bind.annotation.RequestParam;
 
 
 
@@ -33,14 +32,22 @@ public class ParkingController {
     @Autowired
     private ParkingService parkingService;
 
+    // parking location infos for navigation service 
     @GetMapping("/parkings/location/{id}")
-    public LocationDto getParkingLocation(@PathVariable Long id) {
-        return parkingService.getParkingLocation(id);
+    public ResponseEntity<LocationDto> getParkingLocation(@PathVariable Long id) {
+        LocationDto locationDto = parkingService.getParkingLocation(id);
+        if (locationDto == null || locationDto.getId() == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(locationDto);
     }
     
+
+    // all parking locations for navigation service
     @GetMapping("/parkings/location/list")
-    public List<LocationDto> getAllParkingLocations() {
-        return parkingService.getAllParkingLocations();
+    public ResponseEntity<List<LocationDto>> getAllParkingLocations() {
+        List<LocationDto> locations = parkingService.getAllParkingLocations();
+        return ResponseEntity.ok(locations);
     }
 
     //Get All Parkings

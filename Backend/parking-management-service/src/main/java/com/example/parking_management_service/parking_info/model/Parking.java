@@ -33,11 +33,15 @@ public class Parking {
     @Column(nullable = false)
     private double rate;
     
-    // Empty Constructor
+    @Column(name = "latitude", nullable = true)
+    private Double latitude;  
+    
+    @Column(name = "longitude", nullable = true)
+    private Double longitude;  
+    
     public Parking() {
     }
     
-    // Parameterized Constructor
     public Parking(String name, String location, int capacity, String openingHours, String closingHours, double rate) {
         this.name = name;
         this.location = location;
@@ -45,6 +49,18 @@ public class Parking {
         this.openingHours = openingHours;
         this.closingHours = closingHours;
         this.rate = rate;
+    }
+    
+   
+    public Parking(String name, String location, int capacity, String openingHours, String closingHours, double rate, Double latitude, Double longitude) {
+        this.name = name;
+        this.location = location;
+        this.capacity = capacity;
+        this.openingHours = openingHours;
+        this.closingHours = closingHours;
+        this.rate = rate;
+        this.latitude = latitude;
+        this.longitude = longitude;
     }
     
     // Getter and Setter    
@@ -102,5 +118,21 @@ public class Parking {
 
     public void setRate(double rate) {
         this.rate = rate;
+    }
+    
+    public Double getLatitude() {
+        return latitude;
+    }
+    
+    public void setLatitude(Double latitude) {
+        this.latitude = latitude;
+    }
+    
+    public Double getLongitude() {
+        return longitude;
+    }
+    
+    public void setLongitude(Double longitude) {
+        this.longitude = longitude;
     }
 } 

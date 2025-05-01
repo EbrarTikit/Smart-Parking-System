@@ -13,7 +13,7 @@ from .recognition import recognize_license_plate, OCRSingleton, debug_plate_reco
 
 # Logger yapılandırması
 logging.basicConfig(
-    level=logging.INFO,
+    level=logging.DEBUG,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)

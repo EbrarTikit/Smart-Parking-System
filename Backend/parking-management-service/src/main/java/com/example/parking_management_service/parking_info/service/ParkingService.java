@@ -27,11 +27,15 @@ public class ParkingService {
             BeanUtils.copyProperties(parking, locationDto);
             return locationDto;
         }
-        return null;
+        throw new ResourceNotFoundException("Parking location not found with id: " + id);
     }
 
     public List<LocationDto> getAllParkingLocations() {
         List<Parking> parkings = parkingRepository.findAll();
+        if (parkings.isEmpty()) {
+            throw new ResourceNotFoundException("No parking locations found");
+        }
+        
         List<LocationDto> locationDtos = new ArrayList<>();
         for (Parking parking : parkings) {
             LocationDto locationDto = new LocationDto();

@@ -2,12 +2,12 @@ package com.example.navigation_service.controller;
 
 import java.util.List;
 
-import com.example.navigation_service.dto.DtoCarPark;
+import com.example.navigation_service.dto.ParkingLocationDto;
 
 public interface INavigationController {
 
-    public DtoCarPark getParkLocation(Long id);
+    public ParkingLocationDto getParkingLocationFromParkingService(Long id);
 
-    public List<DtoCarPark> getAllParkLocation();
+    public List<ParkingLocationDto> getAllParkingLocationFromParkingService();
 
 }

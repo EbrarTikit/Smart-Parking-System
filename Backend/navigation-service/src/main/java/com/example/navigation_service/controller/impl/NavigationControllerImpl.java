@@ -4,11 +4,13 @@ import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.navigation_service.controller.INavigationController;
 import com.example.navigation_service.dto.DtoCarPark;
+import com.example.navigation_service.dto.ParkingLocationDto;
 import com.example.navigation_service.service.INavigationService;
 
 @RestController
@@ -17,16 +19,16 @@ public class NavigationControllerImpl implements INavigationController {
 
     @Autowired
     private INavigationService carParkService;
-
-    @GetMapping(path =  "/list/{id}")
+    
+    @GetMapping(path = "/parking-location/{id}")
     @Override
-    public DtoCarPark getParkLocation(Long id) {
-        return carParkService.getParkLocation(id);
+    public ParkingLocationDto getParkingLocationFromParkingService( Long id) {
+        return carParkService.getParkingLocationFromParkingService(id);
     }
 
-    @GetMapping(path =  "/list")
     @Override
-    public List<DtoCarPark> getAllParkLocation() {
-        return carParkService.getAllParkLocation();
+    @GetMapping(path = "/parking-location/list")
+    public List<ParkingLocationDto> getAllParkingLocationFromParkingService() {
+        return carParkService.getAllParkingLocationFromParkingService();
     }
 }

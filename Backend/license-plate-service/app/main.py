@@ -9,11 +9,11 @@ import os
 
 from . import models, schemas, crud
 from .database import engine , SessionLocal
-from .recognition import recognize_license_plate, OCRSingleton
+from .recognition import recognize_license_plate, OCRSingleton, debug_plate_recognition
 
 # Logger yapılandırması
 logging.basicConfig(
-    level=logging.INFO,
+    level=logging.DEBUG,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
@@ -65,23 +65,49 @@ async def recognize(file: UploadFile = File(...), db: Session = Depends(get_db))
     try:
         logger.info(f"Plaka tanıma isteği alındı: {file.filename}")
         
+        # Dosya boyutunu kontrol et
+        max_upload_size = int(os.getenv("MAX_UPLOAD_SIZE", 10)) * 1024 * 1024  # MB
+        
         # Dosya içeriğini oku
         contents = await file.read()
+        file_size = len(contents)
         
-        # Plaka tanıma işlemini gerçekleştir
-        success, result = recognize_license_plate(contents)
-        
-        if not success:
-            logger.warning(f"Plaka tanıma başarısız: {result}")
+        if file_size > max_upload_size:
+            logger.warning(f"Dosya boyutu çok büyük: {file_size/(1024*1024):.2f}MB > {max_upload_size/(1024*1024)}MB")
             return schemas.LicensePlateResponse(
                 success=False,
-                message=result
+                message=f"Dosya boyutu çok büyük. Maksimum: {max_upload_size/(1024*1024)}MB"
             )
         
-        # Plaka veritabanında var mı kontrol et
-        license_plate = result
+        # Debug modu açıksa detaylı hata ayıklama kullan
+        if os.getenv("DEBUG", "False").lower() == "true":
+            logger.info("Debug modu aktif, detaylı tanıma yapılıyor")
+            success, result, debug_images = debug_plate_recognition(contents)
+            
+            if not success:
+                logger.warning(f"Debug modunda plaka tanıma başarısız: {result}")
+                return schemas.LicensePlateResponse(
+                    success=False,
+                    message=result
+                )
+                
+            license_plate = result
+        else:
+            # Normal tanıma işlemi
+            success, result = recognize_license_plate(contents)
+            
+            if not success:
+                logger.warning(f"Plaka tanıma başarısız: {result}")
+                return schemas.LicensePlateResponse(
+                    success=False,
+                    message=result
+                )
+                
+            license_plate = result
+        
         logger.info(f"Tanınan plaka: {license_plate}")
         
+        # Plaka veritabanında var mı kontrol et
         db_vehicle = crud.get_vehicle_by_license_plate(db, license_plate)
         
         # Eğer yoksa yeni araç kaydı oluştur

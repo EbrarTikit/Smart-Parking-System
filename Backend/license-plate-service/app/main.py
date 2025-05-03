@@ -1,31 +1,40 @@
-from fastapi import FastAPI, UploadFile, File, Depends, HTTPException, Query, status
-from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy.orm import Session
-from typing import List, Optional
-from datetime import datetime
-import io
 import logging
+import sys
 import os
+import time
+import io
+import base64
+from typing import Optional, List, Dict, Any, Union
 
-from . import models, schemas, crud
-from .database import engine , SessionLocal
-from .recognition import recognize_license_plate, OCRSingleton, debug_plate_recognition
+# FastAPI 
+from fastapi import FastAPI, File, UploadFile, HTTPException, Depends, BackgroundTasks, Body, Query
+from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel, Field
 
-# Logger yapılandırması
+# Veritabanı bağlantısı
+from sqlalchemy import create_engine, Column, Integer, String, Float, DateTime, func, Boolean, Text
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker, Session
+import datetime
+
+# Konfigürasyon
+from app.config import DATABASE_URL, RABBITMQ_URL
+
+# Log yapılandırması
 logging.basicConfig(
-    level=logging.DEBUG,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(sys.stdout)
+    ]
 )
 logger = logging.getLogger(__name__)
 
-# Veritabanı tablolarını oluştur
-models.Base.metadata.create_all(bind=engine)
-
-app = FastAPI(
-    title="License Plate Recognition Service",
-    description="Plaka tanıma ve otopark yönetim servisi",
-    version="1.1.0"
-)
+# Uygulama oluştur
+app = FastAPI(title="License Plate Recognition Service",
+             description="Araç plakalarını tespit ve tanıma servisi",
+             version="1.0.0")
 
 # CORS ayarları
 app.add_middleware(
@@ -36,194 +45,318 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Veritabanı bağlantısı
+try:
+    engine = create_engine(DATABASE_URL)
+    SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+    Base = declarative_base()
+    logger.info("Veritabanı bağlantısı başarıyla kuruldu")
+except Exception as e:
+    logger.error(f"Veritabanı bağlantısı kurulamadı: {str(e)}")
+    engine = None
+    SessionLocal = None
+    Base = declarative_base()
+
+# Model içe aktarımı
+try:
+    from app.model import process_image_for_plate_recognition
+    logger.info("Plaka tanıma modeli başarıyla yüklendi")
+    MODEL_AVAILABLE = True
+except Exception as e:
+    logger.error(f"Plaka tanıma modeli yüklenemedi: {str(e)}")
+    import traceback
+    traceback.print_exc()
+    MODEL_AVAILABLE = False
+
+# Veritabanı modelleri
+class PlateRecord(Base):
+    __tablename__ = "plate_records"
+
+    id = Column(Integer, primary_key=True, index=True)
+    plate_text = Column(String, index=True)
+    confidence = Column(Float)
+    timestamp = Column(DateTime, default=datetime.datetime.utcnow)
+    vehicle_type = Column(String, nullable=True)
+    image_path = Column(String, nullable=True)
+    processed = Column(Boolean, default=False)
+    bbox = Column(String, nullable=True)  # JSON formatında bounding box
+    
+    def __repr__(self):
+        return f"<PlateRecord(id={self.id}, plate={self.plate_text}, confidence={self.confidence})>"
+
+# Veritabanı oluştur
+if engine is not None:
+    try:
+        Base.metadata.create_all(bind=engine)
+        logger.info("Veritabanı tabloları başarıyla oluşturuldu")
+    except Exception as e:
+        logger.error(f"Veritabanı tabloları oluşturulamadı: {str(e)}")
+
 # Bağımlılık
 def get_db():
+    """Database session oluşturur"""
+    if SessionLocal is None:
+        raise HTTPException(status_code=503, detail="Veritabanı bağlantısı kullanılamıyor")
+    
     db = SessionLocal()
     try:
         yield db
     finally:
         db.close()
 
-# Uygulama başlatılırken OCR motorunu yükle
-@app.on_event("startup")
-async def startup_event():
-    logger.info("Uygulama başlatılıyor...")
-    try:
-        # .env dosyasından OCR dil ayarlarını al
-        ocr_languages = os.getenv("OCR_LANGUAGES", "tr,en").split(",")
-        logger.info(f"OCR için diller yükleniyor: {ocr_languages}")
-        
-        # OCR motorunu başlat (Singleton)
-        reader = OCRSingleton.get_reader(languages=ocr_languages)
-        logger.info("OCR motoru başarıyla yüklendi")
-    except Exception as e:
-        logger.error(f"OCR motoru yüklenirken hata: {str(e)}")
-
-# Plaka tanıma endpoint'i
-@app.post("/recognize/", response_model=schemas.LicensePlateResponse)
-async def recognize(file: UploadFile = File(...), db: Session = Depends(get_db)):
-    try:
-        logger.info(f"Plaka tanıma isteği alındı: {file.filename}")
-        
-        # Dosya boyutunu kontrol et
-        max_upload_size = int(os.getenv("MAX_UPLOAD_SIZE", 10)) * 1024 * 1024  # MB
-        
-        # Dosya içeriğini oku
-        contents = await file.read()
-        file_size = len(contents)
-        
-        if file_size > max_upload_size:
-            logger.warning(f"Dosya boyutu çok büyük: {file_size/(1024*1024):.2f}MB > {max_upload_size/(1024*1024)}MB")
-            return schemas.LicensePlateResponse(
-                success=False,
-                message=f"Dosya boyutu çok büyük. Maksimum: {max_upload_size/(1024*1024)}MB"
-            )
-        
-        # Debug modu açıksa detaylı hata ayıklama kullan
-        if os.getenv("DEBUG", "False").lower() == "true":
-            logger.info("Debug modu aktif, detaylı tanıma yapılıyor")
-            success, result, debug_images = debug_plate_recognition(contents)
-            
-            if not success:
-                logger.warning(f"Debug modunda plaka tanıma başarısız: {result}")
-                return schemas.LicensePlateResponse(
-                    success=False,
-                    message=result
-                )
-                
-            license_plate = result
-        else:
-            # Normal tanıma işlemi
-            success, result = recognize_license_plate(contents)
-            
-            if not success:
-                logger.warning(f"Plaka tanıma başarısız: {result}")
-                return schemas.LicensePlateResponse(
-                    success=False,
-                    message=result
-                )
-                
-            license_plate = result
-        
-        logger.info(f"Tanınan plaka: {license_plate}")
-        
-        # Plaka veritabanında var mı kontrol et
-        db_vehicle = crud.get_vehicle_by_license_plate(db, license_plate)
-        
-        # Eğer yoksa yeni araç kaydı oluştur
-        if db_vehicle is None:
-            logger.info(f"Yeni araç kaydı oluşturuluyor: {license_plate}")
-            vehicle_create = schemas.VehicleCreate(license_plate=license_plate)
-            db_vehicle = crud.create_vehicle(db, vehicle_create)
-        else:
-            logger.info(f"Araç veritabanında bulundu: {license_plate}")
-        
-        # Başarılı yanıt döndür
-        return schemas.LicensePlateResponse(
-            success=True,
-            license_plate=license_plate,
-            message="Plaka başarıyla tanındı"
-        )
-        
-    except Exception as e:
-        logger.error(f"Plaka tanıma sırasında hata: {str(e)}")
-        return schemas.LicensePlateResponse(
-            success=False,
-            message=f"Hata: {str(e)}"
-        )
-
-# Araç giriş kaydı oluşturma endpoint'i
-@app.post("/vehicles/{license_plate}/entry", response_model=schemas.ParkingRecord)
-def create_entry_record(license_plate: str, db: Session = Depends(get_db)):
-    logger.info(f"Araç giriş kaydı isteği: {license_plate}")
+# Pydantic modelleri
+class PlateDetectionResponse(BaseModel):
+    success: bool
+    message: str
+    plates: List[str] = []
+    details: Dict[str, Any] = {}
     
-    # Aracı bul veya oluştur
-    db_vehicle = crud.get_vehicle_by_license_plate(db, license_plate)
-    if not db_vehicle:
-        logger.info(f"Araç bulunamadı, yeni kayıt oluşturuluyor: {license_plate}")
-        vehicle_create = schemas.VehicleCreate(license_plate=license_plate)
-        db_vehicle = crud.create_vehicle(db, vehicle_create)
+class PlateInfo(BaseModel):
+    plate_text: str
+    confidence: float
+    timestamp: str
+    vehicle_type: Optional[str] = None
     
-    # Aktif park kaydı var mı kontrol et
-    active_record = crud.get_active_parking_record_by_vehicle(db, db_vehicle.id)
-    if active_record:
-        logger.warning(f"Araç zaten otoparkta: {license_plate}")
-        raise HTTPException(
-            status_code=400,
-            detail="Bu araç zaten otoparkta kayıtlı"
-        )
-    
-    # Yeni park kaydı oluştur
-    logger.info(f"Yeni park kaydı oluşturuluyor: {license_plate}")
-    parking_record = schemas.ParkingRecordCreate(vehicle_id=db_vehicle.id)
-    return crud.create_parking_record(db, parking_record)
+class PlateImage(BaseModel):
+    image: str = Field(..., description="Base64 kodlanmış görüntü verisi")
+    file_name: Optional[str] = None
+    save_debug: bool = False
 
-# Araç çıkış kaydı oluşturma endpoint'i
-@app.post("/vehicles/{license_plate}/exit", response_model=schemas.ParkingRecord)
-def create_exit_record(license_plate: str, db: Session = Depends(get_db)):
-    logger.info(f"Araç çıkış kaydı isteği: {license_plate}")
-    
-    # Aracı bul
-    db_vehicle = crud.get_vehicle_by_license_plate(db, license_plate)
-    if not db_vehicle:
-        logger.warning(f"Araç bulunamadı: {license_plate}")
-        raise HTTPException(
-            status_code=404,
-            detail="Araç bulunamadı"
-        )
-    
-    # Aktif park kaydı var mı kontrol et
-    active_record = crud.get_active_parking_record_by_vehicle(db, db_vehicle.id)
-    if not active_record:
-        logger.warning(f"Aktif park kaydı bulunamadı: {license_plate}")
-        raise HTTPException(
-            status_code=400,
-            detail="Bu araç için aktif park kaydı bulunamadı"
-        )
-    
-    # Park kaydını kapat
-    logger.info(f"Park kaydı kapatılıyor: {license_plate}")
-    record = crud.close_parking_record(db, active_record.id)
-    logger.info(f"Ödenmesi gereken ücret: {record.parking_fee} kuruş")
-    return record
-
-# Araç listesi endpoint'i
-@app.get("/vehicles/", response_model=List[schemas.Vehicle])
-def read_vehicles(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    logger.debug(f"Araç listesi isteği, skip={skip}, limit={limit}")
-    vehicles = crud.get_vehicles(db, skip=skip, limit=limit)
-    return vehicles
-
-# Araç detayı endpoint'i
-@app.get("/vehicles/{license_plate}", response_model=schemas.VehicleWithRecords)
-def read_vehicle(license_plate: str, db: Session = Depends(get_db)):
-    logger.info(f"Araç detayı isteği: {license_plate}")
-    db_vehicle = crud.get_vehicle_by_license_plate(db, license_plate)
-    if db_vehicle is None:
-        logger.warning(f"Araç bulunamadı: {license_plate}")
-        raise HTTPException(status_code=404, detail="Araç bulunamadı")
-    return db_vehicle
-
-# Park kayıtları endpoint'i
-@app.get("/parking-records/", response_model=List[schemas.ParkingRecord])
-def read_parking_records(
-    skip: int = 0, 
-    limit: int = 100, 
-    active_only: bool = False,
-    db: Session = Depends(get_db)
-):
-    logger.debug(f"Park kayıtları isteği, skip={skip}, limit={limit}, active_only={active_only}")
-    records = crud.get_parking_records(db, skip=skip, limit=limit)
-    if active_only:
-        records = [r for r in records if r.is_active]
-    return records
-
-# Sağlık kontrolü endpoint'i
+# API Route'ları
 @app.get("/health")
 def health_check():
+    """Servis sağlık kontrolü"""
     return {
-        "status": "ok", 
-        "timestamp": datetime.now().isoformat(),
-        "ocr_engine": "EasyOCR",
-        "ocr_languages": os.getenv("OCR_LANGUAGES", "tr,en").split(",")
+        "status": "healthy",
+        "timestamp": time.time(),
+        "model_available": MODEL_AVAILABLE,
+        "database_connected": engine is not None
     }
+
+@app.post("/detect-plate", response_model=PlateDetectionResponse)
+async def detect_license_plate(
+    file: UploadFile = File(...),
+    save_db: bool = Query(True, description="Sonuçları veritabanına kaydet"),
+    save_debug: bool = Query(False, description="Debug görsellerini kaydet"),
+    db: Session = Depends(get_db)
+):
+    """
+    Yüklenen görüntüde plaka tespiti ve tanıma yapar
+    """
+    if not MODEL_AVAILABLE:
+        return PlateDetectionResponse(
+            success=False,
+            message="Plaka tanıma modeli yüklenemedi, servis kullanılamıyor",
+            plates=[],
+            details={"error": "Model yüklenemedi"}
+        )
+        
+    try:
+        # Dosyayı oku
+        contents = await file.read()
+        
+        # Plaka tanıma işlemini gerçekleştir
+        results = process_image_for_plate_recognition(contents, save_debug=save_debug)
+        
+        if "error" in results:
+            return PlateDetectionResponse(
+                success=False,
+                message=f"Plaka tanıma sırasında hata: {results['error']}",
+                plates=[],
+                details=results
+            )
+        
+        # Sonuçları veritabanına kaydet
+        if save_db and "license_plates" in results and results["license_plates"]:
+            for plate_text in results["license_plates"]:
+                # Plaka bilgisini bul
+                plate_info = None
+                plate_confidence = 0.0
+                bbox_str = ""
+                
+                # Frame içindeki tüm araçlar ve plakalar
+                for frame_num, frame_data in results["results"].items():
+                    for obj_id, obj_data in frame_data.items():
+                        if "license_plate" in obj_data and obj_data["license_plate"]["text"] == plate_text:
+                            plate_info = obj_data["license_plate"]
+                            plate_confidence = plate_info.get("text_score", 0.0)
+                            bbox = plate_info.get("bbox", [0, 0, 0, 0])
+                            bbox_str = f"{bbox[0]},{bbox[1]},{bbox[2]},{bbox[3]}"
+                            break
+                
+                # Veritabanına kaydet
+                db_record = PlateRecord(
+                    plate_text=plate_text,
+                    confidence=plate_confidence,
+                    bbox=bbox_str,
+                    image_path=f"plates/{int(time.time())}_{plate_text}.jpg",
+                    processed=False
+                )
+                db.add(db_record)
+            
+            db.commit()
+            logger.info(f"Toplam {len(results['license_plates'])} plaka kaydı veritabanına eklendi")
+        
+        return PlateDetectionResponse(
+            success=True,
+            message=f"Plaka tanıma başarılı, {len(results.get('license_plates', []))} plaka tespit edildi",
+            plates=results.get("license_plates", []),
+            details=results
+        )
+        
+    except Exception as e:
+        logger.error(f"Plaka tanıma sırasında beklenmeyen hata: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return PlateDetectionResponse(
+            success=False,
+            message=f"Plaka tanıma sırasında beklenmeyen hata: {str(e)}",
+            plates=[],
+            details={"error": str(e)}
+        )
+
+@app.post("/detect-plate-base64", response_model=PlateDetectionResponse)
+async def detect_license_plate_base64(
+    plate_image: PlateImage,
+    save_db: bool = Query(True, description="Sonuçları veritabanına kaydet"),
+    db: Session = Depends(get_db)
+):
+    """
+    Base64 kodlanmış görüntüde plaka tespiti ve tanıma yapar
+    """
+    if not MODEL_AVAILABLE:
+        return PlateDetectionResponse(
+            success=False,
+            message="Plaka tanıma modeli yüklenemedi, servis kullanılamıyor",
+            plates=[],
+            details={"error": "Model yüklenemedi"}
+        )
+    
+    try:
+        # Base64 kodunu çöz
+        if "," in plate_image.image:
+            # "data:image/jpeg;base64," gibi bir ön ek varsa kaldır
+            image_data = plate_image.image.split(",")[1]
+        else:
+            image_data = plate_image.image
+            
+        image_bytes = base64.b64decode(image_data)
+        
+        # Plaka tanıma işlemini gerçekleştir
+        results = process_image_for_plate_recognition(image_bytes, save_debug=plate_image.save_debug)
+        
+        if "error" in results:
+            return PlateDetectionResponse(
+                success=False,
+                message=f"Plaka tanıma sırasında hata: {results['error']}",
+                plates=[],
+                details=results
+            )
+        
+        # Sonuçları veritabanına kaydet
+        if save_db and "license_plates" in results and results["license_plates"]:
+            for plate_text in results["license_plates"]:
+                # Plaka bilgisini bul
+                plate_info = None
+                plate_confidence = 0.0
+                bbox_str = ""
+                
+                # Frame içindeki tüm araçlar ve plakalar
+                for frame_num, frame_data in results["results"].items():
+                    for obj_id, obj_data in frame_data.items():
+                        if "license_plate" in obj_data and obj_data["license_plate"]["text"] == plate_text:
+                            plate_info = obj_data["license_plate"]
+                            plate_confidence = plate_info.get("text_score", 0.0)
+                            bbox = plate_info.get("bbox", [0, 0, 0, 0])
+                            bbox_str = f"{bbox[0]},{bbox[1]},{bbox[2]},{bbox[3]}"
+                            break
+                
+                # Veritabanına kaydet
+                db_record = PlateRecord(
+                    plate_text=plate_text,
+                    confidence=plate_confidence,
+                    bbox=bbox_str,
+                    image_path=f"plates/{int(time.time())}_{plate_text}.jpg",
+                    processed=False
+                )
+                db.add(db_record)
+            
+            db.commit()
+            logger.info(f"Toplam {len(results['license_plates'])} plaka kaydı veritabanına eklendi")
+        
+        return PlateDetectionResponse(
+            success=True,
+            message=f"Plaka tanıma başarılı, {len(results.get('license_plates', []))} plaka tespit edildi",
+            plates=results.get("license_plates", []),
+            details=results
+        )
+        
+    except Exception as e:
+        logger.error(f"Plaka tanıma sırasında beklenmeyen hata: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return PlateDetectionResponse(
+            success=False,
+            message=f"Plaka tanıma sırasında beklenmeyen hata: {str(e)}",
+            plates=[],
+            details={"error": str(e)}
+        )
+
+@app.get("/plates", response_model=List[PlateInfo])
+def get_all_plates(
+    limit: int = Query(10, description="Maksimum kayıt sayısı"),
+    skip: int = Query(0, description="Atlama sayısı"),
+    db: Session = Depends(get_db)
+):
+    """
+    Veritabanındaki plaka kayıtlarını listeler
+    """
+    try:
+        plates = db.query(PlateRecord).order_by(PlateRecord.timestamp.desc()).offset(skip).limit(limit).all()
+        
+        result = []
+        for plate in plates:
+            result.append(PlateInfo(
+                plate_text=plate.plate_text,
+                confidence=plate.confidence,
+                timestamp=plate.timestamp.isoformat(),
+                vehicle_type=plate.vehicle_type
+            ))
+            
+        return result
+    except Exception as e:
+        logger.error(f"Plaka kayıtları alınırken hata: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Veritabanı hatası: {str(e)}")
+
+@app.get("/")
+def root():
+    """Ana sayfa - API dokümantasyonuna yönlendirme"""
+    return {
+        "message": "License Plate Recognition Service",
+        "docs": "/docs",
+        "status": "running",
+        "model_status": "available" if MODEL_AVAILABLE else "unavailable",
+        "database_status": "connected" if engine is not None else "disconnected"
+    }
+
+# Uygulama başlatıldığında
+@app.on_event("startup")
+def startup_event():
+    logger.info("License Plate Recognition Service başlatılıyor...")
+    
+    # Klasörleri oluştur
+    os.makedirs("./debug_plates", exist_ok=True)
+    
+    logger.info(f"Model durumu: {'Kullanılabilir' if MODEL_AVAILABLE else 'Kullanılamıyor'}")
+    logger.info(f"Veritabanı durumu: {'Bağlı' if engine is not None else 'Bağlı değil'}")
+    logger.info("Servis başlatıldı!")
+
+# Uygulama kapatıldığında
+@app.on_event("shutdown")
+def shutdown_event():
+    logger.info("License Plate Recognition Service kapatılıyor...")
+
+# Uygulamayı doğrudan çalıştırma
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)

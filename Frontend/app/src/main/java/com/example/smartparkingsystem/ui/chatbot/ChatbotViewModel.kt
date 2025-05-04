@@ -56,7 +56,7 @@ class ChatbotViewModel @Inject constructor(
                     val messages = historyItems.map { item ->
                         Message(
                             text = item.content,
-                            isFromUser = item.role == "user"
+                            isFromUser = item.role.equals("user", ignoreCase = true)
                         )
                     }
                     _messages.value = messages

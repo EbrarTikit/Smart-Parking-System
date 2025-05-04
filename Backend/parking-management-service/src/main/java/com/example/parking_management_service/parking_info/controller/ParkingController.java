@@ -22,8 +22,6 @@ import com.example.parking_management_service.parking_info.service.ParkingServic
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
-import org.springframework.web.bind.annotation.RequestParam;
-
 
 
 @RestController

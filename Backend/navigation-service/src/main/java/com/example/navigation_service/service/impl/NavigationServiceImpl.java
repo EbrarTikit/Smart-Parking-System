@@ -1,19 +1,14 @@
 package com.example.navigation_service.service.impl;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
-import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
-import com.example.navigation_service.dto.DtoCarPark;
 import com.example.navigation_service.dto.ParkingLocationDto;
-import com.example.navigation_service.model.CarPark;
 import com.example.navigation_service.repository.INavigationRepository;
 import com.example.navigation_service.service.INavigationService;
 
@@ -32,7 +27,7 @@ public class NavigationServiceImpl implements INavigationService{
     @Autowired
     private RestTemplate restTemplate;
 
-    @Value("${parking.management.service.url:http://parking-management-service:8081}")
+    @Value("${parking.management.service.url:http://parking-management-service:8085}")
     private String parkingManagementServiceUrl;
 
     // Parking Management servisinden veri çeken yeni metod

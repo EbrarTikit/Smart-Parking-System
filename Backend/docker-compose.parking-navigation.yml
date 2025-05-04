@@ -17,11 +17,13 @@ services:
       - "8081:8081"
     environment:
       - REDIS_HOST=redis_service
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka
     depends_on:
       - redis
-    restart: always
+      - discovery-server
     networks:
       - backend_network
+    restart: always
 
   navigation-service:
     build: 
@@ -29,7 +31,39 @@ services:
       dockerfile: Dockerfile
     container_name: navigation_service
     ports:
-      - "8003:8080"
+      - "8003:8003"
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka
+    depends_on:
+      - discovery-server
+    networks:
+      - backend_network
+    restart: always
+
+  discovery-server:
+    build: 
+      context: ./discovery-server
+      dockerfile: Dockerfile
+    container_name: discovery_server
+    ports:
+      - "8761:8761"
+    networks:
+      - backend_network
+    restart: always
+
+  api-gateway-service:
+    build: 
+      context: ./api-gateway-service
+      dockerfile: Dockerfile
+    container_name: api_gateway_service
+    ports:
+      - "8085:8085"
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka
+    depends_on:
+      - discovery-server
+      - navigation-service
+      - parking-management-service
     networks:
       - backend_network
     restart: always

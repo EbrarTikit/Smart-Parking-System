@@ -71,7 +71,19 @@ def update_parking_record(db: Session, record_id: int, parking_record: schemas.P
     return db_record
 
 def calculate_parking_fee(entry_time: datetime, exit_time: datetime) -> int:
-    """Otopark ücretini hesaplar (kuruş cinsinden)"""
+    """
+    Park süresine göre ücret hesaplar (kuruş cinsinden)
+    """
+    # Timezone uyumsuzluğunu kontrol et ve düzelt
+    if entry_time.tzinfo != exit_time.tzinfo:
+        # Eğer biri timezone bilgisi içeriyorsa, diğeri içermiyorsa
+        if entry_time.tzinfo is None and exit_time.tzinfo is not None:
+            import pytz
+            entry_time = pytz.UTC.localize(entry_time)
+        elif entry_time.tzinfo is not None and exit_time.tzinfo is None:
+            import pytz
+            exit_time = pytz.UTC.localize(exit_time)
+    
     # Örnek ücretlendirme: Saat başına 10 TL (1000 kuruş)
     duration = exit_time - entry_time
     hours = duration.total_seconds() / 3600
@@ -81,7 +93,14 @@ def calculate_parking_fee(entry_time: datetime, exit_time: datetime) -> int:
 def close_parking_record(db: Session, record_id: int):
     db_record = get_parking_record(db, record_id)
     if db_record and db_record.is_active:
+        # Timezone bilgisi içermeyen bir datetime nesnesi oluştur
         exit_time = datetime.now()
+        
+        # Eğer entry_time timezone bilgisi içeriyorsa, exit_time'ı da timezone bilgisiyle oluştur
+        if db_record.entry_time.tzinfo is not None:
+            import pytz
+            exit_time = datetime.now(pytz.UTC)
+            
         fee = calculate_parking_fee(db_record.entry_time, exit_time)
         
         db_record.exit_time = exit_time
@@ -90,33 +109,4 @@ def close_parking_record(db: Session, record_id: int):
         
         db.commit()
         db.refresh(db_record)
-    return db_record
-
-# Parking Space CRUD operations
-def get_parking_space(db: Session, space_id: int):
-    return db.query(models.ParkingSpace).filter(models.ParkingSpace.id == space_id).first()
-
-def get_parking_space_by_number(db: Session, space_number: str):
-    return db.query(models.ParkingSpace).filter(models.ParkingSpace.space_number == space_number).first()
-
-def get_parking_spaces(db: Session, skip: int = 0, limit: int = 100):
-    return db.query(models.ParkingSpace).offset(skip).limit(limit).all()
-
-def get_available_parking_spaces(db: Session):
-    return db.query(models.ParkingSpace).filter(models.ParkingSpace.is_occupied == False).all()
-
-def create_parking_space(db: Session, parking_space: schemas.ParkingSpaceCreate):
-    db_space = models.ParkingSpace(**parking_space.dict())
-    db.add(db_space)
-    db.commit()
-    db.refresh(db_space)
-    return db_space
-
-def update_parking_space(db: Session, space_id: int, parking_space: schemas.ParkingSpaceUpdate):
-    db_space = get_parking_space(db, space_id)
-    if db_space:
-        for key, value in parking_space.dict().items():
-            setattr(db_space, key, value)
-        db.commit()
-        db.refresh(db_space)
-    return db_space 
+    return db_record 

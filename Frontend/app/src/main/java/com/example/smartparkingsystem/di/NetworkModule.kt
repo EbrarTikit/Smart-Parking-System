@@ -1,6 +1,7 @@
 package com.example.smartparkingsystem.di
 
 import com.example.smartparkingsystem.data.remote.ChatbotService
+import com.example.smartparkingsystem.data.remote.NavigationService
 import com.example.smartparkingsystem.data.remote.UserService
 import com.example.smartparkingsystem.utils.StringConverterFactory
 import com.google.gson.Gson
@@ -79,6 +80,23 @@ object NetworkModule {
             .build()
     }
 
+    // Navigation servisi için Retrofit instance'ı
+    @Provides
+    @Singleton
+    @Named("navigationRetrofit")
+    fun provideNavigationRetrofit(
+        okHttpClient: OkHttpClient,
+        gson: Gson,
+        stringConverterFactory: StringConverterFactory
+    ): Retrofit {
+        return Retrofit.Builder()
+            .baseUrl("http://10.0.2.2:8003")
+            .client(okHttpClient)
+            .addConverterFactory(stringConverterFactory)
+            .addConverterFactory(GsonConverterFactory.create(gson))
+            .build()
+    }
+
     @Provides
     @Singleton
     fun provideChatbotService(@Named("chatbotRetrofit") retrofit: Retrofit): ChatbotService {
@@ -89,5 +107,11 @@ object NetworkModule {
     @Singleton
     fun provideUserService(@Named("userRetrofit") retrofit: Retrofit): UserService {
         return retrofit.create(UserService::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideNavigationService(@Named("navigationRetrofit") retrofit: Retrofit): NavigationService {
+        return retrofit.create(NavigationService::class.java)
     }
 }

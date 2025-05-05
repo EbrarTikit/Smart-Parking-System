@@ -6,6 +6,7 @@ public class ParkingSpotDto {
     private int column;
     private boolean occupied;
     private String spotIdentifier;
+    private String sensorId;
     
     public ParkingSpotDto() {
     }
@@ -56,5 +57,13 @@ public class ParkingSpotDto {
     
     public void setSpotIdentifier(String spotIdentifier) {
         this.spotIdentifier = spotIdentifier;
+    }
+    
+    public String getSensorId() {
+        return sensorId;
+    }
+    
+    public void setSensorId(String sensorId) {
+        this.sensorId = sensorId;
     }
 }

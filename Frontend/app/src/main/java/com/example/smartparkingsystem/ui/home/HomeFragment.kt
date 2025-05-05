@@ -1,22 +1,25 @@
 package com.example.smartparkingsystem.ui.home
 
+import android.graphics.Rect
 import android.os.Bundle
-import androidx.fragment.app.Fragment
-import android.view.LayoutInflater
 import android.view.View
-import android.view.ViewGroup
+import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
+import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.RecyclerView
 import com.example.smartparkingsystem.R
+import com.example.smartparkingsystem.data.model.LocationResponse
+import com.example.smartparkingsystem.data.model.Parking
 import com.example.smartparkingsystem.databinding.FragmentHomeBinding
-import dagger.hilt.android.AndroidEntryPoint
+import com.example.smartparkingsystem.utils.state.UiState
+import com.google.android.gms.maps.CameraUpdateFactory
+import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
-import com.google.android.gms.maps.GoogleMap
-import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.MarkerOptions
-import com.example.smartparkingsystem.data.model.Parking
-import android.graphics.Rect
-import androidx.recyclerview.widget.RecyclerView
+import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.flow.collectLatest
 
 @AndroidEntryPoint
 class HomeFragment : Fragment(R.layout.fragment_home), OnMapReadyCallback {
@@ -24,47 +27,17 @@ class HomeFragment : Fragment(R.layout.fragment_home), OnMapReadyCallback {
     private val binding get() = _binding!!
     private lateinit var googleMap: GoogleMap
     private val parkingAdapter = ParkingAdapter()
-
-    private val sampleParkings = listOf(
-        Parking(
-            id = "1",
-            name = "ParkSecure",
-            image = R.drawable.img,
-            price = 5.0,
-            availableSpots = 25,
-            totalSpots = 50,
-            latitude = 41.0082,
-            longitude = 28.9784
-        ),
-        Parking(
-            id = "2",
-            name = "SpacePark",
-            image = R.drawable.img,
-            price = 6.0,
-            availableSpots = 15,
-            totalSpots = 30,
-            latitude = 41.0122,
-            longitude = 28.9760
-        ),
-        Parking(
-            id = "3",
-            name = "SmartPark",
-            image = R.drawable.img,
-            price = 4.5,
-            availableSpots = 8,
-            totalSpots = 40,
-            latitude = 41.0160,
-            longitude = 28.9795
-        )
-    )
+    private val viewModel: HomeViewModel by viewModels()
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         _binding = FragmentHomeBinding.bind(view)
-        
+
         setupMap()
         setupRecyclerView()
-        loadParkings()
+        observeUiState()
+        viewModel.fetchLocations()
+        // Eğer kart detaylarını başka bir servisten çekecekseniz, burada ilgili ViewModel fonksiyonunu da çağırabilirsiniz.
     }
 
     private fun setupMap() {
@@ -92,25 +65,58 @@ class HomeFragment : Fragment(R.layout.fragment_home), OnMapReadyCallback {
         }
     }
 
-    private fun loadParkings() {
-        parkingAdapter.submitList(sampleParkings)
+    private fun observeUiState() {
+        viewLifecycleOwner.lifecycleScope.launchWhenStarted {
+            viewModel.uiState.collectLatest { state ->
+                when (state) {
+                    is UiState.Loading -> {
+                        binding.progressBar.visibility = View.VISIBLE
+                    }
+                    is UiState.Success -> {
+                        binding.progressBar.visibility = View.GONE
+                        val locations = state.data
+                        // Harita markerlarını güncelle
+                        if (::googleMap.isInitialized) {
+                            googleMap.clear()
+                            locations.forEach { loc ->
+                                googleMap.addMarker(
+                                    MarkerOptions()
+                                        .position(LatLng(loc.latitude, loc.longitude))
+                                        .title(loc.name)
+                                )
+                            }
+                        }
+                        // RecyclerView için Parking objesine dönüştür
+                        // Burada image, price, availableSpots gibi değerleri başka bir servisten almanız gerekecek.
+                        // Şimdilik dummy değerlerle gösteriyorum:
+                        val parkingList = locations.map {
+                            Parking(
+                                id = it.id.toString(),
+                                name = it.name,
+                                image = R.drawable.img, // Dummy resim, gerçek resmi başka servisten alabilirsiniz
+                                price = 0.0, // Dummy fiyat, gerçek fiyatı başka servisten alabilirsiniz
+                                availableSpots = 0, // Dummy değer
+                                totalSpots = 0, // Dummy değer
+                                latitude = it.latitude,
+                                longitude = it.longitude
+                            )
+                        }
+                        parkingAdapter.submitList(parkingList)
+                    }
+                    is UiState.Error -> {
+                        binding.progressBar.visibility = View.GONE
+                        // Hata mesajı göster
+                        // Toast.makeText(requireContext(), state.message, Toast.LENGTH_LONG).show()
+                    }
+                }
+            }
+        }
     }
 
     override fun onMapReady(map: GoogleMap) {
         googleMap = map
-        
-        // İstanbul
         val istanbul = LatLng(41.0082, 28.9784)
         googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(istanbul, 13f))
-
-        // Otoparkları haritaya ekle
-        sampleParkings.forEach { parking ->
-            googleMap.addMarker(
-                MarkerOptions()
-                    .position(LatLng(parking.latitude, parking.longitude))
-                    .title(parking.name)
-            )
-        }
     }
 
     override fun onDestroyView() {

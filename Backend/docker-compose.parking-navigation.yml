@@ -34,6 +34,17 @@ services:
       - backend_network
     restart: always
 
+  user-service:
+    build: 
+      context: ./user-service
+      dockerfile: Dockerfile
+    container_name: user_service
+    ports:
+      - "8080:8080"
+    restart: always
+    networks:
+      - backend_network
+
 networks:
   backend_network:
     driver: bridge 

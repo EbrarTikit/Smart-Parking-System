@@ -12,13 +12,13 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name="iot_sensors")
+@Table(name="sensors")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class IoTSensor {
-    @Id  // Bu alanın birincil anahtar olduğunu belirtir
-    @GeneratedValue(strategy = GenerationType.IDENTITY)  // ID'nin otomatik olarak artırılacağını belirtir
+public class Sensor {
+    
+    @Id
     private Long id;
 
     @Column(name = "echoPin")

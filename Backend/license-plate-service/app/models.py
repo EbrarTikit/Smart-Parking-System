@@ -8,8 +8,6 @@ class Vehicle(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     license_plate = Column(String, unique=True, index=True)
-    vehicle_type = Column(String, nullable=True)
-    owner_name = Column(String, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     
@@ -28,12 +26,3 @@ class ParkingRecord(Base):
     
     # İlişkiler
     vehicle = relationship("Vehicle", back_populates="parking_records")
-
-class ParkingSpace(Base):
-    __tablename__ = "parking_spaces"
-
-    id = Column(Integer, primary_key=True, index=True)
-    space_number = Column(String, unique=True, index=True)
-    is_occupied = Column(Boolean, default=False)
-    vehicle_id = Column(Integer, ForeignKey("vehicles.id"), nullable=True)
-    last_updated = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())

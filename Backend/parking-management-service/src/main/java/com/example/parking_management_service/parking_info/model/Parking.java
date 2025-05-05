@@ -1,11 +1,18 @@
 package com.example.parking_management_service.parking_info.model;
 
+import java.util.HashSet;
+import java.util.Set;
+
+import com.fasterxml.jackson.annotation.JsonManagedReference;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
+import jakarta.persistence.CascadeType;
 
 @Entity
 @Table(name = "parkings")
@@ -37,7 +44,17 @@ public class Parking {
     private Double latitude;  
     
     @Column(name = "longitude", nullable = true)
-    private Double longitude;  
+    private Double longitude;
+    
+    @Column(name = "rows", nullable = true)
+    private Integer rows;
+    
+    @Column(name = "columns", nullable = true)
+    private Integer columns;
+    
+    @JsonManagedReference
+    @OneToMany(mappedBy = "parking", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<ParkingSpot> parkingSpots = new HashSet<>();
     
     public Parking() {
     }
@@ -61,6 +78,31 @@ public class Parking {
         this.rate = rate;
         this.latitude = latitude;
         this.longitude = longitude;
+    }
+    
+    public Parking(String name, String location, int capacity, String openingHours, String closingHours, double rate, Double latitude, Double longitude, Integer rows, Integer columns) {
+        this.name = name;
+        this.location = location;
+        this.capacity = capacity;
+        this.openingHours = openingHours;
+        this.closingHours = closingHours;
+        this.rate = rate;
+        this.latitude = latitude;
+        this.longitude = longitude;
+        this.rows = rows;
+        this.columns = columns;
+    }
+    
+    // Helper method to add a parking spot
+    public void addParkingSpot(ParkingSpot spot) {
+        parkingSpots.add(spot);
+        spot.setParking(this);
+    }
+    
+    // Helper method to remove a parking spot
+    public void removeParkingSpot(ParkingSpot spot) {
+        parkingSpots.remove(spot);
+        spot.setParking(null);
     }
     
     // Getter and Setter    
@@ -134,5 +176,29 @@ public class Parking {
     
     public void setLongitude(Double longitude) {
         this.longitude = longitude;
+    }
+    
+    public Integer getRows() {
+        return rows;
+    }
+    
+    public void setRows(Integer rows) {
+        this.rows = rows;
+    }
+    
+    public Integer getColumns() {
+        return columns;
+    }
+    
+    public void setColumns(Integer columns) {
+        this.columns = columns;
+    }
+    
+    public Set<ParkingSpot> getParkingSpots() {
+        return parkingSpots;
+    }
+    
+    public void setParkingSpots(Set<ParkingSpot> parkingSpots) {
+        this.parkingSpots = parkingSpots;
     }
 } 

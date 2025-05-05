@@ -24,8 +24,6 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import org.springframework.web.bind.annotation.RequestParam;
 
-
-
 @RestController
 @RequestMapping("/api")
 public class ParkingController {
@@ -64,7 +62,7 @@ public class ParkingController {
     //Create Parking
     @Operation(
         summary = "Create a new parking lot",
-        description = "Creates a new parking lot with the provided details. Use string format 'HH:mm' for time values.",
+        description = "Creates a new parking lot with the provided details. Use string format 'HH:mm' for time values. Optionally include rows and columns to create a layout.",
         requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
             content = @Content(
                 mediaType = "application/json",
@@ -77,7 +75,9 @@ public class ParkingController {
                             "  \"closingHours\": \"22:00\",\n" +
                             "  \"rate\": 10.50,\n" +
                             "  \"latitude\": 41.0082,\n" +
-                            "  \"longitude\": 28.9784\n" +
+                            "  \"longitude\": 28.9784,\n" +
+                            "  \"rows\": 5,\n" +
+                            "  \"columns\": 4\n" +
                             "}"
                 )
             )
@@ -92,7 +92,29 @@ public class ParkingController {
     }
 
     //Update Parking Infos
-    @Operation(summary = "Update parking lot", description = "Updates an existing parking lot with new details")
+    @Operation(
+        summary = "Update parking lot", 
+        description = "Updates an existing parking lot with new details. Can also update rows and columns to modify layout.",
+        requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
+            content = @Content(
+                mediaType = "application/json",
+                examples = @ExampleObject(
+                    value = "{\n" + 
+                            "  \"name\": \"Central Parking Updated\",\n" +
+                            "  \"location\": \"Downtown\",\n" +
+                            "  \"capacity\": 100,\n" +
+                            "  \"openingHours\": \"08:00\",\n" +
+                            "  \"closingHours\": \"22:00\",\n" +
+                            "  \"rate\": 10.50,\n" +
+                            "  \"latitude\": 41.0082,\n" +
+                            "  \"longitude\": 28.9784,\n" +
+                            "  \"rows\": 6,\n" +
+                            "  \"columns\": 5\n" +
+                            "}"
+                )
+            )
+        )
+    )
     @PutMapping("/admin/parkings/{id}")
     public ResponseEntity<Parking> updateParking(@PathVariable Long id, @RequestBody Parking parkingDetails) {
         Parking updatedParking = parkingService.updateParking(id, parkingDetails);

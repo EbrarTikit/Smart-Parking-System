@@ -7,13 +7,15 @@ import androidx.lifecycle.viewModelScope
 import com.example.smartparkingsystem.data.model.SignUpResponse
 import com.example.smartparkingsystem.data.repository.UserRepository
 import com.example.smartparkingsystem.utils.state.UiState
+import com.example.smartparkingsystem.utils.validation.EmailValidator
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
 class SignUpViewModel @Inject constructor(
-    private val repository: UserRepository
+    private val repository: UserRepository,
+    private val emailValidator: EmailValidator
 ) : ViewModel() {
 
     private val _signUpState = MutableLiveData<UiState<SignUpResponse>>()
@@ -43,9 +45,9 @@ class SignUpViewModel @Inject constructor(
     private fun validateInput(username: String, email: String, password: String, confirmPassword: String): Boolean {
         val validationState = ValidationState(
             usernameError = if (username.isBlank()) "Username is required" else null,
-            emailError = when {
+            emailError =  when {
                 email.isBlank() -> "Email is required!"
-                !android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches() -> "Invalid email format!"
+                !emailValidator.isValid(email) -> "Invalid email format!"
                 else -> null
             },
             passwordError = when {

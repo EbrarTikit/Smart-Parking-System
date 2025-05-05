@@ -16,7 +16,7 @@ android {
         versionCode = 1
         versionName = "1.0"
 
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        testInstrumentationRunner = "com.example.smartparkingsystem.HiltTestRunner"
     }
 
     buildFeatures {
@@ -47,9 +47,21 @@ dependencies {
     implementation(libs.material)
     implementation(libs.androidx.constraintlayout)
     implementation(libs.play.services.maps)
+
+    // Test dependencies
     testImplementation(libs.junit)
+    testImplementation(libs.mockk)
+    androidTestImplementation(libs.mockk.mockk.android)
+    testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.androidx.core.testing) // Livedata/Viewmodel Testing
+    testImplementation(libs.truth)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
+    androidTestImplementation(libs.espresso.intents)
+    androidTestImplementation(libs.espresso.contrib)
+    debugImplementation(libs.androidx.fragment.testing)
+    androidTestImplementation(libs.dagger.hilt.android.testing)
+    kaptAndroidTest(libs.hilt.compiler)
 
     //Navigation Component
     implementation(libs.androidx.navigation.fragment.ktx)
@@ -82,6 +94,7 @@ dependencies {
     //Serialization
     implementation(libs.retrofit2.kotlinx.serialization.converter)
     implementation(libs.kotlinx.serialization.json)
+    testImplementation(kotlin("test"))
 }
 
 kapt {

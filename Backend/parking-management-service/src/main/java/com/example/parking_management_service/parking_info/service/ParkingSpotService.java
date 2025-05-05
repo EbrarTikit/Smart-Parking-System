@@ -83,6 +83,8 @@ public class ParkingSpotService {
                 spot.isOccupied(),
                 spot.getSpotIdentifier()
             );
+            // Sensör ID'sini ayrıca set et
+            spotDto.setSensorId(spot.getSensorId());
             spotDtos.add(spotDto);
         }
         
@@ -101,13 +103,16 @@ public class ParkingSpotService {
         spot.setOccupied(isOccupied);
         parkingSpotRepository.save(spot);
         
-        return new ParkingSpotDto(
+        ParkingSpotDto spotDto = new ParkingSpotDto(
             spot.getId(), 
             spot.getRow(), 
             spot.getColumn(), 
             spot.isOccupied(),
             spot.getSpotIdentifier()
         );
+        spotDto.setSensorId(spot.getSensorId());
+        
+        return spotDto;
     }
     
     @Transactional
@@ -120,6 +125,31 @@ public class ParkingSpotService {
         }
         
         return updatedSpots;
+    }
+    
+    @Transactional
+    public ParkingSpotDto assignSensorToSpot(Long parkingId, int row, int column, String sensorId) {
+        ParkingSpot spot = parkingSpotRepository.findByParkingIdAndRowAndColumn(parkingId, row, column);
+        
+        if (spot == null) {
+            throw new ResourceNotFoundException("Parking spot not found at position (" + row + "," + column + ") in parking with id: " + parkingId);
+        }
+        
+        spot.setSensorId(sensorId);
+        parkingSpotRepository.save(spot);
+        
+        // Mevcut entity'den DTO oluştur
+        ParkingSpotDto spotDto = new ParkingSpotDto(
+            spot.getId(), 
+            spot.getRow(), 
+            spot.getColumn(), 
+            spot.isOccupied(),
+            spot.getSpotIdentifier()
+        );
+        // Sensör ID'sini set et
+        spotDto.setSensorId(spot.getSensorId());
+        
+        return spotDto;
     }
     
     private String generateSpotIdentifier(int row, int column) {

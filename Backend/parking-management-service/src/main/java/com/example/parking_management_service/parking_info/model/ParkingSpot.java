@@ -36,6 +36,9 @@ public class ParkingSpot {
     @Column(name = "spot_identifier", nullable = true)
     private String spotIdentifier; // Optional identifier like "A1", "B2", etc.
     
+    @Column(name = "sensor_id", nullable = true)
+    private String sensorId; // ID of the IoT sensor for this spot
+    
     public ParkingSpot() {
     }
     
@@ -101,5 +104,13 @@ public class ParkingSpot {
     
     public void setSpotIdentifier(String spotIdentifier) {
         this.spotIdentifier = spotIdentifier;
+    }
+    
+    public String getSensorId() {
+        return sensorId;
+    }
+    
+    public void setSensorId(String sensorId) {
+        this.sensorId = sensorId;
     }
 }

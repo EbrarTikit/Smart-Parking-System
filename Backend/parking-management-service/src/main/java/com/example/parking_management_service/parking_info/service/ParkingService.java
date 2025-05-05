@@ -7,6 +7,7 @@ import java.util.Optional;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.example.parking_management_service.dto.LocationDto;
 import com.example.parking_management_service.parking_info.exception.ResourceNotFoundException;
@@ -18,6 +19,9 @@ public class ParkingService {
 
     @Autowired
     private ParkingRepository parkingRepository;
+    
+    @Autowired
+    private ParkingSpotService parkingSpotService;
 
     public LocationDto getParkingLocation(Long id) {
         Optional<Parking> optionalParking = parkingRepository.findById(id);
@@ -63,25 +67,59 @@ public class ParkingService {
 
     
     //Create Parking
+    @Transactional
     public Parking createParking(Parking parking) {
-        return parkingRepository.save(parking);
+        // Extract row and column values before saving
+        Integer rows = parking.getRows();
+        Integer columns = parking.getColumns();
+        
+        // Save the parking first to get an ID
+        Parking savedParking = parkingRepository.save(parking);
+        
+        // Check if rows and columns are provided
+        if (rows != null && columns != null && rows > 0 && columns > 0) {
+            // Create parking layout spots
+            parkingSpotService.createParkingLayout(savedParking.getId(), rows, columns);
+            
+            // Refresh parking object with updated data
+            savedParking = parkingRepository.findById(savedParking.getId()).get();
+        }
+        
+        return savedParking;
     }
-
     
     //Update Parking Infos
+    @Transactional
     public Parking updateParking(Long id, Parking parkingDetails) {
         Parking parking = getParkingById(id);
         
         parking.setName(parkingDetails.getName());
         parking.setLocation(parkingDetails.getLocation());
-        parking.setCapacity(parkingDetails.getCapacity());
         parking.setOpeningHours(parkingDetails.getOpeningHours());
         parking.setClosingHours(parkingDetails.getClosingHours());
         parking.setRate(parkingDetails.getRate());
+        parking.setLatitude(parkingDetails.getLatitude());
+        parking.setLongitude(parkingDetails.getLongitude());
         
-        return parkingRepository.save(parking);
+        // Check if rows and columns are being updated
+        Integer newRows = parkingDetails.getRows();
+        Integer newColumns = parkingDetails.getColumns();
+        Integer oldRows = parking.getRows();
+        Integer oldColumns = parking.getColumns();
+        
+        // Save parking first
+        Parking updatedParking = parkingRepository.save(parking);
+        
+        // If rows or columns have changed and are not null, update the layout
+        if ((newRows != null && newColumns != null) && 
+            (oldRows != newRows || oldColumns != newColumns)) {
+            parkingSpotService.createParkingLayout(id, newRows, newColumns);
+            // Refresh the parking object after layout update
+            updatedParking = parkingRepository.findById(id).get();
+        }
+        
+        return updatedParking;
     }
-
     
     //Delete Parking
     public void deleteParking(Long id) {

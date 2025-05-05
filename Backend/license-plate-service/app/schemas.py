@@ -5,8 +5,6 @@ from datetime import datetime
 # Vehicle Schemas
 class VehicleBase(BaseModel):
     license_plate: str
-    vehicle_type: Optional[str] = None
-    owner_name: Optional[str] = None
 
 class VehicleCreate(VehicleBase):
     pass
@@ -36,26 +34,6 @@ class ParkingRecord(ParkingRecordBase):
     exit_time: Optional[datetime] = None
     is_active: bool
     parking_fee: Optional[int] = None
-
-    class Config:
-        orm_mode = True
-
-# Parking Space Schemas
-class ParkingSpaceBase(BaseModel):
-    space_number: str
-    
-class ParkingSpaceCreate(ParkingSpaceBase):
-    pass
-
-class ParkingSpaceUpdate(BaseModel):
-    is_occupied: bool
-    vehicle_id: Optional[int] = None
-
-class ParkingSpace(ParkingSpaceBase):
-    id: int
-    is_occupied: bool
-    vehicle_id: Optional[int] = None
-    last_updated: datetime
 
     class Config:
         orm_mode = True

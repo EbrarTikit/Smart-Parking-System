@@ -1,19 +1,29 @@
 package com.example.smartparkingsystem.ui.detail
 
+import android.content.Context
 import android.os.Bundle
 import androidx.fragment.app.Fragment
 import android.view.View
+import android.widget.Toast
+import androidx.fragment.app.viewModels
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
 import com.example.smartparkingsystem.R
 import com.example.smartparkingsystem.data.model.ParkingListResponse
 import com.example.smartparkingsystem.databinding.FragmentDetailBinding
 import com.example.smartparkingsystem.utils.loadImage
+import com.example.smartparkingsystem.utils.state.UiState
+import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.flow.collectLatest
 
+@AndroidEntryPoint
 class DetailFragment : Fragment(R.layout.fragment_detail) {
 
     private var _binding: FragmentDetailBinding? = null
     private val binding get() = _binding!!
+
+    private val viewModel: DetailViewModel by viewModels()
 
     private lateinit var parking: ParkingListResponse
 
@@ -25,6 +35,7 @@ class DetailFragment : Fragment(R.layout.fragment_detail) {
             this.parking = parking
             setupUI()
             setupClickListeners()
+            trackView()
         }
     }
 
@@ -65,6 +76,19 @@ class DetailFragment : Fragment(R.layout.fragment_detail) {
     private fun isCurrentlyOpen(openHours: String, closeHours: String): Boolean {
         return true
     }
+
+    private fun trackView() {
+        val userId = getUserIdFromPrefsOrSession()
+        viewModel.trackUserView(userId, parking.id)
+    }
+
+
+    private fun getUserIdFromPrefsOrSession(): Int {
+        val sharedPreferences =
+            requireContext().getSharedPreferences("user_prefs", Context.MODE_PRIVATE)
+        return sharedPreferences.getInt("userId", 0)
+    }
+
 
     override fun onDestroyView() {
         super.onDestroyView()

@@ -18,5 +18,5 @@ interface ParkingManagementService {
     suspend fun viewerTrack(
         @Query("userId") userId: Int,
         @Query("parkingId") parkingId: Int
-    ): Response<ViewerTrackResponse>
+    ): ViewerTrackResponse
 }

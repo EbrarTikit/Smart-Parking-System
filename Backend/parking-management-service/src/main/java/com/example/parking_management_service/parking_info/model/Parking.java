@@ -13,6 +13,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import jakarta.persistence.CascadeType;
+import jakarta.persistence.FetchType;
 
 @Entity
 @Table(name = "parkings")
@@ -53,7 +54,7 @@ public class Parking {
     private Integer columns;
     
     @JsonManagedReference
-    @OneToMany(mappedBy = "parking", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "parking", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     private Set<ParkingSpot> parkingSpots = new HashSet<>();
     
     public Parking() {

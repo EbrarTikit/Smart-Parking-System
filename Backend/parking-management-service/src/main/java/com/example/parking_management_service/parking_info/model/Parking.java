@@ -13,6 +13,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import jakarta.persistence.CascadeType;
+import jakarta.persistence.FetchType;
 
 @Entity
 @Table(name = "parkings")
@@ -52,8 +53,11 @@ public class Parking {
     @Column(name = "columns", nullable = true)
     private Integer columns;
     
+    @Column(name = "image_url", nullable = true)
+    private String imageUrl;
+    
     @JsonManagedReference
-    @OneToMany(mappedBy = "parking", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "parking", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     private Set<ParkingSpot> parkingSpots = new HashSet<>();
     
     public Parking() {
@@ -66,6 +70,7 @@ public class Parking {
         this.openingHours = openingHours;
         this.closingHours = closingHours;
         this.rate = rate;
+        this.imageUrl = null;  // Default to null
     }
     
    
@@ -78,6 +83,7 @@ public class Parking {
         this.rate = rate;
         this.latitude = latitude;
         this.longitude = longitude;
+        this.imageUrl = null;  // Default to null
     }
     
     public Parking(String name, String location, int capacity, String openingHours, String closingHours, double rate, Double latitude, Double longitude, Integer rows, Integer columns) {
@@ -91,6 +97,43 @@ public class Parking {
         this.longitude = longitude;
         this.rows = rows;
         this.columns = columns;
+        this.imageUrl = null;  // Default to null
+    }
+    
+    public Parking(String name, String location, int capacity, String openingHours, String closingHours, double rate, String imageUrl) {
+        this.name = name;
+        this.location = location;
+        this.capacity = capacity;
+        this.openingHours = openingHours;
+        this.closingHours = closingHours;
+        this.rate = rate;
+        this.imageUrl = imageUrl;
+    }
+    
+    public Parking(String name, String location, int capacity, String openingHours, String closingHours, double rate, Double latitude, Double longitude, String imageUrl) {
+        this.name = name;
+        this.location = location;
+        this.capacity = capacity;
+        this.openingHours = openingHours;
+        this.closingHours = closingHours;
+        this.rate = rate;
+        this.latitude = latitude;
+        this.longitude = longitude;
+        this.imageUrl = imageUrl;
+    }
+    
+    public Parking(String name, String location, int capacity, String openingHours, String closingHours, double rate, Double latitude, Double longitude, Integer rows, Integer columns, String imageUrl) {
+        this.name = name;
+        this.location = location;
+        this.capacity = capacity;
+        this.openingHours = openingHours;
+        this.closingHours = closingHours;
+        this.rate = rate;
+        this.latitude = latitude;
+        this.longitude = longitude;
+        this.rows = rows;
+        this.columns = columns;
+        this.imageUrl = imageUrl;
     }
     
     // Helper method to add a parking spot
@@ -192,6 +235,14 @@ public class Parking {
     
     public void setColumns(Integer columns) {
         this.columns = columns;
+    }
+    
+    public String getImageUrl() {
+        return imageUrl;
+    }
+    
+    public void setImageUrl(String imageUrl) {
+        this.imageUrl = imageUrl;
     }
     
     public Set<ParkingSpot> getParkingSpots() {

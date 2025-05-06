@@ -9,7 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.example.parking_management_service.dto.LocationDto;
+import com.example.parking_management_service.parking_info.dto.LocationDto;
 import com.example.parking_management_service.parking_info.exception.ResourceNotFoundException;
 import com.example.parking_management_service.parking_info.model.Parking;
 import com.example.parking_management_service.parking_info.repository.ParkingRepository;

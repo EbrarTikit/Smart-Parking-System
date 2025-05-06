@@ -1,4 +1,4 @@
-package com.example.parking_management_service.parking_info.config;
+package com.example.parking_management_service.config;
 
 import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.OpenAPI;
@@ -17,9 +17,9 @@ public class OpenApiConfig {
     public OpenAPI customOpenAPI() {
         return new OpenAPI()
                 .info(new Info()
-                    .title("Parking Management API")
+                    .title("Smart Parking System API")
                     .version("1.0")
-                    .description("API for managing parking lots including details such as name, location, capacity, opening/closing hours, and rates.")
+                    .description("API for Smart Parking System including parking management and IoT device management")
                     .contact(new Contact().name("Smart Parking Team"))
                     .license(new License().name("MIT")))
                 .addSecurityItem(new SecurityRequirement().addList("basicAuth"))
@@ -29,4 +29,4 @@ public class OpenApiConfig {
                             .type(SecurityScheme.Type.HTTP)
                             .scheme("basic")));
     }
-} 
+}

@@ -2,19 +2,74 @@ package com.example.smartparkingsystem.ui.detail
 
 import android.os.Bundle
 import androidx.fragment.app.Fragment
-import android.view.LayoutInflater
 import android.view.View
-import android.view.ViewGroup
+import androidx.navigation.fragment.findNavController
+import androidx.navigation.fragment.navArgs
 import com.example.smartparkingsystem.R
+import com.example.smartparkingsystem.data.model.ParkingListResponse
+import com.example.smartparkingsystem.databinding.FragmentDetailBinding
+import com.example.smartparkingsystem.utils.loadImage
 
-class DetailFragment : Fragment() {
+class DetailFragment : Fragment(R.layout.fragment_detail) {
 
-    override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View? {
-        // Inflate the layout for this fragment
-        return inflater.inflate(R.layout.fragment_detail, container, false)
+    private var _binding: FragmentDetailBinding? = null
+    private val binding get() = _binding!!
+
+    private lateinit var parking: ParkingListResponse
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        _binding = FragmentDetailBinding.bind(view)
+
+        arguments?.getParcelable<ParkingListResponse>("parking")?.let { parking ->
+            this.parking = parking
+            setupUI()
+            setupClickListeners()
+        }
     }
 
+    private fun setupUI() {
+        with(binding) {
+            ivParkingImage.loadImage(parking.imageUrl)
+            tvParkingName.text = parking.name
+            tvParkingAddress.text = parking.location
+            val availableSpots = parking.capacity - parking.parkingSpots.count { it.occupied }
+            chipPeople.text = "${parking.parkingSpots.count { it.occupied }} people"
+            chipSpots.text = "$availableSpots spots"
+            chipTime.text = "${parking.openingHours}-${parking.closingHours}"
+
+            val isOpen = isCurrentlyOpen(parking.openingHours, parking.closingHours)
+            chipStatus.text = if (isOpen) "Open" else "Closed"
+
+            tvPrice.text = "₺${parking.rate}"
+
+            // Set description (placeholder text is already in layout)
+        }
+    }
+
+    private fun setupClickListeners() {
+        binding.btnBack.setOnClickListener {
+            findNavController().navigateUp()
+        }
+
+        binding.btnFavorite.setOnClickListener {
+
+        }
+
+        binding.btnSeeLocation.setOnClickListener {
+
+        }
+
+        binding.btnSeeParkingSpots.setOnClickListener {
+        }
+    }
+
+    private fun isCurrentlyOpen(openHours: String, closeHours: String): Boolean {
+        return true
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        _binding = null
+    }
 }

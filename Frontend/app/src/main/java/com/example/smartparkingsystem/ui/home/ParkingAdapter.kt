@@ -8,7 +8,9 @@ import com.example.smartparkingsystem.data.model.ParkingListResponse
 import com.example.smartparkingsystem.databinding.ItemParkingBinding
 import com.example.smartparkingsystem.utils.loadImage
 
-class ParkingAdapter : RecyclerView.Adapter<ParkingAdapter.ParkingViewHolder>() {
+class ParkingAdapter(
+    private val onItemClick: (ParkingListResponse) -> Unit
+) : RecyclerView.Adapter<ParkingAdapter.ParkingViewHolder>() {
 
     private val parkings = mutableListOf<ParkingListResponse>()
 
@@ -24,7 +26,8 @@ class ParkingAdapter : RecyclerView.Adapter<ParkingAdapter.ParkingViewHolder>() 
                 LayoutInflater.from(parent.context),
                 parent,
                 false
-            )
+            ),
+            onItemClick
         )
     }
 
@@ -35,7 +38,8 @@ class ParkingAdapter : RecyclerView.Adapter<ParkingAdapter.ParkingViewHolder>() 
     override fun getItemCount() = parkings.size
 
     class ParkingViewHolder(
-        private val binding: ItemParkingBinding
+        private val binding: ItemParkingBinding,
+        private val onItemClick: (ParkingListResponse) -> Unit = {}
     ) : RecyclerView.ViewHolder(binding.root) {
 
         fun bind(parking: ParkingListResponse) {
@@ -45,6 +49,10 @@ class ParkingAdapter : RecyclerView.Adapter<ParkingAdapter.ParkingViewHolder>() 
                 priceText.text = "₺${parking.rate}/hr"
                 val availableSpotsCount = parking.capacity - parking.parkingSpots.count { it.occupied }
                 availableSpots.text = "$availableSpotsCount spots available"
+            }
+
+            binding.root.setOnClickListener {
+                onItemClick(parking)
             }
         }
     }

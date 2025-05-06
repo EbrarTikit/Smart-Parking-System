@@ -48,7 +48,7 @@ class HomeFragment : Fragment(R.layout.fragment_home), OnMapReadyCallback {
         setupMap()
         setupRecyclerView()
         observeUiState()
-        viewModel.fetchLocations()
+        viewModel.fetchParkings()
     }
 
     private fun setupMap() {
@@ -78,41 +78,27 @@ class HomeFragment : Fragment(R.layout.fragment_home), OnMapReadyCallback {
 
     private fun observeUiState() {
         viewLifecycleOwner.lifecycleScope.launchWhenStarted {
-            viewModel.uiState.collectLatest { state ->
+            viewModel.parkings.collectLatest { state ->
                 when (state) {
                     is UiState.Loading -> {
                         binding.progressBar.visibility = View.VISIBLE
                     }
-
                     is UiState.Success -> {
                         binding.progressBar.visibility = View.GONE
-                        val locations = state.data
-
+                        val parkingList = state.data
+                        parkingAdapter.submitList(parkingList)
+                        // Harita markerlarını da burada güncelleyebilirsin:
                         if (::googleMap.isInitialized) {
                             googleMap.clear()
-                            locations.forEach { loc ->
+                            parkingList.forEach { parking ->
                                 googleMap.addMarker(
                                     MarkerOptions()
-                                        .position(LatLng(loc.latitude, loc.longitude))
-                                        .title(loc.name)
+                                        .position(LatLng(parking.latitude, parking.longitude))
+                                        .title(parking.name)
                                 )
                             }
                         }
-                        val parkingList = locations.map {
-                            Parking(
-                                id = it.id.toString(),
-                                name = it.name,
-                                image = R.drawable.img,
-                                price = 0.0,
-                                availableSpots = 0,
-                                totalSpots = 0,
-                                latitude = it.latitude,
-                                longitude = it.longitude
-                            )
-                        }
-                        parkingAdapter.submitList(parkingList)
                     }
-
                     is UiState.Error -> {
                         binding.progressBar.visibility = View.GONE
                         Toast.makeText(requireContext(), state.message, Toast.LENGTH_LONG).show()
@@ -120,6 +106,7 @@ class HomeFragment : Fragment(R.layout.fragment_home), OnMapReadyCallback {
                 }
             }
         }
+
     }
 
     override fun onMapReady(map: GoogleMap) {

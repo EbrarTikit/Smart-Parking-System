@@ -77,7 +77,8 @@ public class ParkingController {
                             "  \"latitude\": 41.0082,\n" +
                             "  \"longitude\": 28.9784,\n" +
                             "  \"rows\": 5,\n" +
-                            "  \"columns\": 4\n" +
+                            "  \"columns\": 4,\n" +
+                            "  \"imageUrl\": \"https://example.com/parking-image.jpg\"\n" +
                             "}"
                 )
             )
@@ -109,7 +110,8 @@ public class ParkingController {
                             "  \"latitude\": 41.0082,\n" +
                             "  \"longitude\": 28.9784,\n" +
                             "  \"rows\": 6,\n" +
-                            "  \"columns\": 5\n" +
+                            "  \"columns\": 5,\n" +
+                            "  \"imageUrl\": \"https://example.com/parking-updated-image.jpg\"\n" +
                             "}"
                 )
             )

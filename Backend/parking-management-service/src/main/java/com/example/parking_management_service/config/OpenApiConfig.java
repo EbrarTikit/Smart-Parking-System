@@ -1,4 +1,4 @@
-package com.example.parking_management_service.parking_info.config;
+package com.example.parking_management_service.config;
 
 import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.OpenAPI;

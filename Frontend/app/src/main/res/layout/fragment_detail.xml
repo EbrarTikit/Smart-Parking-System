@@ -4,6 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@color/white"
     android:fillViewport="true">
 
     <androidx.constraintlayout.widget.ConstraintLayout
@@ -15,12 +16,12 @@
             android:id="@+id/iv_parking_image"
             android:layout_width="match_parent"
             android:layout_height="200dp"
+            android:contentDescription="Parking image"
             android:scaleType="centerCrop"
             android:src="@drawable/img"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            android:contentDescription="Parking image" />
+            app:layout_constraintTop_toTopOf="parent" />
 
         <ImageButton
             android:id="@+id/btn_back"
@@ -28,12 +29,12 @@
             android:layout_height="30dp"
             android:layout_margin="16dp"
             android:background="@drawable/btn_back_bg"
-            android:src="@drawable/ic_back"
-            app:tint="@color/black"
             android:contentDescription="Back"
             android:elevation="4dp"
+            android:src="@drawable/ic_back"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
+            app:layout_constraintTop_toTopOf="parent"
+            app:tint="@color/black" />
 
         <TextView
             android:id="@+id/tv_parking_name"
@@ -58,9 +59,9 @@
             android:background="?attr/selectableItemBackgroundBorderless"
             android:contentDescription="Favorite"
             android:src="@drawable/ic_favorite_unfilled"
+            app:layout_constraintBottom_toBottomOf="@+id/tv_parking_name"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="@+id/tv_parking_name"
-            app:layout_constraintBottom_toBottomOf="@+id/tv_parking_name" />
+            app:layout_constraintTop_toTopOf="@+id/tv_parking_name" />
 
         <TextView
             android:id="@+id/tv_parking_address"
@@ -74,65 +75,82 @@
             app:layout_constraintStart_toStartOf="@+id/tv_parking_name"
             app:layout_constraintTop_toBottomOf="@+id/tv_parking_name" />
 
-        <com.google.android.material.chip.Chip
-            android:id="@+id/chip_people"
+        <HorizontalScrollView
+            android:id="@+id/sv_horizontal"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:text="8 people"
-            app:chipBackgroundColor="@color/white"
-            app:chipStrokeColor="@color/secondary"
-            app:chipIcon="@drawable/ic_view"
-            app:layout_constraintStart_toStartOf="@+id/tv_parking_address"
-            app:layout_constraintTop_toBottomOf="@+id/tv_parking_address" />
-
-        <com.google.android.material.chip.Chip
-            android:id="@+id/chip_time"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+            android:scrollbars="none"
             android:layout_marginStart="8dp"
-            android:text="1 hour"
-            app:chipBackgroundColor="@color/white"
-            app:chipStrokeColor="@color/secondary"
-            app:chipIcon="@android:drawable/ic_menu_recent_history"
-            app:layout_constraintStart_toEndOf="@+id/chip_people"
-            app:layout_constraintTop_toTopOf="@+id/chip_people" />
+            android:layout_marginEnd="8dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/tv_parking_address">
 
-        <com.google.android.material.chip.Chip
-            android:id="@+id/chip_spots"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:text="20 spots"
-            app:chipBackgroundColor="@color/white"
-            app:chipIcon="@drawable/ic_spot"
-            app:chipStrokeColor="@color/secondary"
-            app:layout_constraintStart_toEndOf="@+id/chip_time"
-            app:layout_constraintTop_toTopOf="@+id/chip_time" />
+            <com.google.android.material.chip.ChipGroup
+                android:id="@+id/chip_group"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:layout_marginEnd="8dp"
+                >
 
-        <com.google.android.material.chip.Chip
-            android:id="@+id/chip_status"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:text="Open"
-            app:chipBackgroundColor="@color/white"
-            app:chipStrokeColor="@color/secondary"
-            app:chipIconTint="@color/secondary"
-            app:layout_constraintStart_toEndOf="@+id/chip_spots"
-            app:layout_constraintTop_toTopOf="@+id/chip_spots" />
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chip_people"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:text="8 people"
+                    app:chipBackgroundColor="@color/white"
+                    app:chipIcon="@drawable/ic_view"
+                    app:chipStrokeColor="@color/secondary" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chip_time"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:text="1 hour"
+                    app:chipBackgroundColor="@color/white"
+                    app:chipIcon="@android:drawable/ic_menu_recent_history"
+                    app:chipStrokeColor="@color/secondary"
+                    />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chip_spots"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="16dp"
+                    android:text="20 spots"
+                    app:chipBackgroundColor="@color/white"
+                    app:chipIcon="@drawable/ic_spot"
+                    app:chipStrokeColor="@color/secondary"
+                    />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chip_status"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:text="Open"
+                    app:chipBackgroundColor="@color/white"
+                    app:chipIconTint="@color/secondary"
+                    app:chipStrokeColor="@color/secondary"
+                    />
+            </com.google.android.material.chip.ChipGroup>
+        </HorizontalScrollView>
 
         <TextView
             android:id="@+id/tv_description_title"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
+            android:layout_marginTop="18dp"
+            android:layout_marginStart="16dp"
             android:text="Description"
             android:textColor="@android:color/black"
             android:textSize="18sp"
             android:textStyle="bold"
-            app:layout_constraintStart_toStartOf="@+id/chip_people"
-            app:layout_constraintTop_toBottomOf="@+id/chip_people" />
+            app:layout_constraintStart_toStartOf="@+id/sv_horizontal"
+            app:layout_constraintTop_toBottomOf="@+id/sv_horizontal" />
 
         <TextView
             android:id="@+id/tv_description"
@@ -163,8 +181,8 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
                 android:gravity="center"
+                android:orientation="vertical"
                 android:padding="16dp">
 
                 <TextView
@@ -194,9 +212,9 @@
             android:layout_marginEnd="8dp"
             android:layout_marginBottom="16dp"
             android:backgroundTint="@color/primary"
-            android:text="See Location"
-            android:textSize="18sp"
+            android:text="Get Directions"
             android:textAllCaps="false"
+            android:textSize="16sp"
             app:cornerRadius="8dp"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toStartOf="@+id/btn_see_parking_spots"

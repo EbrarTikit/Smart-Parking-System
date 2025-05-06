@@ -42,8 +42,6 @@ class DetailFragment : Fragment(R.layout.fragment_detail) {
             chipStatus.text = if (isOpen) "Open" else "Closed"
 
             tvPrice.text = "₺${parking.rate}"
-
-            // Set description (placeholder text is already in layout)
         }
     }
 

@@ -4,13 +4,14 @@ import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import com.example.smartparkingsystem.data.model.Parking
+import com.example.smartparkingsystem.data.model.ParkingListResponse
 import com.example.smartparkingsystem.databinding.ItemParkingBinding
 
 class ParkingAdapter : RecyclerView.Adapter<ParkingAdapter.ParkingViewHolder>() {
 
-    private val parkings = mutableListOf<Parking>()
+    private val parkings = mutableListOf<ParkingListResponse>()
 
-    fun submitList(newParkings: List<Parking>) {
+    fun submitList(newParkings: List<ParkingListResponse>) {
         parkings.clear()
         parkings.addAll(newParkings)
         notifyDataSetChanged()
@@ -36,12 +37,13 @@ class ParkingAdapter : RecyclerView.Adapter<ParkingAdapter.ParkingViewHolder>() 
         private val binding: ItemParkingBinding
     ) : RecyclerView.ViewHolder(binding.root) {
 
-        fun bind(parking: Parking) {
+        fun bind(parking: ParkingListResponse) {
             binding.apply {
-                parkingImage.setImageResource(parking.image)
+                parkingImage.setImageResource(com.example.smartparkingsystem.R.drawable.img) // image url backend'den gelirse Glide ile yükleyebilirsin
                 parkingName.text = parking.name
-                priceText.text = "₺${parking.price}/hr"
-                availableSpots.text = "${parking.availableSpots} spots available"
+                priceText.text = "₺${parking.rate}/hr"
+                val availableSpotsCount = parking.capacity - parking.parkingSpots.count { it.occupied }
+                availableSpots.text = "$availableSpotsCount spots available"
             }
         }
     }

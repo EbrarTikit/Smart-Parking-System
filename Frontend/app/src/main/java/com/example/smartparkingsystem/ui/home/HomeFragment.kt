@@ -86,7 +86,37 @@ class HomeFragment : Fragment(R.layout.fragment_home), OnMapReadyCallback {
                     is UiState.Success -> {
                         binding.progressBar.visibility = View.GONE
                         val parkingList = state.data
-                        parkingAdapter.submitList(parkingList)
+
+                        // Kullanıcı konumunu al ve sıralama yap
+                        if (hasLocationPermission()) {
+                            try {
+                                fusedLocationClient.lastLocation
+                                    .addOnSuccessListener { location ->
+                                        if (location != null) {
+                                            val userLatLng = LatLng(location.latitude, location.longitude)
+                                            val sortedList = parkingList.sortedBy { parking ->
+                                                distanceBetween(
+                                                    userLatLng.latitude, userLatLng.longitude,
+                                                    parking.latitude, parking.longitude
+                                                )
+                                            }
+                                            parkingAdapter.submitList(sortedList)
+                                        } else {
+                                            // Konum alınamazsa, gelen sırayla göster
+                                            parkingAdapter.submitList(parkingList)
+                                        }
+                                    }
+                                    .addOnFailureListener {
+                                        parkingAdapter.submitList(parkingList)
+                                    }
+                            } catch (e: SecurityException) {
+                                // İzin yoksa, gelen sırayla göster
+                                parkingAdapter.submitList(parkingList)
+                            }
+                        } else {
+                            parkingAdapter.submitList(parkingList)
+                        }
+
                         // Harita markerlarını da burada güncelleyebilirsin:
                         if (::googleMap.isInitialized) {
                             googleMap.clear()
@@ -106,7 +136,15 @@ class HomeFragment : Fragment(R.layout.fragment_home), OnMapReadyCallback {
                 }
             }
         }
+    }
 
+    private fun distanceBetween(
+        startLat: Double, startLng: Double,
+        endLat: Double, endLng: Double
+    ): Float {
+        val results = FloatArray(1)
+        android.location.Location.distanceBetween(startLat, startLng, endLat, endLng, results)
+        return results[0]
     }
 
     override fun onMapReady(map: GoogleMap) {

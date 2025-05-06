@@ -1,7 +1,9 @@
 package com.example.smartparkingsystem.data.repository
 
 import com.example.smartparkingsystem.data.model.ParkingListResponse
+import com.example.smartparkingsystem.data.model.ViewerTrackResponse
 import com.example.smartparkingsystem.data.remote.ParkingManagementService
+import retrofit2.Response
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -11,5 +13,12 @@ class ParkingManagementRepository @Inject constructor(
 ) {
     suspend fun getParkingList(): List<ParkingListResponse> {
         return parkingManagementService.getParkingList()
+    }
+
+    suspend fun viewerTrack(
+        userId: Int,
+        parkingId: Int,
+    ): Response<ViewerTrackResponse> {
+        return parkingManagementService.viewerTrack(userId, parkingId)
     }
 }

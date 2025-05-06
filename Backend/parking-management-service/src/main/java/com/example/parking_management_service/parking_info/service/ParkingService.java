@@ -50,6 +50,7 @@ public class ParkingService {
     }
 
     //Get All Parkings
+    @Transactional(readOnly = true)
     public List<Parking> getAllParkings() {
         return parkingRepository.findAll();
     }

@@ -6,8 +6,8 @@ object Constants {
     const val HISTORY = "/api/v1/chat/{session_id}/history"
     const val SIGNUP = "/api/auth/signup"
     const val SIGNIN = "/api/auth/signin"
-    const val NAVIGATION = "/api/parkings/location/{id}"
-    const val NAVIGATION_LIST = "/api/parkings/location/list"
+    const val NAVIGATION = "rest/api/car_park/parking-location/{id}"
+    const val NAVIGATION_LIST = "rest/api/car_park/parking-location/list"
 
     //Session Manager
     const val PREF_NAME = "smart_parking_session"

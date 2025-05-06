@@ -13,8 +13,6 @@ import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.RecyclerView
 import com.example.smartparkingsystem.R
-import com.example.smartparkingsystem.data.model.Parking
-import com.example.smartparkingsystem.data.model.ParkingListResponse
 import com.example.smartparkingsystem.databinding.FragmentHomeBinding
 import com.example.smartparkingsystem.utils.state.UiState
 import com.google.android.gms.location.FusedLocationProviderClient
@@ -93,6 +91,7 @@ class HomeFragment : Fragment(R.layout.fragment_home), OnMapReadyCallback {
                     is UiState.Loading -> {
                         binding.progressBar.visibility = View.VISIBLE
                     }
+
                     is UiState.Success -> {
                         binding.progressBar.visibility = View.GONE
                         val parkingList = state.data
@@ -103,7 +102,8 @@ class HomeFragment : Fragment(R.layout.fragment_home), OnMapReadyCallback {
                                 fusedLocationClient.lastLocation
                                     .addOnSuccessListener { location ->
                                         if (location != null) {
-                                            val userLatLng = LatLng(location.latitude, location.longitude)
+                                            val userLatLng =
+                                                LatLng(location.latitude, location.longitude)
                                             val sortedList = parkingList.sortedBy { parking ->
                                                 distanceBetween(
                                                     userLatLng.latitude, userLatLng.longitude,
@@ -139,6 +139,7 @@ class HomeFragment : Fragment(R.layout.fragment_home), OnMapReadyCallback {
                             }
                         }
                     }
+
                     is UiState.Error -> {
                         binding.progressBar.visibility = View.GONE
                         Toast.makeText(requireContext(), state.message, Toast.LENGTH_LONG).show()

@@ -1,5 +1,6 @@
 package com.example.smartparkingsystem.ui.signin
 
+import android.content.Context
 import android.os.Bundle
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
@@ -64,6 +65,9 @@ class SignInFragment : Fragment() {
                 is UiState.Loading -> showLoading(true)
                 is UiState.Success -> {
                     showLoading(false)
+                    val userId = state.data.id
+                    val sharedPreferences = requireContext().getSharedPreferences("user_prefs", Context.MODE_PRIVATE)
+                    sharedPreferences.edit().putInt("userId", userId.toInt()).apply()
                     findNavController().navigate(R.id.action_signInFragment_to_locationAccessFragment)
                 }
                 is UiState.Error -> {

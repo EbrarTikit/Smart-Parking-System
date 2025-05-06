@@ -18,7 +18,7 @@ class ParkingManagementRepository @Inject constructor(
     suspend fun viewerTrack(
         userId: Int,
         parkingId: Int,
-    ): Response<ViewerTrackResponse> {
+    ): ViewerTrackResponse {
         return parkingManagementService.viewerTrack(userId, parkingId)
     }
 }

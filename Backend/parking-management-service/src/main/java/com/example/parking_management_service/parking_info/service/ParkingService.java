@@ -101,6 +101,7 @@ public class ParkingService {
         parking.setRate(parkingDetails.getRate());
         parking.setLatitude(parkingDetails.getLatitude());
         parking.setLongitude(parkingDetails.getLongitude());
+        parking.setImageUrl(parkingDetails.getImageUrl());
         
         // Check if rows and columns are being updated
         Integer newRows = parkingDetails.getRows();

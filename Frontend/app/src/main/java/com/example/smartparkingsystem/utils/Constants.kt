@@ -8,6 +8,9 @@ object Constants {
     const val SIGNIN = "/api/auth/signin"
     const val NAVIGATION = "rest/api/car_park/parking-location/{id}"
     const val NAVIGATION_LIST = "rest/api/car_park/parking-location/list"
+    const val PARKING_LIST = "api/parkings"
+    const val PARKING_DETAILS = "api/parkings/{parkingId}/layout"
+
 
     //Session Manager
     const val PREF_NAME = "smart_parking_session"

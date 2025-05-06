@@ -95,6 +95,9 @@ dependencies {
     implementation(libs.retrofit2.kotlinx.serialization.converter)
     implementation(libs.kotlinx.serialization.json)
     testImplementation(kotlin("test"))
+
+    //Glide
+    implementation(libs.glide)
 }
 
 kapt {

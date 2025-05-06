@@ -6,6 +6,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.smartparkingsystem.data.model.Parking
 import com.example.smartparkingsystem.data.model.ParkingListResponse
 import com.example.smartparkingsystem.databinding.ItemParkingBinding
+import com.example.smartparkingsystem.utils.loadImage
 
 class ParkingAdapter : RecyclerView.Adapter<ParkingAdapter.ParkingViewHolder>() {
 
@@ -39,7 +40,7 @@ class ParkingAdapter : RecyclerView.Adapter<ParkingAdapter.ParkingViewHolder>() 
 
         fun bind(parking: ParkingListResponse) {
             binding.apply {
-                parkingImage.setImageResource(com.example.smartparkingsystem.R.drawable.img) // image url backend'den gelirse Glide ile yükleyebilirsin
+                parkingImage.loadImage(parking.imageUrl)
                 parkingName.text = parking.name
                 priceText.text = "₺${parking.rate}/hr"
                 val availableSpotsCount = parking.capacity - parking.parkingSpots.count { it.occupied }

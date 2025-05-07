@@ -66,9 +66,10 @@ public SecurityFilterChain filterChain(HttpSecurity http, JwtAuthenticationFilte
         .exceptionHandling(exception -> exception.authenticationEntryPoint(unauthorizedHandler()))
         .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
         .authorizeHttpRequests(auth -> 
-            auth.requestMatchers("/api/auth/**","/swagger-ui.html", "/v3/api-docs", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
+            auth.requestMatchers("/api/auth/**","/swagger-ui.html", "/v3/api-docs", "/swagger-ui/**", "/v3/api-docs/**","/api/users/**").permitAll()
                 .requestMatchers("/api/test/**").permitAll()
                 .requestMatchers("/api/protected/**").authenticated()
+                .requestMatchers("/api/users/**").authenticated()
                 .anyRequest().authenticated()
         )
         .addFilterBefore(jwtAuthenticationFilter, org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter.class) // JWT doğrulama filtresi ekleniyor
@@ -79,7 +80,7 @@ public SecurityFilterChain filterChain(HttpSecurity http, JwtAuthenticationFilte
                 String path = request.getRequestURI();
                 
                 // Skip token validation for public endpoints
-                if (path.startsWith("/api/auth/") || path.startsWith("/api/test/")|| path.startsWith("/swagger-ui") || path.startsWith("/v3/api-docs")) {
+                if (path.startsWith("/api/auth/") || path.startsWith("/api/test/")|| path.startsWith("/swagger-ui") || path.startsWith("/v3/api-docs")|| path.startsWith("/api/users/")) {
                     filterChain.doFilter(request, response);
                     return;
                 }

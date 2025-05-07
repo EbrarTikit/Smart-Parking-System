@@ -22,9 +22,14 @@ def get_gemini_response(user_message: str, conversation_history: List[Dict]) -> 
             for msg in conversation_history[-6:]  # Son 3 konuşmayı al
         ])
     
+    # İç içe f-string kullanımı yerine daha güvenli bir yaklaşım
+    context_section = ""
+    if conversation_context:
+        context_section = "Önceki Konuşma:\n" + conversation_context + "\n"
+    
     prompt = f"""Sen Türkiye/Antalya'da çalışan bir otopark asistanısın. Kullanıcılara otopark ile ilgili konularda yardımcı oluyorsun.
 
-{f'Önceki Konuşma:\n{conversation_context}\n' if conversation_context else ''}
+{context_section}
 Kullanıcı: {user_message}
 
 Lütfen önceki konuşmayı dikkate alarak yanıt ver."""

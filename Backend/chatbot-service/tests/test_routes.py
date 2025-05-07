@@ -17,7 +17,7 @@ def test_session_id():
 
 @pytest.fixture
 def sample_conversation(test_session_id):
-    # Global conversation_history nesnesini kullan
+
     conversation_history.add_message(test_session_id, "user", "Merhaba")
     conversation_history.add_message(test_session_id, "assistant", "Size nasıl yardımcı olabilirim?")
     return conversation_history
@@ -39,14 +39,15 @@ def test_chat_new_session():
     assert "session_id" in response.json()
 
 def test_chat_existing_session(test_session_id):
-    # İlk mesaj
+    
+
     response1 = client.post(
         "/api/v1/chat", 
         json={"message": "Merhaba", "session_id": test_session_id}
     )
     assert response1.status_code == 200
 
-    # Aynı oturumda ikinci mesaj
+
     response2 = client.post(
         "/api/v1/chat", 
         json={"message": "Otopark fiyatları nedir?", "session_id": test_session_id}
@@ -69,15 +70,13 @@ def test_get_nonexistent_chat_history():
     assert response.json()["detail"] == "Sohbet geçmişi bulunamadı"
 
 def test_clear_chat_history(test_session_id, sample_conversation):
-    # Önce mesajların var olduğunu kontrol et
+
     history_response = client.get(f"/api/v1/chat/{test_session_id}/history")
     assert history_response.status_code == 200
     
-    # Geçmişi temizle
     response = client.delete(f"/api/v1/chat/{test_session_id}")
     assert response.status_code == 200
     
-    # Geçmişin silindiğini kontrol et
     history_response = client.get(f"/api/v1/chat/{test_session_id}/history")
     assert history_response.status_code == 404
 
@@ -95,15 +94,13 @@ def test_list_active_sessions(test_session_id, sample_conversation):
     assert session["message_count"] == 2
 
 def test_cleanup_expired_sessions(test_session_id):
-    # Global conversation_history'yi kullan
+
     conversation_history.add_message(test_session_id, "user", "Test mesajı")
     
-    # Oturumun timestamp'ini manuel olarak güncelle
+
     conversation_history.conversations[test_session_id][0]["timestamp"] = \
         datetime.now() - timedelta(minutes=31)
     
-    # Temizlik işlemini çağır
     conversation_history.cleanup_expired()
     
-    # Oturumun silindiğini kontrol et
     assert test_session_id not in conversation_history.conversations

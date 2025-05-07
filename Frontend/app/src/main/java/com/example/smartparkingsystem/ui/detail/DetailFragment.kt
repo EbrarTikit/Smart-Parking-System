@@ -36,6 +36,7 @@ class DetailFragment : Fragment(R.layout.fragment_detail) {
             setupUI()
             setupClickListeners()
             trackView()
+            observeViewerCount()
         }
     }
 
@@ -45,7 +46,6 @@ class DetailFragment : Fragment(R.layout.fragment_detail) {
             tvParkingName.text = parking.name
             tvParkingAddress.text = parking.location
             val availableSpots = parking.capacity - parking.parkingSpots.count { it.occupied }
-            chipPeople.text = "${parking.parkingSpots.count { it.occupied }} people"
             chipSpots.text = "$availableSpots spots"
             chipTime.text = "${parking.openingHours}-${parking.closingHours}"
 
@@ -77,18 +77,33 @@ class DetailFragment : Fragment(R.layout.fragment_detail) {
         return true
     }
 
+    private fun observeViewerCount() {
+        viewLifecycleOwner.lifecycleScope.launchWhenStarted {
+            viewModel.viewerCount.collectLatest { state ->
+                when (state) {
+                    is UiState.Loading -> {
+                    }
+                    is UiState.Success -> {
+                        binding.chipPeople.text = "${state.data.viewerCount} people"
+                    }
+                    is UiState.Error -> {
+                        Toast.makeText(requireContext(), state.message, Toast.LENGTH_LONG).show()
+                    }
+                }
+            }
+        }
+    }
+
     private fun trackView() {
         val userId = getUserIdFromPrefsOrSession()
         viewModel.trackUserView(userId, parking.id)
     }
-
 
     private fun getUserIdFromPrefsOrSession(): Int {
         val sharedPreferences =
             requireContext().getSharedPreferences("user_prefs", Context.MODE_PRIVATE)
         return sharedPreferences.getInt("userId", 0)
     }
-
 
     override fun onDestroyView() {
         super.onDestroyView()

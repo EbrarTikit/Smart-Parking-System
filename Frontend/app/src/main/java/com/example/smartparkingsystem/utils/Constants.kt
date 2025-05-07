@@ -11,6 +11,7 @@ object Constants {
     const val PARKING_LIST = "api/parkings"
     const val PARKING_DETAILS = "api/parkings/{parkingId}/layout"
     const val VIEWER_TRACK = "/api/parking-viewers/track"
+    const val VIEWER_COUNT = "/api/parking-viewers/{parkingId}/count"
 
 
     //Session Manager

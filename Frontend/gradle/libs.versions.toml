@@ -5,6 +5,7 @@ espressoContrib = "3.5.1"
 espressoIntents = "3.5.1"
 fragmentKtx = "1.8.6"
 fragmentTesting = "1.6.2"
+glide = "4.16.0"
 hiltAndroidTesting = "2.55"
 kotlin = "1.9.24"
 coreKtx = "1.10.1"
@@ -44,6 +45,7 @@ converter-gson = { module = "com.squareup.retrofit2:converter-gson", version.ref
 dagger-hilt-android-testing = { module = "com.google.dagger:hilt-android-testing", version.ref = "hiltAndroidTesting" }
 espresso-contrib = { module = "androidx.test.espresso:espresso-contrib", version.ref = "espressoContrib" }
 espresso-intents = { module = "androidx.test.espresso:espresso-intents", version.ref = "espressoIntents" }
+glide = { module = "com.github.bumptech.glide:glide", version.ref = "glide" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
 androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }

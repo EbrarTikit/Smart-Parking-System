@@ -1,6 +1,7 @@
 package com.example.parking_management_service.parking_info.repository;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -20,4 +21,7 @@ public interface ParkingSpotRepository extends JpaRepository<ParkingSpot, Long> 
         @Param("row") int row, 
         @Param("column") int column
     );
+
+    @Query("SELECT ps FROM ParkingSpot ps WHERE ps.sensorId = :sensorId")
+    Optional<ParkingSpot> findBySensorId(@Param("sensorId") String sensorId);
 }

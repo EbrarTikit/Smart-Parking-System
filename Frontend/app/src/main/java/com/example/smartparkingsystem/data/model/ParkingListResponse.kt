@@ -10,6 +10,7 @@ data class ParkingListResponse(
     val rate: Double,
     val latitude: Double,
     val longitude: Double,
+    val imageUrl: String,
     val rows: Int,
     val columns: Int,
     val parkingSpots: List<ParkingSpotResponse>

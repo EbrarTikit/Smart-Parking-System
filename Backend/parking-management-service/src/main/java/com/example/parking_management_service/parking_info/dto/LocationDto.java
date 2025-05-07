@@ -1,4 +1,4 @@
-package com.example.parking_management_service.dto;
+package com.example.parking_management_service.parking_info.dto;
 
 import lombok.Data;
 

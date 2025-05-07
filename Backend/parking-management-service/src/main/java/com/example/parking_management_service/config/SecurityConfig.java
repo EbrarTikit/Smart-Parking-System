@@ -1,4 +1,4 @@
-package com.example.parking_management_service.parking_info.config;
+package com.example.parking_management_service.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

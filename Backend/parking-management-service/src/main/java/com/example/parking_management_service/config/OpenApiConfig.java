@@ -17,9 +17,9 @@ public class OpenApiConfig {
     public OpenAPI customOpenAPI() {
         return new OpenAPI()
                 .info(new Info()
-                    .title("Smart Parking System API")
+                    .title("Parking Management API")
                     .version("1.0")
-                    .description("API for Smart Parking System including parking management and IoT device management")
+                    .description("API for managing parking lots including details such as name, location, capacity, opening/closing hours, and rates.")
                     .contact(new Contact().name("Smart Parking Team"))
                     .license(new License().name("MIT")))
                 .addSecurityItem(new SecurityRequirement().addList("basicAuth"))
@@ -29,4 +29,5 @@ public class OpenApiConfig {
                             .type(SecurityScheme.Type.HTTP)
                             .scheme("basic")));
     }
-}
+} 
+

@@ -113,4 +113,9 @@ public class ParkingSpot {
     public void setSensorId(String sensorId) {
         this.sensorId = sensorId;
     }
+    
+    // method to check if spot is available (not occupied)
+    public boolean isAvailable() {
+        return !isOccupied;
+    }
 }

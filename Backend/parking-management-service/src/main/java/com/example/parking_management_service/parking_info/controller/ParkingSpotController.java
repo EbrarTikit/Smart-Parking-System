@@ -14,11 +14,11 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.example.parking_management_service.parking_info.dto.ParkingLayoutDto;
 import com.example.parking_management_service.parking_info.dto.ParkingSpotDto;
+import com.example.parking_management_service.parking_info.dto.ParkingSpotResponseDto;
+import com.example.parking_management_service.parking_info.model.ParkingSpot;
 import com.example.parking_management_service.parking_info.service.ParkingSpotService;
 
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.media.ExampleObject;
 
 @RestController
 @RequestMapping("/api")
@@ -74,9 +74,42 @@ public class ParkingSpotController {
         List<ParkingSpotDto> updatedSpots = parkingSpotService.updateMultipleSpotStatus(parkingId, spotUpdates);
         return ResponseEntity.ok(updatedSpots);
     }
+
+    @PostMapping("/{parkingId}/spots")
+    public ResponseEntity<ParkingSpotResponseDto> addParkingSpot(
+        @PathVariable Long parkingId,
+        @RequestBody ParkingSpotDto parkingSpotDto) {
+    ParkingSpot parkingSpot = parkingSpotService.addParkingSpotToParking(
+        parkingId, 
+        parkingSpotDto.getColumn(), 
+        parkingSpotDto.getRow()
+    );
+    return ResponseEntity.ok(toDto(parkingSpot));
+    }
+
+    @PostMapping("/{parkingId}/spots/batch")
+    public ResponseEntity<List<ParkingSpotResponseDto>> addParkingSpots(
+        @PathVariable Long parkingId,
+        @RequestBody List<ParkingSpotDto> parkingSpotDtos) {
+        List<ParkingSpot> parkingSpots = parkingSpotService.addParkingSpotsToParking(parkingId, parkingSpotDtos);
+        List<ParkingSpotResponseDto> dtos = parkingSpots.stream().map(this::toDto).toList();
+        return ResponseEntity.ok(dtos);
+    }
+    private ParkingSpotResponseDto toDto(ParkingSpot spot) {
+        ParkingSpotResponseDto dto = new ParkingSpotResponseDto();
+        dto.setId(spot.getId());
+        dto.setColumn(spot.getColumn());
+        dto.setRow(spot.getRow());
+        dto.setOccupied(spot.isOccupied());
+        dto.setSpotIdentifier(spot.getSpotIdentifier());
+        dto.setSensorId(spot.getSensorId());
+        return dto;
+    }
+
     
+
+
     // Helper classes for request bodies
-    
     public static class LayoutRequest {
         private int rows;
         private int columns;

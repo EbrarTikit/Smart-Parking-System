@@ -77,7 +77,6 @@ public class ParkingSpotService {
         List<ParkingSpotDto> spotDtos = new ArrayList<>();
         for (ParkingSpot spot : spots) {
             ParkingSpotDto spotDto = new ParkingSpotDto(
-                spot.getId(), 
                 spot.getRow(), 
                 spot.getColumn(), 
                 spot.isOccupied(),
@@ -103,8 +102,7 @@ public class ParkingSpotService {
         spot.setOccupied(isOccupied);
         parkingSpotRepository.save(spot);
         
-        ParkingSpotDto spotDto = new ParkingSpotDto(
-            spot.getId(), 
+        ParkingSpotDto spotDto = new ParkingSpotDto( 
             spot.getRow(), 
             spot.getColumn(), 
             spot.isOccupied(),
@@ -139,8 +137,7 @@ public class ParkingSpotService {
         parkingSpotRepository.save(spot);
         
         // Mevcut entity'den DTO oluştur
-        ParkingSpotDto spotDto = new ParkingSpotDto(
-            spot.getId(), 
+        ParkingSpotDto spotDto = new ParkingSpotDto( 
             spot.getRow(), 
             spot.getColumn(), 
             spot.isOccupied(),
@@ -159,4 +156,47 @@ public class ParkingSpotService {
         
         return rowLetter + String.valueOf(columnNumber);
     }
+
+    public ParkingSpot addParkingSpotToParking(Long parkingId, int column, int row) {
+        Parking parking = parkingRepository.findById(parkingId)
+            .orElseThrow(() -> new RuntimeException("Parking not found"));
+
+        ParkingSpot parkingSpot = new ParkingSpot();
+        parkingSpot.setColumn(column);
+        parkingSpot.setRow(row);
+        parkingSpot.setParking(parking);
+
+        // İlişkiyi iki taraflı güncellemek için:
+        parking.getParkingSpots().add(parkingSpot);
+
+        parkingSpotRepository.save(parkingSpot);
+        parkingRepository.save(parking);
+
+        return parkingSpot;
+    }
+
+    public List<ParkingSpot> addParkingSpotsToParking(Long parkingId, List<ParkingSpotDto> parkingSpotDtos) {
+        Parking parking = parkingRepository.findById(parkingId)
+            .orElseThrow(() -> new RuntimeException("Parking not found"));
+
+        List<ParkingSpot> parkingSpots = new ArrayList<>();
+
+        for (ParkingSpotDto parkingSpotDto : parkingSpotDtos) {
+            ParkingSpot parkingSpot = new ParkingSpot();
+            parkingSpot.setColumn(parkingSpotDto.getColumn());
+            parkingSpot.setRow(parkingSpotDto.getRow());
+            parkingSpot.setParking(parking);
+
+            // İlişkiyi iki taraflı güncellemek için:
+            parking.getParkingSpots().add(parkingSpot);
+
+            parkingSpotRepository.save(parkingSpot);
+            parkingSpots.add(parkingSpot);
+        }
+
+        parkingRepository.save(parking);
+
+        return parkingSpots;
+    }
+
 }

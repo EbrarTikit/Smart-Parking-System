@@ -15,8 +15,16 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.example.parking_management_service.parking_info.dto.LayoutRequestDto;
+import com.example.parking_management_service.parking_info.dto.LayoutResponseDto;
 import com.example.parking_management_service.parking_info.dto.LocationDto;
+import com.example.parking_management_service.parking_info.dto.ParkingSpotResponseDto;
+import com.example.parking_management_service.parking_info.dto.RoadDTO;
+import com.example.parking_management_service.parking_info.dto.RoadResponseDto;
 import com.example.parking_management_service.parking_info.model.Parking;
+import com.example.parking_management_service.parking_info.model.ParkingSpot;
+import com.example.parking_management_service.parking_info.model.Road;
+import com.example.parking_management_service.parking_info.repository.ParkingRepository;
 import com.example.parking_management_service.parking_info.service.ParkingService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -29,6 +37,9 @@ public class ParkingController {
 
     @Autowired
     private ParkingService parkingService;
+
+    @Autowired
+    private ParkingRepository parkingRepository;   
 
     @GetMapping("/parkings/location/{id}")
     public ResponseEntity<LocationDto> getParkingLocation(@PathVariable Long id) {
@@ -132,5 +143,59 @@ public class ParkingController {
         response.put("deleted", Boolean.TRUE);
         
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/{parkingId}/layout")
+    public ResponseEntity<LayoutResponseDto> getParkingLayout(@PathVariable Long parkingId) {
+    Parking parking = parkingRepository.findById(parkingId)
+        .orElseThrow(() -> new RuntimeException("Parking not found"));
+
+    List<ParkingSpotResponseDto> spotDtos = parking.getParkingSpots().stream()
+        .map(this::toParkingSpotDto)
+        .toList();
+
+    List<RoadResponseDto> roadDtos = parking.getRoads().stream()
+        .map(this::toRoadDto)
+        .toList();
+
+    LayoutResponseDto response = new LayoutResponseDto();
+    response.setParkingId(parking.getId());
+    response.setParkingName(parking.getName());
+    response.setCapacity(parking.getCapacity());
+    response.setRows(parking.getRows());
+    response.setColumns(parking.getColumns());
+    response.setParkingSpots(spotDtos);
+    response.setRoads(roadDtos);
+
+    return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/{parkingId}/layout")
+    public ResponseEntity<Void> updateParkingLayout(
+        @PathVariable Long parkingId,
+        @RequestBody LayoutRequestDto layoutRequestDto) {
+        parkingService.updateParkingLayout(
+        parkingId,
+        layoutRequestDto.getParkingSpots(),
+        layoutRequestDto.getRoads()
+        );
+    return ResponseEntity.ok().build();
+    }
+
+    // Yardımcı dönüşüm fonksiyonları
+    private ParkingSpotResponseDto toParkingSpotDto(ParkingSpot spot) {
+        ParkingSpotResponseDto dto = new ParkingSpotResponseDto();
+        dto.setId(spot.getId());
+        dto.setColumn(spot.getColumn());
+        dto.setRow(spot.getRow());
+        return dto;
+    }
+
+    private RoadResponseDto toRoadDto(Road road) {
+        RoadResponseDto dto = new RoadResponseDto();
+        dto.setId(road.getId());
+        dto.setRoadColumn(road.getRoadColumn());
+        dto.setRoadRow(road.getRoadRow());
+        return dto;
     }
 } 

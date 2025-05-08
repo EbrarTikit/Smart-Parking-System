@@ -86,6 +86,7 @@ class MainActivity : AppCompatActivity() {
                 R.id.authFragment,
                 R.id.signInFragment,
                 R.id.signUpFragment,
+                R.id.detailFragment,
                 R.id.locationAccessFragment,
                 R.id.locationFragment -> true
                 else -> false

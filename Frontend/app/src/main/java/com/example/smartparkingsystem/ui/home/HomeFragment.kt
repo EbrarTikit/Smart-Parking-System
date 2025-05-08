@@ -10,9 +10,9 @@ import androidx.core.app.ActivityCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
+import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.RecyclerView
 import com.example.smartparkingsystem.R
-import com.example.smartparkingsystem.data.model.Parking
 import com.example.smartparkingsystem.databinding.FragmentHomeBinding
 import com.example.smartparkingsystem.utils.state.UiState
 import com.google.android.gms.location.FusedLocationProviderClient
@@ -31,7 +31,7 @@ class HomeFragment : Fragment(R.layout.fragment_home), OnMapReadyCallback {
     private var _binding: FragmentHomeBinding? = null
     private val binding get() = _binding!!
     private lateinit var googleMap: GoogleMap
-    private val parkingAdapter = ParkingAdapter()
+    private lateinit var parkingAdapter: ParkingAdapter
     private val viewModel: HomeViewModel by viewModels()
 
     private lateinit var fusedLocationClient: FusedLocationProviderClient
@@ -42,13 +42,21 @@ class HomeFragment : Fragment(R.layout.fragment_home), OnMapReadyCallback {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         _binding = FragmentHomeBinding.bind(view)
-
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(requireActivity())
 
+        setupAdapter()
         setupMap()
         setupRecyclerView()
         observeUiState()
         viewModel.fetchParkings()
+    }
+
+    private fun setupAdapter() {
+        parkingAdapter = ParkingAdapter { parking ->
+            findNavController().navigate(
+                R.id.action_navigation_home_to_detailFragment,
+                Bundle().apply { putParcelable("parking", parking) })
+        }
     }
 
     private fun setupMap() {
@@ -83,6 +91,7 @@ class HomeFragment : Fragment(R.layout.fragment_home), OnMapReadyCallback {
                     is UiState.Loading -> {
                         binding.progressBar.visibility = View.VISIBLE
                     }
+
                     is UiState.Success -> {
                         binding.progressBar.visibility = View.GONE
                         val parkingList = state.data
@@ -93,7 +102,8 @@ class HomeFragment : Fragment(R.layout.fragment_home), OnMapReadyCallback {
                                 fusedLocationClient.lastLocation
                                     .addOnSuccessListener { location ->
                                         if (location != null) {
-                                            val userLatLng = LatLng(location.latitude, location.longitude)
+                                            val userLatLng =
+                                                LatLng(location.latitude, location.longitude)
                                             val sortedList = parkingList.sortedBy { parking ->
                                                 distanceBetween(
                                                     userLatLng.latitude, userLatLng.longitude,
@@ -129,6 +139,7 @@ class HomeFragment : Fragment(R.layout.fragment_home), OnMapReadyCallback {
                             }
                         }
                     }
+
                     is UiState.Error -> {
                         binding.progressBar.visibility = View.GONE
                         Toast.makeText(requireContext(), state.message, Toast.LENGTH_LONG).show()

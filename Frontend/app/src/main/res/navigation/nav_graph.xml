@@ -49,6 +49,9 @@
         <action
             android:id="@+id/action_signInFragment_to_locationAccessFragment"
             app:destination="@id/locationAccessFragment" />
+        <action
+            android:id="@+id/action_signInFragment_to_navigation_home"
+            app:destination="@id/navigation_home" />
     </fragment>
     <fragment
         android:id="@+id/signUpFragment"
@@ -99,7 +102,11 @@
     <fragment
         android:id="@+id/navigation_profile"
         android:name="com.example.smartparkingsystem.ui.profile.ProfileFragment"
-        android:label="Profile" />
+        android:label="Profile" >
+        <action
+            android:id="@+id/action_navigation_profile_to_signInFragment"
+            app:destination="@id/signInFragment" />
+    </fragment>
     <fragment
         android:id="@+id/detailFragment"
         android:name="com.example.smartparkingsystem.ui.detail.DetailFragment"

@@ -76,8 +76,24 @@ class DetailFragment : Fragment(R.layout.fragment_detail) {
     }
 
     private fun isCurrentlyOpen(openHours: String, closeHours: String): Boolean {
-        return true
+        try {
+            val currentTime = java.time.LocalTime.now()
+            val formatter = java.time.format.DateTimeFormatter.ofPattern("HH:mm")
+
+            val openTime = java.time.LocalTime.parse(openHours, formatter)
+            val closeTime = java.time.LocalTime.parse(closeHours, formatter)
+
+            return if (closeTime.isAfter(openTime)) {
+                currentTime.isAfter(openTime) && currentTime.isBefore(closeTime)
+            } else {
+                currentTime.isAfter(openTime) || currentTime.isBefore(closeTime)
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            return false
+        }
     }
+
 
     private fun observeViewerCount() {
         viewLifecycleOwner.lifecycleScope.launchWhenStarted {

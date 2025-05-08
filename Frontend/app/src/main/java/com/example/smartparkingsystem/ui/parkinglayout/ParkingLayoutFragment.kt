@@ -82,7 +82,7 @@ class ParkingLayoutFragment : Fragment() {
                 gravity = Gravity.CENTER
                 setTextColor(Color.WHITE)
                 setBackgroundColor(
-                    if (spot.occupied) Color.RED else Color.GREEN
+                    if (spot.occupied) Color.GREEN else Color.RED
                 )
             }
 

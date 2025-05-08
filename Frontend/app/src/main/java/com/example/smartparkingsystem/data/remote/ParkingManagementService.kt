@@ -1,8 +1,10 @@
 package com.example.smartparkingsystem.data.remote
 
+import com.example.smartparkingsystem.data.model.ParkingLayoutResponse
 import com.example.smartparkingsystem.data.model.ParkingListResponse
 import com.example.smartparkingsystem.data.model.ViewerCountResponse
 import com.example.smartparkingsystem.data.model.ViewerTrackResponse
+import com.example.smartparkingsystem.utils.Constants.LAYOUT
 import com.example.smartparkingsystem.utils.Constants.PARKING_LIST
 import com.example.smartparkingsystem.utils.Constants.VIEWER_COUNT
 import com.example.smartparkingsystem.utils.Constants.VIEWER_TRACK
@@ -27,4 +29,9 @@ interface ParkingManagementService {
     suspend fun getParkingViewerCount(
         @Path("parkingId") parkingId: Int
     ): ViewerCountResponse
+
+    @GET(LAYOUT)
+    suspend fun getParkingLayout(
+        @Path("parkingId") parkingId: Int
+    ): ParkingLayoutResponse
 }

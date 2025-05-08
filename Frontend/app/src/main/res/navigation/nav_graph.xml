@@ -114,5 +114,17 @@
         <argument
             android:name="parking"
             app:argType="com.example.smartparkingsystem.data.model.ParkingListResponse" />
+        <action
+            android:id="@+id/action_detailFragment_to_parkingLayoutFragment"
+            app:destination="@id/parkingLayoutFragment" />
+    </fragment>
+    <fragment
+        android:id="@+id/parkingLayoutFragment"
+        android:name="com.example.smartparkingsystem.ui.parkinglayout.ParkingLayoutFragment"
+        android:label="fragment_parking_layout"
+        tools:layout="@layout/fragment_parking_layout">
+        <argument
+            android:name="parkingId"
+            app:argType="integer" />
     </fragment>
 </navigation>

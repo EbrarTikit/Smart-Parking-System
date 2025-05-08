@@ -8,7 +8,6 @@ import android.widget.Toast
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
-import androidx.navigation.fragment.navArgs
 import com.example.smartparkingsystem.R
 import com.example.smartparkingsystem.data.model.ParkingListResponse
 import com.example.smartparkingsystem.databinding.FragmentDetailBinding
@@ -70,6 +69,9 @@ class DetailFragment : Fragment(R.layout.fragment_detail) {
         }
 
         binding.btnSeeParkingSpots.setOnClickListener {
+            findNavController().navigate(
+                R.id.action_detailFragment_to_parkingLayoutFragment,
+                Bundle().apply { putInt("parkingId", parking.id) })
         }
     }
 

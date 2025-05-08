@@ -1,5 +1,9 @@
 package com.example.smartparkingsystem.data.model
 
+import android.os.Parcelable
+import kotlinx.parcelize.Parcelize
+
+@Parcelize
 data class ParkingListResponse(
     val id: Int,
     val name: String,
@@ -14,4 +18,4 @@ data class ParkingListResponse(
     val rows: Int,
     val columns: Int,
     val parkingSpots: List<ParkingSpotResponse>
-)
+) : Parcelable

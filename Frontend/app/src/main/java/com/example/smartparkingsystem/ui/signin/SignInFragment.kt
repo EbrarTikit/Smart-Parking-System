@@ -1,12 +1,18 @@
 package com.example.smartparkingsystem.ui.signin
 
+import android.Manifest
+import android.content.Context
+import android.content.pm.PackageManager
 import android.os.Bundle
+import android.util.Log
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.core.content.ContextCompat
 import androidx.core.widget.addTextChangedListener
 import androidx.fragment.app.viewModels
+import androidx.navigation.NavOptions
 import androidx.navigation.fragment.findNavController
 import com.example.smartparkingsystem.R
 import com.example.smartparkingsystem.databinding.FragmentSignInBinding
@@ -64,7 +70,27 @@ class SignInFragment : Fragment() {
                 is UiState.Loading -> showLoading(true)
                 is UiState.Success -> {
                     showLoading(false)
-                    findNavController().navigate(R.id.action_signInFragment_to_locationAccessFragment)
+                    val userId = state.data.id
+                    val sharedPreferences = requireContext().getSharedPreferences("user_prefs", Context.MODE_PRIVATE)
+                    sharedPreferences.edit().putInt("userId", userId.toInt()).apply()
+
+                    if (ContextCompat.checkSelfPermission(
+                            requireContext(),
+                            Manifest.permission.ACCESS_FINE_LOCATION
+                        ) == PackageManager.PERMISSION_GRANTED
+                    ) {
+                        Log.d("SignInFragment", "Navigating to HomeFragment (konum izni var)")
+                        findNavController().navigate(
+                            R.id.action_signInFragment_to_navigation_home,
+                            null,
+                            NavOptions.Builder()
+                                .setPopUpTo(R.id.signInFragment, true)
+                                .build()
+                        )
+                    } else {
+                        Log.d("SignInFragment", "Navigating to LocationAccessFragment (konum izni yok)")
+                        findNavController().navigate(R.id.action_signInFragment_to_locationAccessFragment)
+                    }
                 }
                 is UiState.Error -> {
                     showLoading(false)

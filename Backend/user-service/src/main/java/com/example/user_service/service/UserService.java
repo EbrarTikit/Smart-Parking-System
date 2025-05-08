@@ -1,6 +1,5 @@
 package com.example.user_service.service;
 
-
 import java.util.List;
 import java.util.Optional;
 
@@ -8,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import com.example.user_service.dto.NotificationPreferencesDto;
 import com.example.user_service.exception.UserNotFoundException;
 import com.example.user_service.exception.UsernameAlreadyExistsException;
 import com.example.user_service.model.User;
@@ -59,6 +59,35 @@ public class UserService {
 
     public boolean existsByUsername(String username) {
         return userRepository.findByUsername(username).isPresent();
+    }
+    
+    // Notification preferences methods
+    public NotificationPreferencesDto getNotificationPreferences(Long userId) {
+        User user = userRepository.findById(userId)
+            .orElseThrow(() -> new UserNotFoundException("User not found with id: " + userId));
+            
+        return new NotificationPreferencesDto(user.isParkingFullNotification());
+    }
+    
+    public NotificationPreferencesDto toggleNotificationPreferences(Long userId) {
+        User user = userRepository.findById(userId)
+            .orElseThrow(() -> new UserNotFoundException("User not found with id: " + userId));
+            
+        // Mevcut değerin tersini al
+        boolean newValue = !user.isParkingFullNotification();
+        
+        // Debug için değerleri yazdır
+        System.out.println("Önceki değer: " + user.isParkingFullNotification());
+        System.out.println("Yeni değer: " + newValue);
+        
+        // Yeni değeri ayarla
+        user.setParkingFullNotification(newValue);
+        User savedUser = userRepository.save(user);
+        
+        // Kaydedilen değeri kontrol et
+        System.out.println("Kaydedilen değer: " + savedUser.isParkingFullNotification());
+        
+        return new NotificationPreferencesDto(savedUser.isParkingFullNotification());
     }
 }
 

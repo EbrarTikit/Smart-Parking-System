@@ -38,6 +38,8 @@ public class SecurityConfig {
                     // Açık erişim vermek istediğiniz endpointler
                     .requestMatchers(HttpMethod.GET, "/api/users/**").permitAll()
                     .requestMatchers(HttpMethod.DELETE, "/api/users/**").permitAll()
+                    .requestMatchers("/api/users/*/notification-preferences").permitAll()
+                    .requestMatchers("/api/users/*/notification-preferences/toggle").permitAll()
                     .anyRequest().authenticated()
             )
             // JWT filtresi eklemek yerine öncelikle genel endpoint erişimine izin verin

@@ -1,12 +1,14 @@
 package com.example.user_service.model;
 
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.Email;
+
 
 
 @Entity
@@ -20,6 +22,10 @@ public class User {
     @Email
     private String email;
     private String password;
+    
+    // Notification preferences
+    @Column(name = "parking_full_notification")
+    private boolean parkingFullNotification = false; // Default to false (opt-in)
 
     // Constructor, Getters, Setters
     public User() {
@@ -55,6 +61,14 @@ public class User {
 
     public void setPassword(String password) {
         this.password = password;
+    }
+    
+    public boolean isParkingFullNotification() {
+        return parkingFullNotification;
+    }
+    
+    public void setParkingFullNotification(boolean parkingFullNotification) {
+        this.parkingFullNotification = parkingFullNotification;
     }
 }
 

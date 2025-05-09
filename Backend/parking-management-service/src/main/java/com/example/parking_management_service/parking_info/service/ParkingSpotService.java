@@ -2,7 +2,6 @@ package com.example.parking_management_service.parking_info.service;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -10,11 +9,13 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.example.parking_management_service.parking_info.dto.ParkingLayoutDto;
 import com.example.parking_management_service.parking_info.dto.ParkingSpotDto;
+import com.example.parking_management_service.parking_info.dto.RoadDTO;
 import com.example.parking_management_service.parking_info.exception.ResourceNotFoundException;
 import com.example.parking_management_service.parking_info.model.Parking;
 import com.example.parking_management_service.parking_info.model.ParkingSpot;
 import com.example.parking_management_service.parking_info.repository.ParkingRepository;
 import com.example.parking_management_service.parking_info.repository.ParkingSpotRepository;
+import com.example.parking_management_service.parking_info.util.PositionValidator;
 
 @Service
 public class ParkingSpotService {
@@ -82,7 +83,7 @@ public class ParkingSpotService {
                 spot.isOccupied(),
                 spot.getSpotIdentifier()
             );
-            // Sensör ID'sini ayrıca set et
+            
             spotDto.setSensorId(spot.getSensorId());
             spotDtos.add(spotDto);
         }
@@ -136,14 +137,15 @@ public class ParkingSpotService {
         spot.setSensorId(sensorId);
         parkingSpotRepository.save(spot);
         
-        // Mevcut entity'den DTO oluştur
+        
         ParkingSpotDto spotDto = new ParkingSpotDto( 
             spot.getRow(), 
             spot.getColumn(), 
             spot.isOccupied(),
             spot.getSpotIdentifier()
         );
-        // Sensör ID'sini set et
+        
+
         spotDto.setSensorId(spot.getSensorId());
         
         return spotDto;
@@ -157,22 +159,45 @@ public class ParkingSpotService {
         return rowLetter + String.valueOf(columnNumber);
     }
 
-    public ParkingSpot addParkingSpotToParking(Long parkingId, int column, int row) {
+    public ParkingSpot addParkingSpotToParking(Long parkingId, ParkingSpotDto spotDto) {
         Parking parking = parkingRepository.findById(parkingId)
             .orElseThrow(() -> new RuntimeException("Parking not found"));
-
-        ParkingSpot parkingSpot = new ParkingSpot();
-        parkingSpot.setColumn(column);
-        parkingSpot.setRow(row);
-        parkingSpot.setParking(parking);
-
-        // İlişkiyi iki taraflı güncellemek için:
-        parking.getParkingSpots().add(parkingSpot);
-
-        parkingSpotRepository.save(parkingSpot);
+    
+        
+        List<ParkingSpotDto> allSpots = parking.getParkingSpots().stream()
+            .map(existingSpot -> {
+                ParkingSpotDto dto = new ParkingSpotDto();
+                dto.setRow(existingSpot.getRow());
+                dto.setColumn(existingSpot.getColumn());
+                return dto;
+            }).toList();
+    
+        List<RoadDTO> allRoads = parking.getRoads().stream()
+            .map(existingRoad -> {
+                RoadDTO dto = new RoadDTO();
+                dto.setRoadRow(existingRoad.getRoadRow());
+                dto.setRoadColumn(existingRoad.getRoadColumn());
+                return dto;
+            }).toList();
+    
+        
+        allSpots = new ArrayList<>(allSpots);
+        allSpots.add(spotDto);
+    
+        PositionValidator.validateUniquePositions(allSpots, allRoads);
+    
+        ParkingSpot spot = new ParkingSpot();
+        spot.setRow(spotDto.getRow());
+        spot.setColumn(spotDto.getColumn());
+        spot.setOccupied(spotDto.isOccupied());
+        spot.setSpotIdentifier(spotDto.getSpotIdentifier());
+        spot.setSensorId(spotDto.getSensorId());
+        spot.setParking(parking);
+    
+        parking.getParkingSpots().add(spot);
         parkingRepository.save(parking);
-
-        return parkingSpot;
+    
+        return spot;
     }
 
     public List<ParkingSpot> addParkingSpotsToParking(Long parkingId, List<ParkingSpotDto> parkingSpotDtos) {
@@ -187,7 +212,7 @@ public class ParkingSpotService {
             parkingSpot.setRow(parkingSpotDto.getRow());
             parkingSpot.setParking(parking);
 
-            // İlişkiyi iki taraflı güncellemek için:
+            
             parking.getParkingSpots().add(parkingSpot);
 
             parkingSpotRepository.save(parkingSpot);

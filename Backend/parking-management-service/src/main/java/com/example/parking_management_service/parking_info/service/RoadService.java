@@ -1,10 +1,13 @@
 package com.example.parking_management_service.parking_info.service;
 
+import com.example.parking_management_service.parking_info.dto.ParkingSpotDto;
 import com.example.parking_management_service.parking_info.dto.RoadDTO;
 import com.example.parking_management_service.parking_info.model.Parking;
 import com.example.parking_management_service.parking_info.model.Road;
 import com.example.parking_management_service.parking_info.repository.ParkingRepository;
 import com.example.parking_management_service.parking_info.repository.RoadRepository;
+import com.example.parking_management_service.parking_info.util.PositionValidator;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -37,21 +40,40 @@ public class RoadService {
         roadRepository.deleteById(id);
     }
 
-    public Road addRoadToParking(Long parkingId, int roadColumn, int roadRow) {
+    public Road addRoadToParking(Long parkingId, RoadDTO roadDto) {
         Parking parking = parkingRepository.findById(parkingId)
             .orElseThrow(() -> new RuntimeException("Parking not found"));
-
+    
+        List<ParkingSpotDto> allSpots = parking.getParkingSpots().stream()
+            .map(existingSpot -> {
+                ParkingSpotDto dto = new ParkingSpotDto();
+                dto.setRow(existingSpot.getRow());
+                dto.setColumn(existingSpot.getColumn());
+                return dto;
+            }).toList();
+    
+        List<RoadDTO> allRoads = parking.getRoads().stream()
+            .map(existingRoad -> {
+                RoadDTO dto = new RoadDTO();
+                dto.setRoadRow(existingRoad.getRoadRow());
+                dto.setRoadColumn(existingRoad.getRoadColumn());
+                return dto;
+            }).toList();
+    
+        
+        allRoads = new ArrayList<>(allRoads);
+        allRoads.add(roadDto);
+    
+        PositionValidator.validateUniquePositions(allSpots, allRoads);
+    
         Road road = new Road();
-        road.setRoadColumn(roadColumn);
-        road.setRoadRow(roadRow);
+        road.setRoadRow(roadDto.getRoadRow());
+        road.setRoadColumn(roadDto.getRoadColumn());
         road.setParking(parking);
-
-        // İlişkiyi iki taraflı güncellemek için:
+    
         parking.getRoads().add(road);
-
-        roadRepository.save(road);
         parkingRepository.save(parking);
-
+    
         return road;
     }
 
@@ -67,7 +89,7 @@ public class RoadService {
             road.setRoadRow(roadDTO.getRoadRow());
             road.setParking(parking);
     
-            // İlişkiyi iki taraflı güncellemek için:
+            
             parking.getRoads().add(road);
     
             roadRepository.save(road);

@@ -17,7 +17,7 @@ import com.example.parking_management_service.parking_info.model.Parking;
 import com.example.parking_management_service.parking_info.model.ParkingSpot;
 import com.example.parking_management_service.parking_info.model.Road;
 import com.example.parking_management_service.parking_info.repository.ParkingRepository;
-import com.example.parking_management_service.parking_info.repository.RoadRepository;
+import com.example.parking_management_service.parking_info.util.PositionValidator;
 
 @Service
 public class ParkingService {
@@ -25,19 +25,20 @@ public class ParkingService {
     @Autowired
     private ParkingRepository parkingRepository;
 
-    @Autowired
-    private RoadRepository roadRepository;
-
     public void updateParkingLayout(Long parkingId, List<ParkingSpotDto> spotDtos, List<RoadDTO> roadDtos) {
+        
+        PositionValidator.validateUniquePositions(spotDtos, roadDtos);
+    
         Parking parking = parkingRepository.findById(parkingId)
             .orElseThrow(() -> new RuntimeException("Parking not found"));
     
-        // Eski spot ve road'ları temizle
+        
         parking.getParkingSpots().clear();
         parking.getRoads().clear();
     
-        // Yeni spot'ları ekle
+        
         for (ParkingSpotDto spotDto : spotDtos) {
+            PositionValidator.validateWithinBounds(spotDto.getRow(), spotDto.getColumn(), parking.getRows(), parking.getColumns());
             ParkingSpot spot = new ParkingSpot();
             spot.setRow(spotDto.getRow());
             spot.setColumn(spotDto.getColumn());
@@ -48,8 +49,9 @@ public class ParkingService {
             parking.getParkingSpots().add(spot);
         }
     
-        // Yeni road'ları ekle
+        
         for (RoadDTO roadDto : roadDtos) {
+            PositionValidator.validateWithinBounds(roadDto.getRoadRow(), roadDto.getRoadColumn(), parking.getRows(), parking.getColumns());
             Road road = new Road();
             road.setRoadRow(roadDto.getRoadRow());
             road.setRoadColumn(roadDto.getRoadColumn());

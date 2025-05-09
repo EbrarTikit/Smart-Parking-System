@@ -46,7 +46,7 @@ public class RoadController {
     public ResponseEntity<Road> addRoadToParking(
             @PathVariable Long parkingId,
             @RequestBody RoadDTO roadDTO) {
-        Road road = roadService.addRoadToParking(parkingId, roadDTO.getRoadColumn(), roadDTO.getRoadRow());
+        Road road = roadService.addRoadToParking(parkingId, roadDTO);
         return ResponseEntity.ok(road);
     }
 

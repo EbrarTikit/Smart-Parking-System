@@ -3,6 +3,8 @@ package com.example.user_service.security;
 import java.io.IOException;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -17,6 +19,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 @Component
+@Order(Ordered.HIGHEST_PRECEDENCE + 10)
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     @Autowired
@@ -25,13 +28,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     @Autowired
     private JwtUtil jwtUtil;
 
+
+
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
-        System.out.println("🔍 JwtAuthenticationFilter ÇALIŞIYOR: " + request.getRequestURI());
-
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) 
+            throws ServletException, IOException {
+        
         final String authorizationHeader = request.getHeader("Authorization");
-        System.out.println("📢 Authorization Header: " + authorizationHeader);
-
 
         String username = null;
         String jwt = null;
@@ -43,28 +46,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             UserDetails userDetails = this.userDetailsService.loadUserByUsername(username);
-            System.out.println("✅ User Found: " + userDetails.getUsername());
-
 
             if (jwtUtil.validateToken(jwt, userDetails)) {
                 UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
                         userDetails, null, userDetails.getAuthorities());
                 authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 SecurityContextHolder.getContext().setAuthentication(authentication);
-                System.out.println("🔒 Authentication SUCCESS");
-
             }
-
-            if (SecurityContextHolder.getContext().getAuthentication() == null) {
-                System.out.println("⚠ SecurityContextHolder içinde Authentication YOK! Ekleniyor...");
-            } else {
-                System.out.println("✅ SecurityContextHolder içinde Authentication VAR!");
-            }
-            System.out.println("🚀 SecurityContextHolder.getContext().getAuthentication(): " + SecurityContextHolder.getContext().getAuthentication());
-
-            
         }
+        
         filterChain.doFilter(request, response);
     }
-
 }

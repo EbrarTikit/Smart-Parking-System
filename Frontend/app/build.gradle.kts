@@ -2,7 +2,9 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.hilt.android.plugin)
+    alias(libs.plugins.navigation.safe.args.gradle.plugin)
     id("kotlin-kapt")
+    id("kotlin-parcelize")
 }
 
 android {
@@ -98,6 +100,9 @@ dependencies {
 
     //Glide
     implementation(libs.glide)
+
+    //Grid
+    implementation(libs.androidx.gridlayout)
 }
 
 kapt {

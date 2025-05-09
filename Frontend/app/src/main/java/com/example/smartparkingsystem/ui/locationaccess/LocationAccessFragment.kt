@@ -3,6 +3,7 @@ package com.example.smartparkingsystem.ui.locationaccess
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Bundle
+import android.util.Log
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
@@ -21,16 +22,13 @@ class LocationAccessFragment : Fragment(R.layout.fragment_location_access) {
     private val locationPermissionRequest =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
             if (isGranted) {
+                Log.d("LocationAccessFragment", "Permission granted, navigating to HomeFragment")
                 findNavController().navigate(R.id.action_locationAccessFragment_to_homeFragment)
             } else {
+                Log.d("LocationAccessFragment", "Permission denied, showing toast")
                 Toast.makeText(requireContext(), "Location permission is required or enter manually!", Toast.LENGTH_SHORT).show()
             }
         }
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-
-    }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -58,10 +56,20 @@ class LocationAccessFragment : Fragment(R.layout.fragment_location_access) {
     }
 
     private fun requestLocationPermission() {
-        if (isLocationPermissionGranted()) {
-            findNavController().navigate(R.id.action_locationAccessFragment_to_homeFragment)
-        } else {
-            locationPermissionRequest.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+        when {
+            ContextCompat.checkSelfPermission(
+                requireContext(),
+                Manifest.permission.ACCESS_FINE_LOCATION
+            ) == PackageManager.PERMISSION_GRANTED -> {
+                // İzin zaten verilmiş, direkt HomeFragment'a geç
+                Log.d("LocationAccessFragment", "Location permission already granted, navigating to HomeFragment")
+                findNavController().navigate(R.id.action_locationAccessFragment_to_homeFragment)
+            }
+            else -> {
+                // İzin yok, izin iste
+                Log.d("LocationAccessFragment", "Requesting location permission")
+                locationPermissionRequest.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+            }
         }
     }
 

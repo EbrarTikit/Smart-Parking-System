@@ -55,6 +55,19 @@ public class Parking {
     
     @Column(name = "image_url", nullable = true)
     private String imageUrl;
+
+    // Parking sınıfına eklenecek
+    @OneToMany(mappedBy = "parking", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
+    private Set<Road> roads = new HashSet<>();
+
+    // Getter ve Setter metodları
+    public Set<Road> getRoads() {
+        return roads;
+    }
+
+    public void setRoads(Set<Road> roads) {
+        this.roads = roads;
+    }
     
     @JsonManagedReference
     @OneToMany(mappedBy = "parking", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)

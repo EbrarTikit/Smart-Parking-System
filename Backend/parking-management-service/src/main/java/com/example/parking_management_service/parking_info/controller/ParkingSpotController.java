@@ -81,8 +81,7 @@ public class ParkingSpotController {
         @RequestBody ParkingSpotDto parkingSpotDto) {
     ParkingSpot parkingSpot = parkingSpotService.addParkingSpotToParking(
         parkingId, 
-        parkingSpotDto.getColumn(), 
-        parkingSpotDto.getRow()
+        parkingSpotDto
     );
     return ResponseEntity.ok(toDto(parkingSpot));
     }

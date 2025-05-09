@@ -19,7 +19,6 @@ import com.example.parking_management_service.parking_info.dto.LayoutRequestDto;
 import com.example.parking_management_service.parking_info.dto.LayoutResponseDto;
 import com.example.parking_management_service.parking_info.dto.LocationDto;
 import com.example.parking_management_service.parking_info.dto.ParkingSpotResponseDto;
-import com.example.parking_management_service.parking_info.dto.RoadDTO;
 import com.example.parking_management_service.parking_info.dto.RoadResponseDto;
 import com.example.parking_management_service.parking_info.model.Parking;
 import com.example.parking_management_service.parking_info.model.ParkingSpot;
@@ -182,7 +181,7 @@ public class ParkingController {
     return ResponseEntity.ok().build();
     }
 
-    // Yardımcı dönüşüm fonksiyonları
+    
     private ParkingSpotResponseDto toParkingSpotDto(ParkingSpot spot) {
         ParkingSpotResponseDto dto = new ParkingSpotResponseDto();
         dto.setId(spot.getId());

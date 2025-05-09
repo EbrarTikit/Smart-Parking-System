@@ -10,16 +10,58 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.example.parking_management_service.parking_info.dto.LocationDto;
+import com.example.parking_management_service.parking_info.dto.ParkingSpotDto;
+import com.example.parking_management_service.parking_info.dto.RoadDTO;
 import com.example.parking_management_service.parking_info.exception.ResourceNotFoundException;
 import com.example.parking_management_service.parking_info.model.Parking;
+import com.example.parking_management_service.parking_info.model.ParkingSpot;
+import com.example.parking_management_service.parking_info.model.Road;
 import com.example.parking_management_service.parking_info.repository.ParkingRepository;
+import com.example.parking_management_service.parking_info.util.PositionValidator;
 
 @Service
 public class ParkingService {
 
     @Autowired
     private ParkingRepository parkingRepository;
+
+    public void updateParkingLayout(Long parkingId, List<ParkingSpotDto> spotDtos, List<RoadDTO> roadDtos) {
+        
+        PositionValidator.validateUniquePositions(spotDtos, roadDtos);
     
+        Parking parking = parkingRepository.findById(parkingId)
+            .orElseThrow(() -> new RuntimeException("Parking not found"));
+    
+        
+        parking.getParkingSpots().clear();
+        parking.getRoads().clear();
+    
+        
+        for (ParkingSpotDto spotDto : spotDtos) {
+            PositionValidator.validateWithinBounds(spotDto.getRow(), spotDto.getColumn(), parking.getRows(), parking.getColumns());
+            ParkingSpot spot = new ParkingSpot();
+            spot.setRow(spotDto.getRow());
+            spot.setColumn(spotDto.getColumn());
+            spot.setOccupied(spotDto.isOccupied());
+            spot.setSpotIdentifier(spotDto.getSpotIdentifier());
+            spot.setSensorId(spotDto.getSensorId());
+            spot.setParking(parking);
+            parking.getParkingSpots().add(spot);
+        }
+    
+        
+        for (RoadDTO roadDto : roadDtos) {
+            PositionValidator.validateWithinBounds(roadDto.getRoadRow(), roadDto.getRoadColumn(), parking.getRows(), parking.getColumns());
+            Road road = new Road();
+            road.setRoadRow(roadDto.getRoadRow());
+            road.setRoadColumn(roadDto.getRoadColumn());
+            road.setParking(parking);
+            parking.getRoads().add(road);
+        }
+    
+        parkingRepository.save(parking);
+    }
+
     @Autowired
     private ParkingSpotService parkingSpotService;
 

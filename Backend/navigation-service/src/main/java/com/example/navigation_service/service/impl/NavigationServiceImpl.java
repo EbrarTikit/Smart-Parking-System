@@ -1,19 +1,13 @@
 package com.example.navigation_service.service.impl;
-
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
-import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
-import com.example.navigation_service.dto.DtoCarPark;
 import com.example.navigation_service.dto.ParkingLocationDto;
-import com.example.navigation_service.model.CarPark;
 import com.example.navigation_service.repository.INavigationRepository;
 import com.example.navigation_service.service.INavigationService;
 

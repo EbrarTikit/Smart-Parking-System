@@ -24,4 +24,6 @@ public interface ParkingSpotRepository extends JpaRepository<ParkingSpot, Long> 
 
     @Query("SELECT ps FROM ParkingSpot ps WHERE ps.sensorId = :sensorId")
     Optional<ParkingSpot> findBySensorId(@Param("sensorId") String sensorId);
+
+    void deleteAllByParking_Id(Long parkingId);
 }

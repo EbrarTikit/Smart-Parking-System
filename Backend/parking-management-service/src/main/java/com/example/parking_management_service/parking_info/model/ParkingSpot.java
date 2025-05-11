@@ -10,9 +10,13 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 
 @Entity
-@Table(name = "parking_spots")
+@Table(
+    name = "parking_spots",
+    uniqueConstraints = @UniqueConstraint(columnNames = {"parking_id", "spot_row", "spot_column"})
+)
 public class ParkingSpot {
     
     @Id
@@ -96,6 +100,10 @@ public class ParkingSpot {
 
     public void setOccupied(boolean isOccupied) {
         this.isOccupied = isOccupied;
+    }
+
+    public boolean getOccupied() {
+        return isOccupied;
     }
     
     public String getSpotIdentifier() {

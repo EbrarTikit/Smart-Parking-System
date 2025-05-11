@@ -26,8 +26,14 @@ public class ParkingSpotService {
     @Autowired
     private ParkingSpotRepository parkingSpotRepository;
     
-    @Autowired
-    private WebSocketService webSocketService;
+
+    @Transactional
+    public void clearParkingSpotsOfParking(Long parkingId) {
+        Parking parking = parkingRepository.findById(parkingId)
+            .orElseThrow(() -> new RuntimeException("Parking not found"));
+        parking.getParkingSpots().clear();
+        parkingRepository.save(parking);
+    }
 
 
     @Transactional
@@ -115,8 +121,6 @@ public class ParkingSpotService {
         );
         spotDto.setSensorId(spot.getSensorId());
     
-        // WebSocket üzerinden bildirim gönder
-        webSocketService.sendParkingSpotUpdate(spotDto);
     
         return spotDto;
     }
@@ -130,8 +134,6 @@ public class ParkingSpotService {
             updatedSpots.add(updated);
         }
     
-        // Tüm güncellemeleri WebSocket üzerinden gönder
-        webSocketService.sendMultipleParkingSpotUpdates(updatedSpots);
     
         return updatedSpots;
     }
@@ -233,5 +235,7 @@ public class ParkingSpotService {
 
         return parkingSpots;
     }
+
+    
 
 }

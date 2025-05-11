@@ -26,6 +26,9 @@ public class ParkingSpotController {
 
     @Autowired
     private ParkingSpotService parkingSpotService;
+
+    
+
     
     @Operation(
         summary = "Create parking layout",

@@ -40,6 +40,7 @@ public class RoadService {
         roadRepository.deleteById(id);
     }
 
+
     public Road addRoadToParking(Long parkingId, RoadDTO roadDto) {
         Parking parking = parkingRepository.findById(parkingId)
             .orElseThrow(() -> new RuntimeException("Parking not found"));

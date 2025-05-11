@@ -26,6 +26,16 @@ public class ParkingSpotService {
     @Autowired
     private ParkingSpotRepository parkingSpotRepository;
     
+
+    @Transactional
+    public void clearParkingSpotsOfParking(Long parkingId) {
+        Parking parking = parkingRepository.findById(parkingId)
+            .orElseThrow(() -> new RuntimeException("Parking not found"));
+        parking.getParkingSpots().clear();
+        parkingRepository.save(parking);
+    }
+
+
     @Transactional
     public ParkingLayoutDto createParkingLayout(Long parkingId, int rows, int columns) {
         Parking parking = parkingRepository.findById(parkingId)
@@ -95,14 +105,14 @@ public class ParkingSpotService {
     @Transactional
     public ParkingSpotDto updateSpotStatus(Long parkingId, int row, int column, boolean isOccupied) {
         ParkingSpot spot = parkingSpotRepository.findByParkingIdAndRowAndColumn(parkingId, row, column);
-        
+    
         if (spot == null) {
             throw new ResourceNotFoundException("Parking spot not found at position (" + row + "," + column + ") in parking with id: " + parkingId);
         }
-        
+    
         spot.setOccupied(isOccupied);
         parkingSpotRepository.save(spot);
-        
+    
         ParkingSpotDto spotDto = new ParkingSpotDto( 
             spot.getRow(), 
             spot.getColumn(), 
@@ -110,19 +120,21 @@ public class ParkingSpotService {
             spot.getSpotIdentifier()
         );
         spotDto.setSensorId(spot.getSensorId());
-        
+    
+    
         return spotDto;
     }
     
     @Transactional
     public List<ParkingSpotDto> updateMultipleSpotStatus(Long parkingId, List<ParkingSpotDto> spotUpdates) {
         List<ParkingSpotDto> updatedSpots = new ArrayList<>();
-        
+    
         for (ParkingSpotDto update : spotUpdates) {
             ParkingSpotDto updated = updateSpotStatus(parkingId, update.getRow(), update.getColumn(), update.isOccupied());
             updatedSpots.add(updated);
         }
-        
+    
+    
         return updatedSpots;
     }
     
@@ -223,5 +235,7 @@ public class ParkingSpotService {
 
         return parkingSpots;
     }
+
+    
 
 }

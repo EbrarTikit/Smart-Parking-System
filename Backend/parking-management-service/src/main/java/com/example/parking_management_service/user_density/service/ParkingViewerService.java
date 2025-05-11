@@ -103,7 +103,6 @@ public class ParkingViewerService {
     // This method will be called by notification service when implemented
     @Scheduled(fixedRate = 60000) // Run every minute
     public void checkParkingStatusForNotifications() {
-        LocalDateTime now = LocalDateTime.now();
         List<Parking> parkings = parkingRepository.findAll();
         
         for (Parking parking : parkings) {

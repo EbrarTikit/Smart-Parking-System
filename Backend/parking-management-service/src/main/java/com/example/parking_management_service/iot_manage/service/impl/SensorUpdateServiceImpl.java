@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service;
 
 import com.example.parking_management_service.iot_manage.dto.SensorUpdateDTO;
 import com.example.parking_management_service.iot_manage.service.ISensorUpdateService;
+import com.example.parking_management_service.parking_info.dto.SensorUpdateDto;
 import com.example.parking_management_service.parking_info.model.ParkingSpot;
 import com.example.parking_management_service.parking_info.repository.ParkingSpotRepository;
 
@@ -13,6 +14,9 @@ public class SensorUpdateServiceImpl implements ISensorUpdateService {
 
     @Autowired
     private ParkingSpotRepository parkingSpotRepository;
+
+    @Autowired
+private WebSocketService webSocketService;
     
     @Override
     public boolean updateParkingSpotOccupancy(SensorUpdateDTO sensorData) {
@@ -29,6 +33,9 @@ public class SensorUpdateServiceImpl implements ISensorUpdateService {
             
             // Veritabanına kaydet
             parkingSpotRepository.save(parkingSpot);
+
+            SensorUpdateDto sensorUpdateDto = new SensorUpdateDto(parkingSpot.getId(),parkingSpot.getOccupied());
+            webSocketService.sendParkingSpotUpdate(sensorUpdateDto);
             
             return true;
         } catch (Exception e) {

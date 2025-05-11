@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="12dp"
+    app:cardBackgroundColor="@color/white"
+    app:cardCornerRadius="12dp"
+    app:cardElevation="2dp">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="16dp">
+
+        <com.google.android.material.imageview.ShapeableImageView
+            android:id="@+id/iv_parking_image"
+            android:layout_width="70dp"
+            android:layout_height="70dp"
+            android:scaleType="centerCrop"
+            android:src="@drawable/img"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:shapeAppearanceOverlay="@style/RoundedImageView" />
+
+        <TextView
+            android:id="@+id/tv_parking_name"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
+            android:fontFamily="sans-serif-medium"
+            android:textColor="@color/black"
+            android:textSize="16sp"
+            app:layout_constraintEnd_toStartOf="@+id/btn_favorite"
+            app:layout_constraintStart_toEndOf="@+id/iv_parking_image"
+            app:layout_constraintTop_toTopOf="@+id/iv_parking_image"
+            tools:text="Mark Antalya" />
+
+        <TextView
+            android:id="@+id/tv_parking_location"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:alpha="0.7"
+            android:textColor="@color/black"
+            android:textSize="14sp"
+            app:layout_constraintEnd_toEndOf="@+id/tv_parking_name"
+            app:layout_constraintStart_toStartOf="@+id/tv_parking_name"
+            app:layout_constraintTop_toBottomOf="@+id/tv_parking_name"
+            tools:text="Antalya, Turkey" />
+
+        <TextView
+            android:id="@+id/tv_parking_price"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:textColor="@color/primary"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            app:layout_constraintStart_toStartOf="@+id/tv_parking_location"
+            app:layout_constraintTop_toBottomOf="@+id/tv_parking_location"
+            tools:text="$10/h" />
+
+        <ImageButton
+            android:id="@+id/btn_favorite"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Remove from favorites"
+            android:src="@drawable/ic_favorite_"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:tint="@color/black" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</com.google.android.material.card.MaterialCardView>

@@ -1,6 +1,8 @@
 package com.example.smartparkingsystem.ui.detail
 
 import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import androidx.fragment.app.Fragment
 import android.view.View
@@ -65,7 +67,20 @@ class DetailFragment : Fragment(R.layout.fragment_detail) {
         }
 
         binding.btnSeeLocation.setOnClickListener {
+            val gmmIntentUri = Uri.parse("google.navigation:q=${parking.latitude},${parking.longitude}")
+            val mapIntent = Intent(Intent.ACTION_VIEW, gmmIntentUri).apply {
+                setPackage("com.google.android.apps.maps")
+            }
 
+            if (mapIntent.resolveActivity(requireActivity().packageManager) != null) {
+                startActivity(mapIntent)
+            } else {
+                Toast.makeText(
+                    requireContext(),
+                    "Google Maps is not installed on your device",
+                    Toast.LENGTH_LONG
+                ).show()
+            }
         }
 
         binding.btnSeeParkingSpots.setOnClickListener {
@@ -76,8 +91,24 @@ class DetailFragment : Fragment(R.layout.fragment_detail) {
     }
 
     private fun isCurrentlyOpen(openHours: String, closeHours: String): Boolean {
-        return true
+        try {
+            val currentTime = java.time.LocalTime.now()
+            val formatter = java.time.format.DateTimeFormatter.ofPattern("HH:mm")
+
+            val openTime = java.time.LocalTime.parse(openHours, formatter)
+            val closeTime = java.time.LocalTime.parse(closeHours, formatter)
+
+            return if (closeTime.isAfter(openTime)) {
+                currentTime.isAfter(openTime) && currentTime.isBefore(closeTime)
+            } else {
+                currentTime.isAfter(openTime) || currentTime.isBefore(closeTime)
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            return false
+        }
     }
+
 
     private fun observeViewerCount() {
         viewLifecycleOwner.lifecycleScope.launchWhenStarted {

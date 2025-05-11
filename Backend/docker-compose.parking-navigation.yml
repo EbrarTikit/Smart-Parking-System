@@ -40,7 +40,9 @@ services:
       dockerfile: Dockerfile
     container_name: user_service
     ports:
-      - "8080:8080"
+      - "${USER_SERVICE_PORT:-8080}:8080"
+    env_file:
+      - ./user-service/.env
     restart: always
     networks:
       - backend_network

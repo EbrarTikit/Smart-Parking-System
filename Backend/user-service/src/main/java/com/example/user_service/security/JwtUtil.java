@@ -7,6 +7,7 @@ import java.util.function.Function;
 
 import javax.crypto.SecretKey;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
@@ -14,24 +15,33 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
+import jakarta.annotation.PostConstruct;
+
 
 @Component
 public class JwtUtil {
-    //private SecretKey secretKey = Keys.secretKeyFor(SignatureAlgorithm.HS256);  Güvenli anahtar oluşturur
-
-     private static final String SECRET_KEY = "BuCokGucluVeUzunBirSecretKeyOlmali!!123456789"; // Uzun ve güçlü bir secret key
-    private static final SecretKey secretKey = Keys.hmacShaKeyFor(SECRET_KEY.getBytes(StandardCharsets.UTF_8));
-
+    @Value("${JWT_SECRET}")
+    private String secretKeyString;
+    
+    @Value("${JWT_EXPIRATION:86400000}")
+    private long jwtExpiration;
+    
+    private SecretKey secretKey;
+    
+    @PostConstruct
+    public void init() {
+        this.secretKey = Keys.hmacShaKeyFor(secretKeyString.getBytes(StandardCharsets.UTF_8));
+    }
+    
     public String generateToken(String username) {
         System.out.println("✅ JWT Secret Key: " + Base64.getEncoder().encodeToString(secretKey.getEncoded()));
 
         return Jwts.builder()
             .setSubject(username)
             .setIssuedAt(new Date())
-            .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 10)) // 10 saat
+            .setExpiration(new Date(System.currentTimeMillis() + jwtExpiration))
             .signWith(secretKey, SignatureAlgorithm.HS256)
             .compact();
-
     }
 
     public boolean validateToken(String token, UserDetails userDetails) {

@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.example.parking_management_service.parking_info.dto.LayoutRequestDto;
 import com.example.parking_management_service.parking_info.dto.LocationDto;
 import com.example.parking_management_service.parking_info.dto.ParkingSpotDto;
 import com.example.parking_management_service.parking_info.dto.RoadDTO;
@@ -25,6 +26,64 @@ public class ParkingService {
     @Autowired
     private ParkingRepository parkingRepository;
 
+    @Transactional
+    public void clearLayoutOfParking(Long parkingId) {
+        clearParkingSpotsOfParking(parkingId);
+        clearRoadsOfParking(parkingId);
+    }
+
+    public void createParkingLayout(Long parkingId, LayoutRequestDto layoutRequestDto) {
+        Parking parking = parkingRepository.findById(parkingId)
+            .orElseThrow(() -> new RuntimeException("Parking not found"));
+    
+        // Layout var mı kontrolü
+        if (!parking.getParkingSpots().isEmpty() || !parking.getRoads().isEmpty()) {
+            throw new IllegalStateException("This parking already has a layout. Please clear it before creating a new one.");
+        }
+    
+        PositionValidator.validateUniquePositions(layoutRequestDto.getParkingSpots(), layoutRequestDto.getRoads());
+    
+        for (ParkingSpotDto spotDto : layoutRequestDto.getParkingSpots()) {
+            PositionValidator.validateWithinBounds(spotDto.getRow(), spotDto.getColumn(), parking.getRows(), parking.getColumns());
+            ParkingSpot spot = new ParkingSpot();
+            spot.setRow(spotDto.getRow());
+            spot.setColumn(spotDto.getColumn());
+            spot.setOccupied(spotDto.isOccupied());
+            spot.setSpotIdentifier(spotDto.getSpotIdentifier());
+            spot.setSensorId(spotDto.getSensorId());
+            spot.setParking(parking);
+            parking.getParkingSpots().add(spot);
+        }
+    
+        for (RoadDTO roadDto : layoutRequestDto.getRoads()) {
+            PositionValidator.validateWithinBounds(roadDto.getRoadRow(), roadDto.getRoadColumn(), parking.getRows(), parking.getColumns());
+            Road road = new Road();
+            road.setRoadRow(roadDto.getRoadRow());
+            road.setRoadColumn(roadDto.getRoadColumn());
+            road.setParking(parking);
+            parking.getRoads().add(road);
+        }
+    
+        parkingRepository.save(parking);
+    }
+
+    @Transactional
+    public void clearParkingSpotsOfParking(Long parkingId) {
+        Parking parking = parkingRepository.findById(parkingId)
+            .orElseThrow(() -> new RuntimeException("Parking not found"));
+        parking.getParkingSpots().clear();
+        parkingRepository.save(parking);
+    }
+
+    
+    @Transactional
+    public void clearRoadsOfParking(Long parkingId) {
+        Parking parking = parkingRepository.findById(parkingId)
+            .orElseThrow(() -> new RuntimeException("Parking not found"));
+        parking.getRoads().clear();
+        parkingRepository.save(parking);
+    }
+
     public void updateParkingLayout(Long parkingId, List<ParkingSpotDto> spotDtos, List<RoadDTO> roadDtos) {
         
         PositionValidator.validateUniquePositions(spotDtos, roadDtos);
@@ -32,11 +91,9 @@ public class ParkingService {
         Parking parking = parkingRepository.findById(parkingId)
             .orElseThrow(() -> new RuntimeException("Parking not found"));
     
-        
-        parking.getParkingSpots().clear();
-        parking.getRoads().clear();
-    
-        
+        clearParkingSpotsOfParking(parkingId);
+        clearRoadsOfParking(parkingId);
+
         for (ParkingSpotDto spotDto : spotDtos) {
             PositionValidator.validateWithinBounds(spotDto.getRow(), spotDto.getColumn(), parking.getRows(), parking.getColumns());
             ParkingSpot spot = new ParkingSpot();

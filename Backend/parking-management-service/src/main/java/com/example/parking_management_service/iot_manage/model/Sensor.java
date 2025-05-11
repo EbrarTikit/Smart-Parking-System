@@ -1,6 +1,5 @@
 package com.example.parking_management_service.iot_manage.model;
 
-import java.time.LocalDateTime;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

@@ -70,58 +70,87 @@ class ParkingLayoutFragment : Fragment() {
         grid.rowCount = layout.rows
         grid.removeAllViews()
 
-        // Sabit genişlik/yükseklik oranı tanımlayalım (dikdörtgen görünümü için)
-        val heightToWidthRatio = 1.8 // Yükseklik genişliğin %60'ı olacak
+        val heightToWidthRatio = 1.8
+        val spotWidth = dpToPx(60)
+        val spotHeight = (spotWidth * heightToWidthRatio).toInt()
 
-        // Temel boyutlar için minimum hesaplama
-        val spotWidth = dpToPx(60) // 80dp sabit genişlik
-        val spotHeight = (spotWidth * heightToWidthRatio).toInt() // Orantılı yükseklik
+        // Spot ve road'ları kolayca bulmak için map'ler oluştur
+        val spotMap = layout.parkingSpots.associateBy { it.row to it.column }
+        val roadSet = layout.roads.map { it.roadRow to it.roadColumn }.toSet()
 
-        layout.spots.forEach { spot ->
-            // Her spot için FrameLayout oluştur
-            val frameLayout = FrameLayout(requireContext())
-
-            // Kenarlık oluştur
-            val border = GradientDrawable().apply {
-                shape = GradientDrawable.RECTANGLE
-                setColor(Color.WHITE)  // Beyaz arka plan
-                setStroke(2, Color.BLACK)  // Siyah kenarlık
-                cornerRadius = 4f  // Hafif yuvarlatılmış köşeler
-            }
-            frameLayout.background = border
-
-            // Spot tanımlayıcı metni
-            val textView = TextView(requireContext()).apply {
-                text = spot.spotIdentifier
-                gravity = Gravity.CENTER
-                setTextColor(Color.BLACK)
-                textSize = 14f
-            }
-            frameLayout.addView(textView)
-
-            // Eğer spot doluysa araç görseli ekle
-            if (spot.occupied) {
-                val carImageView = ImageView(requireContext()).apply {
-                    setImageResource(R.drawable.ic_car)
-                    scaleType = ImageView.ScaleType.FIT_CENTER
-                    val padding = (spotHeight * 0.1).toInt()
-                    setPadding(padding, padding, padding, padding)
+        for (r in 0 until layout.rows) {
+            for (c in 0 until layout.columns) {
+                val frameLayout = FrameLayout(requireContext())
+                val border = GradientDrawable().apply {
+                    shape = GradientDrawable.RECTANGLE
+                    setColor(Color.WHITE)
+                    setStroke(2, Color.BLACK)
+                    cornerRadius = 4f
                 }
-                frameLayout.addView(carImageView)
-            }
+                frameLayout.background = border
 
-            val params = GridLayout.LayoutParams(
-                GridLayout.spec(spot.row, 1, GridLayout.CENTER),
-                GridLayout.spec(spot.column, 1, GridLayout.CENTER)
-            ).apply {
-                width = spotWidth
-                height = spotHeight
-                setMargins(12, 12, 12, 12)
-            }
+                val params = GridLayout.LayoutParams(
+                    GridLayout.spec(r, 1, GridLayout.CENTER),
+                    GridLayout.spec(c, 1, GridLayout.CENTER)
+                ).apply {
+                    width = spotWidth
+                    height = spotHeight
+                    setMargins(12, 12, 12, 12)
+                }
 
-            grid.addView(frameLayout, params)
+                when {
+                    roadSet.contains(r to c) -> {
+                        // Road ise çizgi görselini göster
+                        val lineImageView = ImageView(requireContext()).apply {
+                            setImageResource(R.drawable.ic_line)
+                            scaleType = ImageView.ScaleType.FIT_CENTER
+                            // Görsel boyutunu ayarla
+                            val padding = (spotHeight * 0.3).toInt()
+                            setPadding(padding, padding, padding, padding)
+                        }
+                        frameLayout.addView(lineImageView)
+                    }
+                    spotMap.containsKey(r to c) -> {
+                        // ParkingSpot ise
+                        val spot = spotMap[r to c]!!
+
+                        // spotIdentifier null ise row ve column'a göre otomatik oluştur
+                        val identifier = if (spot.spotIdentifier.isNullOrEmpty()) {
+                            // A1, B2 gibi sıra sütun gösterimi oluştur
+                            val rowLetter = ('A' + r).toChar()
+                            "$rowLetter${c+1}"
+                        } else {
+                            spot.spotIdentifier
+                        }
+
+                        val textView = TextView(requireContext()).apply {
+                            text = identifier
+                            gravity = Gravity.CENTER
+                            setTextColor(Color.BLACK)
+                            textSize = 14f
+                        }
+                        frameLayout.addView(textView)
+
+                        if (spot.occupied) {
+                            val carImageView = ImageView(requireContext()).apply {
+                                setImageResource(R.drawable.ic_car)
+                                scaleType = ImageView.ScaleType.FIT_CENTER
+                                val padding = (spotHeight * 0.1).toInt()
+                                setPadding(padding, padding, padding, padding)
+                            }
+                            frameLayout.addView(carImageView)
+                        }
+                    }
+                    else -> {
+                        // Ne road ne de spot ise boş bırak
+                    }
+                }
+
+                grid.addView(frameLayout, params)
+            }
         }
     }
+
 
     // DP'yi piksel değerine dönüştürmek için yardımcı fonksiyon
     private fun dpToPx(dp: Int): Int {

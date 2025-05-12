@@ -10,5 +10,4 @@ import lombok.NoArgsConstructor;
 public class SensorUpdateDto {
     private Long id;
     private boolean occupied;
-
 }

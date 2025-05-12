@@ -8,6 +8,7 @@ fragmentTesting = "1.6.2"
 glide = "4.16.0"
 gridlayout = "1.0.0"
 hiltAndroidTesting = "2.55"
+javaWebsocket = "1.5.3"
 kotlin = "1.9.24"
 coreKtx = "1.10.1"
 junit = "4.13.2"
@@ -25,8 +26,11 @@ constraintlayout = "2.1.4"
 hilt = "2.55"
 mockk = "1.13.5"
 mockkAndroid = "1.13.5"
+moshiKotlin = "1.14.0"
 navigationFragmentKtx = "2.8.6"
 navigationUiKtx = "2.8.6"
+okhttp = "4.9.3"
+okhttpWs = "3.14.9"
 playServicesLocation = "21.3.0"
 playServicesMaps = "19.1.0"
 playServicesMapsVersion = "18.2.0"
@@ -48,6 +52,7 @@ dagger-hilt-android-testing = { module = "com.google.dagger:hilt-android-testing
 espresso-contrib = { module = "androidx.test.espresso:espresso-contrib", version.ref = "espressoContrib" }
 espresso-intents = { module = "androidx.test.espresso:espresso-intents", version.ref = "espressoIntents" }
 glide = { module = "com.github.bumptech.glide:glide", version.ref = "glide" }
+java-websocket = { module = "org.java-websocket:Java-WebSocket", version.ref = "javaWebsocket" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
 androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }
@@ -65,6 +70,9 @@ androidx-navigation-fragment-ktx = { group = "androidx.navigation", name = "navi
 androidx-navigation-ui-ktx = { group = "androidx.navigation", name = "navigation-ui-ktx", version.ref = "navigationUiKtx" }
 mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
 mockk-mockk-android = { module = "io.mockk:mockk-android", version.ref = "mockkAndroid" }
+moshi-kotlin = { module = "com.squareup.moshi:moshi-kotlin", version.ref = "moshiKotlin" }
+okhttp = { module = "com.squareup.okhttp3:okhttp", version.ref = "okhttp" }
+okhttp-ws = { module = "com.squareup.okhttp3:okhttp-ws", version.ref = "okhttpWs" }
 play-services-location = { module = "com.google.android.gms:play-services-location", version.ref = "playServicesLocation" }
 play-services-maps = { group = "com.google.android.gms", name = "play-services-maps", version.ref = "playServicesMaps" }
 play-services-maps-v1820 = { module = "com.google.android.gms:play-services-maps", version.ref = "playServicesMapsVersion" }

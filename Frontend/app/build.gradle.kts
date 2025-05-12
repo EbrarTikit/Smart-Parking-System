@@ -105,8 +105,9 @@ dependencies {
     implementation(libs.androidx.gridlayout)
 
     //WebSocket
-    implementation("org.java-websocket:Java-WebSocket:1.5.3")
-    implementation("com.squareup.moshi:moshi-kotlin:1.14.0")
+    implementation(libs.java.websocket)
+    implementation(libs.moshi.kotlin)
+    implementation(libs.okhttp)
 }
 
 kapt {

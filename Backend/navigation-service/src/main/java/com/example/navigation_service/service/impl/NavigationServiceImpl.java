@@ -8,7 +8,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import com.example.navigation_service.dto.ParkingLocationDto;
-import com.example.navigation_service.repository.INavigationRepository;
 import com.example.navigation_service.service.INavigationService;
 
 import org.springframework.http.HttpMethod;
@@ -19,9 +18,6 @@ import com.example.navigation_service.exception.ErrorResponse;
 
 @Service
 public class NavigationServiceImpl implements INavigationService{
-
-    @Autowired
-    private INavigationRepository carParkRepository;
 
     @Autowired
     private RestTemplate restTemplate;

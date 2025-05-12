@@ -26,4 +26,4 @@ ENV REDIS_DB=0
 ENV REDIS_PASSWORD=
 ENV REDIS_EXPIRY=1800
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8001", "--reload"]

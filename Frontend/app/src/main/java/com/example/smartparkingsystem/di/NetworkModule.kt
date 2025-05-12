@@ -74,7 +74,7 @@ object NetworkModule {
         stringConverterFactory: StringConverterFactory
     ): Retrofit {
         return Retrofit.Builder()
-            .baseUrl("http://10.0.2.2:8080")
+            .baseUrl("http://10.0.2.2:8050")
             .client(okHttpClient)
             .addConverterFactory(stringConverterFactory)
             .addConverterFactory(GsonConverterFactory.create(gson))
@@ -91,7 +91,7 @@ object NetworkModule {
         stringConverterFactory: StringConverterFactory
     ): Retrofit {
         return Retrofit.Builder()
-            .baseUrl("http://10.0.2.2:8003")
+            .baseUrl("http://10.0.2.2:8080")
             .client(okHttpClient)
             .addConverterFactory(stringConverterFactory)
             .addConverterFactory(GsonConverterFactory.create(gson))

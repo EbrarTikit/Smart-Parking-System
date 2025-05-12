@@ -27,7 +27,7 @@ services:
     environment:
       - REDIS_HOSTS=local:redis_service:6379
     ports:
-      - "8081:8081"
+      - "8000:8000"
     networks:
       - backend_network
     depends_on:
@@ -40,7 +40,7 @@ services:
       dockerfile: Dockerfile
     container_name: chatbot_service
     ports:
-      - "8001:8000"
+      - "8001:8001"
     env_file:
       - ./chatbot-service/.env
     environment:
@@ -80,46 +80,46 @@ services:
       - backend_network
     restart: always
 
-  license-plate-service:
-    build:
-      context: ./license-plate-service
-      dockerfile: Dockerfile
-      # Build argumentleri ekleyerek daha hızlı build
-      args:
-        - BUILDKIT_INLINE_CACHE=1
-        - PIP_NO_CACHE_DIR=1
-        - PIP_TIMEOUT=180
-    image: license-plate-service:latest
-    container_name: license_plate_service
-    ports:
-      - "8005:8000"
-    environment:
-      - OCR_LANGUAGES=tr,en
-      - MAX_UPLOAD_SIZE=10
-      - DATABASE_URL=postgresql://user:password@postgres/license_plate_db
-      - DEBUG=False
-      - FORCE_CUDA=0  # GPU kullanımını zorla devre dışı bırak
-      - PYTHONUNBUFFERED=1
-    volumes:
-      # Kod değişikliklerinin otomatik yansıması için yerel kod dizinini konteyner içine bağla
-      - ./license-plate-service/app:/app/app
-      - ./license-plate-service/.env:/app/.env
-      # Debug görüntüleri için klasörler
-      - ./license-plate-service/debug_images:/app/debug_images
-      - ./license-plate-service/app/model/debug_plates:/app/app/model/debug_plates
-      # YOLO model dosyaları
-      - ./license-plate-service/app/model/yolov8n.pt:/app/app/model/yolov8n.pt
-      - ./license-plate-service/app/model/license_plate_detector.pt:/app/app/model/license_plate_detector.pt
-    depends_on:
-      - postgres
-    networks:
-      - backend_network
-    deploy:
-      resources:
-        limits:
-          memory: 2G  # CPU için yeterli bellek
-        reservations:
-          memory: 1G  # Minimum bellek garantisi
+  # license-plate-service:
+  #   build:
+  #     context: ./license-plate-service
+  #     dockerfile: Dockerfile
+  #     # Build argumentleri ekleyerek daha hızlı build
+  #     args:
+  #       - BUILDKIT_INLINE_CACHE=1
+  #       - PIP_NO_CACHE_DIR=1
+  #       - PIP_TIMEOUT=180
+  #   image: license-plate-service:latest
+  #   container_name: license_plate_service
+  #   ports:
+  #     - "8005:8000"
+  #   environment:
+  #     - OCR_LANGUAGES=tr,en
+  #     - MAX_UPLOAD_SIZE=10
+  #     - DATABASE_URL=postgresql://user:password@postgres/license_plate_db
+  #     - DEBUG=False
+  #     - FORCE_CUDA=0  # GPU kullanımını zorla devre dışı bırak
+  #     - PYTHONUNBUFFERED=1
+  #   volumes:
+  #     # Kod değişikliklerinin otomatik yansıması için yerel kod dizinini konteyner içine bağla
+  #     - ./license-plate-service/app:/app/app
+  #     - ./license-plate-service/.env:/app/.env
+  #     # Debug görüntüleri için klasörler
+  #     - ./license-plate-service/debug_images:/app/debug_images
+  #     - ./license-plate-service/app/model/debug_plates:/app/app/model/debug_plates
+  #     # YOLO model dosyaları
+  #     - ./license-plate-service/app/model/yolov8n.pt:/app/app/model/yolov8n.pt
+  #     - ./license-plate-service/app/model/license_plate_detector.pt:/app/app/model/license_plate_detector.pt
+  #   depends_on:
+  #     - postgres
+  #   networks:
+  #     - backend_network
+  #   deploy:
+  #     resources:
+  #       limits:
+  #         memory: 2G  # CPU için yeterli bellek
+  #       reservations:
+  #         memory: 1G  # Minimum bellek garantisi
 
   user-service:
     build: 
@@ -127,7 +127,7 @@ services:
       dockerfile: Dockerfile
     container_name: user_service
     ports:
-      - "8080:8080"
+      - "8050:8050"
     restart: always
     networks:
       - backend_network
@@ -138,7 +138,7 @@ services:
       dockerfile: Dockerfile
     container_name: parking_management_service
     ports:
-      - "8080:8080"
+      - "8081:8081"
     environment:
       - REDIS_HOST=redis_service
     depends_on:
@@ -153,7 +153,7 @@ services:
       dockerfile: Dockerfile
     container_name: navigation_service
     ports:
-      - "8003:8080"
+      - "8080:8080"
     networks:
       - backend_network
     restart: always

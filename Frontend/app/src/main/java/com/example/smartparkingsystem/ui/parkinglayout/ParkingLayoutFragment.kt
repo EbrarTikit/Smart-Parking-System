@@ -2,8 +2,10 @@ package com.example.smartparkingsystem.ui.parkinglayout
 
 import android.graphics.Color
 import android.graphics.PorterDuff
+import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
+import android.text.TextUtils
 import android.util.Log
 import android.view.Gravity
 import android.view.LayoutInflater
@@ -35,6 +37,9 @@ class ParkingLayoutFragment : Fragment() {
 
     private var webSocketClient: ParkingWebSocketClient? = null
     private val spotViews = mutableMapOf<Long, View>()
+
+    private var totalSpotCount = 0
+    private var occupiedSpotCount = 0
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -130,25 +135,199 @@ class ParkingLayoutFragment : Fragment() {
     }
 
     private fun initializeWebSocket() {
+        Log.d("ParkingLayout", "Initializing WebSocket connection...")
         webSocketClient = ParkingWebSocketClient { update ->
+            Log.d("ParkingLayout", "Received WebSocket update - Spot ID: ${update.id}, Occupied: ${update.occupied}")
             activity?.runOnUiThread {
                 updateParkingSpotStatus(update)
             }
         }
-        webSocketClient?.connect()
+
+        // setConnectionLostTimeout metodu WebSocketClient'da mevcut
+        webSocketClient?.setConnectionLostTimeout(0)
+        
+        try {
+            webSocketClient?.connect()
+            Log.d("ParkingLayout", "WebSocket connection initiated")
+        } catch (e: Exception) {
+            Log.e("ParkingLayout", "Error connecting to WebSocket: ${e.message}")
+        }
     }
 
     private fun updateParkingSpotStatus(update: SensorUpdateDto) {
-        spotViews[update.id]?.let { view ->
-            val frameLayout = view as? FrameLayout ?: return
+        Log.d("ParkingLayout", "Updating spot status - ID: ${update.id}, Occupied: ${update.occupied}")
+        val view = spotViews[update.id]
+        if (view == null) {
+            Log.e("ParkingLayout", "No view found for spot ID: ${update.id}")
+            return
+        }
+        
+        Log.d("ParkingLayout", "Found view for spot ID: ${update.id}")
+        val frameLayout = view as? FrameLayout
+        if (frameLayout == null) {
+            Log.e("ParkingLayout", "View is not a FrameLayout for spot ID: ${update.id}")
+            return
+        }
+
+        activity?.runOnUiThread {
+            // İstatistikleri güncellemek için spot durumunu kontrol et
+            val currentViews = frameLayout.findViewWithTag<View>("car_image")
+            val wasOccupied = currentViews != null
+            
+            // Eğer durum değiştiyse sayaçları güncelle
+            if (wasOccupied != update.occupied) {
+                if (update.occupied) {
+                    occupiedSpotCount++
+                } else {
+                    occupiedSpotCount--
+                }
+                // İstatistikleri güncelle
+                updateParkingStats()
+            }
+            
+            // Find the spot identifier first
+            val textView = frameLayout.findViewWithTag<TextView>("spotIdentifier") 
+                ?: frameLayout.getChildAt(0) as? TextView
+            
+            // Check if this is a disabled spot by checking text or tag
+            val isDisabled = textView?.text?.contains("Disabled", ignoreCase = true) ?: false
+            
+            // Update the background based on status and type
             val border = GradientDrawable().apply {
                 shape = GradientDrawable.RECTANGLE
-                setColor(if (update.occupied) Color.RED else Color.GREEN)
-                setStroke(3, Color.BLACK)
+                
+                when {
+                    isDisabled && update.occupied -> {
+                        // Disabled + Occupied
+                        colors = intArrayOf(
+                            Color.parseColor("#6B8CFF"),
+                            Color.parseColor("#4F69BC")
+                        )
+                    }
+                    isDisabled -> {
+                        // Disabled + Available
+                        colors = intArrayOf(
+                            Color.parseColor("#8BA3FF"),
+                            Color.parseColor("#6B8CFF")
+                        )
+                    }
+                    update.occupied -> {
+                        // Regular + Occupied
+                        colors = intArrayOf(
+                            Color.parseColor("#FF7F7F"),
+                            Color.parseColor("#FF5050")
+                        )
+                    }
+                    else -> {
+                        // Regular + Available
+                        colors = intArrayOf(
+                            Color.parseColor("#FFFFFF"),
+                            Color.parseColor("#F7F7F7")
+                        )
+                    }
+                }
+                
+                orientation = GradientDrawable.Orientation.TL_BR
                 cornerRadius = 12f
+                setStroke(3, Color.parseColor("#202020"))
             }
+            
             frameLayout.background = border
+            
+            // Update text color
+            textView?.setTextColor(if (update.occupied || isDisabled) Color.WHITE else Color.BLACK)
+            
+            // Remove all views except the identifier text
+            val children = ArrayList<View>()
+            for (i in 0 until frameLayout.childCount) {
+                children.add(frameLayout.getChildAt(i))
+            }
+            
+            val spotIdentifierText = children.filterIsInstance<TextView>().firstOrNull()
+            frameLayout.removeAllViews()
+            
+            // Add back the identifier text
+            if (spotIdentifierText != null) {
+                frameLayout.addView(spotIdentifierText)
+            }
+            
+            // Add car image if spot is occupied
+            if (update.occupied) {
+                val occupiedIndicator = View(requireContext()).apply {
+                    background = GradientDrawable().apply {
+                        shape = GradientDrawable.RECTANGLE
+                        cornerRadius = 8f
+                        setColor(Color.parseColor("#FF5252"))
+                    }
+                    alpha = 0.2f
+                    layoutParams = FrameLayout.LayoutParams(
+                        FrameLayout.LayoutParams.MATCH_PARENT,
+                        FrameLayout.LayoutParams.MATCH_PARENT
+                    )
+                }
+                frameLayout.addView(occupiedIndicator)
+
+                val carImageView = ImageView(requireContext()).apply {
+                    setImageResource(R.drawable.top_car)
+                    scaleType = ImageView.ScaleType.FIT_CENTER
+                    rotation = 90f
+
+                    // Araç görselinin boyutlarını büyütün
+                    val spotWidth = frameLayout.width
+                    val spotHeight = frameLayout.height
+                    
+                    val width = (spotWidth * 0.75).toInt()   // Genişliği azalt
+                    val height = (spotHeight * 0.9).toInt()  // Yüksekliği artır
+
+                    layoutParams = FrameLayout.LayoutParams(
+                        width,
+                        height
+                    ).apply {
+                        gravity = Gravity.CENTER
+                        setMargins(0, 0, 0, 0)
+                    }
+
+                    adjustViewBounds = true
+                    background = null
+                    tag = "car_image"
+                }
+                frameLayout.addView(carImageView)
+                
+                // Text'i yeniden öne getir
+                if (textView != null) {
+                    textView.bringToFront()
+                }
+            }
+            
+            // Add wheelchair icon for disabled spots
+            if (isDisabled) {
+                val wheelchairImageView = ImageView(requireContext()).apply {
+                    setImageResource(R.drawable.ic_wheelchair)
+                    scaleType = ImageView.ScaleType.FIT_XY
+                    setColorFilter(Color.WHITE, PorterDuff.Mode.SRC_IN)
+                    layoutParams = FrameLayout.LayoutParams(
+                        dpToPx(24),
+                        dpToPx(24)
+                    ).apply {
+                        gravity = Gravity.BOTTOM or Gravity.END
+                        setMargins(0, 0, dpToPx(8), dpToPx(8))
+                    }
+                }
+                frameLayout.addView(wheelchairImageView)
+            }
+
+            Log.d("ParkingLayout", "Successfully updated spot ID: ${update.id} to ${if (update.occupied) "occupied" else "available"}")
         }
+    }
+
+    override fun onDestroyView() {
+        Log.d("ParkingLayout", "Destroying view and closing WebSocket connection")
+        super.onDestroyView()
+        webSocketClient?.close()
+        webSocketClient = null
+        spotViews.clear()
+        _binding = null
+        Log.d("ParkingLayout", "View destroyed and WebSocket connection closed")
     }
 
     private fun drawLayout(layout: ParkingLayoutResponse) {
@@ -164,6 +343,9 @@ class ParkingLayoutFragment : Fragment() {
             grid.columnCount = layout.columns
             grid.rowCount = layout.rows
             grid.removeAllViews()
+            
+            // Clear previous spot views before redrawing
+            spotViews.clear()
 
             val heightToWidthRatio = 2.0
             val spotWidth = dpToPx(70)
@@ -197,31 +379,18 @@ class ParkingLayoutFragment : Fragment() {
                 for (c in 0 until layout.columns) {
                     val frameLayout = FrameLayout(requireContext())
 
-                    //Creating border
-                    val border = GradientDrawable().apply {
-                        shape = GradientDrawable.RECTANGLE
-                        setColor(Color.WHITE)
-                        setStroke(3, Color.BLACK)
-                        cornerRadius = 12f
-
-                        colors = intArrayOf(
-                            Color.WHITE,
-                            Color.parseColor("#F5F9FF")
-                        )
-                    }
-                    frameLayout.background = border
-
                     val params = GridLayout.LayoutParams(
                         GridLayout.spec(r, 1, GridLayout.CENTER),
                         GridLayout.spec(c, 1, GridLayout.CENTER)
                     ).apply {
                         width = spotWidth
                         height = spotHeight
-                        setMargins(12, 12, 12, 12)
+                        setMargins(8, 8, 8, 8)
                     }
 
                     when {
                         roadSet.contains(r to c) -> {
+                            // Road styling
                             val roadBackground = GradientDrawable().apply {
                                 shape = GradientDrawable.RECTANGLE
                                 setColor(Color.parseColor("#FFFFFF"))
@@ -232,83 +401,94 @@ class ParkingLayoutFragment : Fragment() {
                             val lineImageView = ImageView(requireContext()).apply {
                                 setImageResource(R.drawable.ic_line)
                                 scaleType = ImageView.ScaleType.FIT_XY
-                                setColorFilter(Color.BLACK, PorterDuff.Mode.SRC_IN)
+                                setColorFilter(Color.parseColor("#DDDDDD"), PorterDuff.Mode.SRC_IN)
 
                                 val position = r to c
-                                //Horizontal road w rotation
                                 if (horizontalRoads.contains(position)) {
                                     rotation = 90f
-
-                                    val horizontalPadding = (spotWidth * 0.3).toInt()
-                                    val verticalPadding = (spotHeight * 0.35).toInt()
-                                    setPadding(
-                                        horizontalPadding,
-                                        verticalPadding,
-                                        horizontalPadding,
-                                        verticalPadding
-                                    )
                                 } else {
-                                    // Vertical road - no rotation
                                     rotation = 0f
-
-                                    val horizontalPadding = (spotWidth * 0.3).toInt()
-                                    val verticalPadding = (spotHeight * 0.35).toInt()
-                                    setPadding(
-                                        horizontalPadding,
-                                        verticalPadding,
-                                        horizontalPadding,
-                                        verticalPadding
-                                    )
                                 }
+                                
+                                val horizontalPadding = (spotWidth * 0.3).toInt()
+                                val verticalPadding = (spotHeight * 0.35).toInt()
+                                setPadding(
+                                    horizontalPadding,
+                                    verticalPadding,
+                                    horizontalPadding,
+                                    verticalPadding
+                                )
                             }
                             frameLayout.addView(lineImageView)
                         }
                         spotMap.containsKey(r to c) -> {
-                            frameLayout.background = border
-
-                            // ParkingSpot
                             val spot = spotMap[r to c]!!
-
-                            // If PArkingSpot is null, create auto
-                            val identifier = if (spot.spotIdentifier.isNullOrEmpty()) {
-                                val rowLetter = ('A' + r).toChar()
-                                "$rowLetter${c + 1}"
-                            } else {
-                                spot.spotIdentifier
-                            }
-
-                            //Disabled Parking Spot
-                            // Check if this is a disabled parking spot
-                            val isDisabledSpot = !spot.spotIdentifier.isNullOrEmpty() &&
-                                    spot.spotIdentifier.contains("Disabled", ignoreCase = true)
-
-                            if (isDisabledSpot) {
-                                val disabledSpotBg = GradientDrawable().apply {
-                                    shape = GradientDrawable.RECTANGLE
-                                    setColor(Color.parseColor("#2196F3")) // Blue background
-                                    setStroke(3, Color.parseColor("#1976D2"))  // Darker blue border
-                                    cornerRadius = 12f
+                            val isDisabled = spot.spotIdentifier?.contains("Disabled", ignoreCase = true) ?: false
+                            
+                            // Modern spot background with gradient and elevation
+                            val border = GradientDrawable().apply {
+                                shape = GradientDrawable.RECTANGLE
+                                
+                                // Set colors based on spot status and type
+                                when {
+                                    isDisabled && spot.occupied -> {
+                                        // Disabled + Occupied
+                                        colors = intArrayOf(
+                                            Color.parseColor("#6B8CFF"),
+                                            Color.parseColor("#4F69BC")
+                                        )
+                                    }
+                                    isDisabled -> {
+                                        // Disabled + Available
+                                        colors = intArrayOf(
+                                            Color.parseColor("#8BA3FF"),
+                                            Color.parseColor("#6B8CFF")
+                                        )
+                                    }
+                                    spot.occupied -> {
+                                        // Regular + Occupied
+                                        colors = intArrayOf(
+                                            Color.parseColor("#FF7F7F"),
+                                            Color.parseColor("#FF5050")
+                                        )
+                                    }
+                                    else -> {
+                                        // Regular + Available
+                                        colors = intArrayOf(
+                                            Color.parseColor("#FFFFFF"),
+                                            Color.parseColor("#F7F7F7")
+                                        )
+                                    }
                                 }
-                                frameLayout.background = disabledSpotBg
+                                
+                                orientation = GradientDrawable.Orientation.TL_BR
+                                cornerRadius = 12f
+                                setStroke(3, Color.parseColor("#202020"))
                             }
-
+                            
+                            frameLayout.background = border
+                            
+                            // Add elevation effect
+                            frameLayout.elevation = 5f
+                                                
+                            // Add spot identifier text
                             val textView = TextView(requireContext()).apply {
-                                text = identifier
+                                text = spot.spotIdentifier ?: spot.id.toString()
                                 gravity = Gravity.CENTER
-                                setTextColor(if (isDisabledSpot) Color.WHITE else Color.BLACK)
                                 textSize = 14f
+                                setTextColor(if (spot.occupied || isDisabled) Color.WHITE else Color.BLACK)
+                                typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
                                 layoutParams = FrameLayout.LayoutParams(
                                     FrameLayout.LayoutParams.MATCH_PARENT,
                                     FrameLayout.LayoutParams.WRAP_CONTENT
                                 ).apply {
                                     gravity = Gravity.TOP or Gravity.CENTER_HORIZONTAL
-                                    topMargin = dpToPx(4)
-                                    setMargins(0, 2, 0, 2)
+                                    topMargin = dpToPx(8)
                                 }
                             }
                             frameLayout.addView(textView)
-
-                            // Availability check
+                            
+                            // Add car image if spot is occupied
                             if (spot.occupied) {
                                 val occupiedIndicator = View(requireContext()).apply {
                                     background = GradientDrawable().apply {
@@ -326,18 +506,19 @@ class ParkingLayoutFragment : Fragment() {
 
                                 val carImageView = ImageView(requireContext()).apply {
                                     setImageResource(R.drawable.top_car)
-                                    scaleType = ImageView.ScaleType.FIT_XY
+                                    scaleType = ImageView.ScaleType.FIT_CENTER
                                     rotation = 90f
 
-                                    val width = (spotWidth * 1.5).toInt()
-                                    val height = (spotHeight * 1.7).toInt()
+                                    // Araç görselinin boyutlarını büyütün
+                                    val width = (spotWidth * 0.75).toInt()   // Genişliği azalt
+                                    val height = (spotHeight * 0.9).toInt()  // Yüksekliği artır
 
                                     layoutParams = FrameLayout.LayoutParams(
                                         width,
                                         height
                                     ).apply {
                                         gravity = Gravity.CENTER
-                                        setMargins(0, 0, 0, 0)
+                                        setMargins(0, 0, 0, 0) // Marjin olmadan
                                     }
 
                                     // Make sure the image is visible
@@ -345,37 +526,38 @@ class ParkingLayoutFragment : Fragment() {
                                     background = null
                                 }
                                 frameLayout.addView(carImageView)
+                                
+                                // Text'i yeniden öne getir
+                                textView.bringToFront()
                             }
-
+                            
                             // Add wheelchair icon for disabled spots
-                            if (isDisabledSpot) {
-                                val wheelchairIcon = ImageView(requireContext()).apply {
+                            if (isDisabled) {
+                                val wheelchairImageView = ImageView(requireContext()).apply {
                                     setImageResource(R.drawable.ic_wheelchair)
+                                    scaleType = ImageView.ScaleType.FIT_XY
+                                    setColorFilter(Color.WHITE, PorterDuff.Mode.SRC_IN)
                                     layoutParams = FrameLayout.LayoutParams(
                                         dpToPx(24),
                                         dpToPx(24)
                                     ).apply {
                                         gravity = Gravity.BOTTOM or Gravity.END
-                                        setMargins(0, 0, dpToPx(4), dpToPx(4))
+                                        setMargins(0, 0, dpToPx(8), dpToPx(8))
                                     }
-                                    setColorFilter(
-                                        Color.parseColor("#1976D2"),
-                                        PorterDuff.Mode.SRC_IN
-                                    )
                                 }
-                                frameLayout.addView(wheelchairIcon)
+                                frameLayout.addView(wheelchairImageView)
                             }
-
-                            // Store the view reference
-                            spot.id?.let { id ->
-                                spotViews[id.toLong()] = frameLayout
-                            }
+                            
+                            // Store reference to the view for WebSocket updates
+                            spotViews[spot.id.toLong()] = frameLayout
+                            Log.d("ParkingLayout", "Added spot view to map - ID: ${spot.id}")
                         }
                         else -> {
+                            // Empty cell styling
                             val emptyBackground = GradientDrawable().apply {
                                 shape = GradientDrawable.RECTANGLE
                                 cornerRadius = 8f
-                                setColor(Color.parseColor("#FFFFFF"))
+                                setColor(Color.parseColor("#F9F9F9"))
                             }
                             frameLayout.background = emptyBackground
                         }
@@ -384,6 +566,13 @@ class ParkingLayoutFragment : Fragment() {
                     grid.addView(frameLayout, params)
                 }
             }
+
+            // İstatistikleri başlangıçta hesapla
+            totalSpotCount = layout.parkingSpots.size
+            occupiedSpotCount = layout.parkingSpots.count { it.occupied }
+            
+            // İstatistikleri güncelle
+            updateParkingStats()
         } catch (e: Exception) {
             Log.e("ParkingLayout", "Error drawing layout: ${e.message}", e)
             Snackbar.make(
@@ -410,6 +599,20 @@ class ParkingLayoutFragment : Fragment() {
         }
     }
 
+    private fun updateParkingStats() {
+        try {
+            val availableSpots = totalSpotCount - occupiedSpotCount
+            
+            binding.tvAvailable.text = "Available: $availableSpots"
+            binding.tvOccupied.text = "Occupied: $occupiedSpotCount"
+            binding.tvLastUpdated.text = "Last updated: Just now"
+            
+            Log.d("ParkingLayout", "Updated stats - Available: $availableSpots, Occupied: $occupiedSpotCount")
+        } catch (e: Exception) {
+            Log.e("ParkingLayout", "Error updating stats: ${e.message}", e)
+        }
+    }
+
     // DP'yi piksel değerine dönüştürmek için yardımcı fonksiyon
     private fun dpToPx(dp: Int): Int {
         return (dp * resources.displayMetrics.density).toInt()
@@ -419,13 +622,5 @@ class ParkingLayoutFragment : Fragment() {
         binding.apply {
             progressBar.visibility = if (isLoading) View.VISIBLE else View.GONE
         }
-    }
-
-    override fun onDestroyView() {
-        super.onDestroyView()
-        webSocketClient?.close()
-        webSocketClient = null
-        spotViews.clear()
-        _binding = null
     }
 }

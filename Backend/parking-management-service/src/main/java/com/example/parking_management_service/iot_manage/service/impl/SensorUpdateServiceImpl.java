@@ -16,7 +16,7 @@ public class SensorUpdateServiceImpl implements ISensorUpdateService {
     private ParkingSpotRepository parkingSpotRepository;
 
     @Autowired
-private WebSocketService webSocketService;
+    private WebSocketService webSocketService;
     
     @Override
     public boolean updateParkingSpotOccupancy(SensorUpdateDTO sensorData) {

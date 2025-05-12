@@ -6,5 +6,6 @@ data class ParkingLayoutResponse(
     val parkingId: Int,
     val parkingName: String,
     val rows: Int,
-    val spots: List<Spot>
+    val parkingSpots: List<Spot>,
+    val roads: List<Road>
 )

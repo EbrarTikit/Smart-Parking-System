@@ -4,10 +4,13 @@ import os
 import time
 import io
 import base64
+import uuid
+import json
+import asyncio
 from typing import Optional, List, Dict, Any, Union
 
 # FastAPI 
-from fastapi import FastAPI, File, UploadFile, HTTPException, Depends, BackgroundTasks, Body, Query
+from fastapi import FastAPI, File, UploadFile, HTTPException, Depends, BackgroundTasks, Body, Query, WebSocket, WebSocketDisconnect
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
@@ -34,6 +37,9 @@ from app.crud import (
 
 # Konfigürasyon
 from app.config import DATABASE_URL, RABBITMQ_URL
+
+# WebSocket yönetimi
+from app.websocket import manager, RoomType
 
 # Log yapılandırması
 logging.basicConfig(
@@ -240,10 +246,29 @@ class VehicleExitResponse(BaseModel):
     parking_fee: Optional[float] = None  # TL cinsinden
     parking_record_id: Optional[int] = None
 
+# Asenkron task'leri güvenli şekilde çalıştırmak için yardımcı fonksiyon
+def run_async(coroutine):
+    """Senkron bir fonksiyondan asenkron bir coroutine'i çalıştırmak için güvenli yöntem"""
+    try:
+        loop = asyncio.get_event_loop()
+    except RuntimeError:
+        # Eğer mevcut event loop yoksa yeni bir tane oluştur
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+    
+    # Eğer loop çalışmıyorsa yeni bir executor ile coroutine'i çalıştır
+    if not loop.is_running():
+        return loop.run_until_complete(coroutine)
+    else:
+        # Eğer loop zaten çalışıyorsa (uvicorn içinde), daha sonra çalıştırılmak üzere planla
+        # Burası uvicorn'un ana event loop'u içinde çalışacaktır
+        return asyncio.create_task(coroutine)
+
 @app.post("/vehicle/entry", response_model=VehicleEntryResponse)
 def register_vehicle_entry(
     entry: VehicleEntryRequest,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    background_tasks: BackgroundTasks = BackgroundTasks()
 ):
     """
     Araç otoparka giriş yaptığında, plaka bilgisini kaydet ve giriş kaydı oluştur.
@@ -271,25 +296,53 @@ def register_vehicle_entry(
         # Aktif park kaydı var mı kontrol et
         active_record = get_active_parking_record_by_vehicle(db, db_vehicle.id)
         if active_record:
-            return VehicleEntryResponse(
+            response = VehicleEntryResponse(
                 success=False,
                 message=f"Bu araç zaten otoparkta park halinde. Giriş zamanı: {active_record.entry_time}",
                 entry_time=active_record.entry_time.isoformat(),
                 vehicle=VehicleSchema.from_orm(db_vehicle),
                 parking_record_id=active_record.id
             )
+            
+            # WebSocket bildirimi gönder (zaten park halinde)
+            background_tasks.add_task(
+                lambda: run_async(manager.send_vehicle_update({
+                    "id": db_vehicle.id,
+                    "license_plate": db_vehicle.license_plate,
+                    "status": "already_parked",
+                    "message": f"Araç zaten park halinde: {entry.license_plate}",
+                    "parking_record_id": active_record.id,
+                    "entry_time": active_record.entry_time.isoformat()
+                }))
+            )
+            
+            return response
         
         # Yeni park kaydı oluştur
         parking_record_data = ParkingRecordCreate(vehicle_id=db_vehicle.id)
         new_record = create_parking_record(db, parking_record_data)
         
-        return VehicleEntryResponse(
+        response = VehicleEntryResponse(
             success=True,
             message=f"Araç girişi başarıyla kaydedildi: {entry.license_plate}",
             entry_time=new_record.entry_time.isoformat(),
             vehicle=VehicleSchema.from_orm(db_vehicle),
             parking_record_id=new_record.id
         )
+        
+        # WebSocket bildirimi gönder (yeni giriş)
+        background_tasks.add_task(
+            lambda: run_async(manager.send_parking_record_update({
+                "id": new_record.id,
+                "vehicle_id": db_vehicle.id,
+                "license_plate": db_vehicle.license_plate,
+                "action": "entry",
+                "entry_time": new_record.entry_time.isoformat(),
+                "message": f"Araç girişi: {entry.license_plate}"
+            }))
+        )
+        
+        return response
         
     except Exception as e:
         logger.error(f"Araç girişi kaydedilirken hata: {str(e)}")
@@ -303,7 +356,8 @@ def register_vehicle_entry(
 @app.post("/vehicle/exit", response_model=VehicleExitResponse)
 def register_vehicle_exit(
     exit_req: VehicleExitRequest,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    background_tasks: BackgroundTasks = BackgroundTasks()
 ):
     """
     Araç otoparktan çıkış yaptığında, çıkış kaydı oluştur ve ücretlendirme yap
@@ -322,18 +376,45 @@ def register_vehicle_exit(
         # Araç veritabanında var mı kontrol et
         db_vehicle = get_vehicle_by_license_plate(db, exit_req.license_plate)
         if not db_vehicle:
-            return VehicleExitResponse(
+            response = VehicleExitResponse(
                 success=False,
                 message=f"Bu plakaya ait araç kaydı bulunamadı: {exit_req.license_plate}"
             )
+            
+            # WebSocket bildirimi gönder (araç bulunamadı)
+            background_tasks.add_task(
+                lambda: run_async(manager.broadcast({
+                    "type": "error",
+                    "action": "exit_failed",
+                    "reason": "vehicle_not_found",
+                    "license_plate": exit_req.license_plate,
+                    "message": f"Araç bulunamadı: {exit_req.license_plate}"
+                }, RoomType.ADMIN))
+            )
+            
+            return response
         
         # Aktif park kaydı var mı kontrol et
         active_record = get_active_parking_record_by_vehicle(db, db_vehicle.id)
         if not active_record:
-            return VehicleExitResponse(
+            response = VehicleExitResponse(
                 success=False,
                 message=f"Bu araca ait aktif park kaydı bulunamadı: {exit_req.license_plate}"
             )
+            
+            # WebSocket bildirimi gönder (aktif kayıt yok)
+            background_tasks.add_task(
+                lambda: run_async(manager.broadcast({
+                    "type": "error",
+                    "action": "exit_failed",
+                    "reason": "no_active_record",
+                    "license_plate": exit_req.license_plate,
+                    "vehicle_id": db_vehicle.id,
+                    "message": f"Aktif park kaydı yok: {exit_req.license_plate}"
+                }, RoomType.ADMIN))
+            )
+            
+            return response
         
         # Park kaydını kapat ve ücretlendirme yap (otopark ID'si ile)
         logger.info(f"Araç çıkışı için park kaydı kapatılıyor: {active_record.id}, Otopark ID: {exit_req.parking_id}")
@@ -366,6 +447,22 @@ def register_vehicle_exit(
             parking_record_id=closed_record.id
         )
         
+        # WebSocket bildirimi gönder (çıkış başarılı)
+        background_tasks.add_task(
+            lambda: run_async(manager.send_parking_record_update({
+                "id": closed_record.id,
+                "vehicle_id": db_vehicle.id,
+                "license_plate": exit_req.license_plate,
+                "parking_id": exit_req.parking_id,
+                "action": "exit",
+                "entry_time": closed_record.entry_time.isoformat(),
+                "exit_time": closed_record.exit_time.isoformat(),
+                "duration_hours": round(duration, 2),
+                "parking_fee": round(fee_tl, 2),
+                "message": f"Araç çıkışı: {exit_req.license_plate}, Ücret: {fee_tl:.2f} TL"
+            }))
+        )
+        
         logger.info(f"Çıkış cevabı hazırlandı: {response}")
         return response
         
@@ -373,6 +470,22 @@ def register_vehicle_exit(
         logger.error(f"Araç çıkışı kaydedilirken hata: {str(e)}")
         import traceback
         traceback.print_exc()
+        
+        # WebSocket hata bildirimi
+        try:
+            background_tasks.add_task(
+                lambda: run_async(manager.broadcast({
+                    "type": "error",
+                    "action": "exit_error",
+                    "license_plate": exit_req.license_plate,
+                    "parking_id": exit_req.parking_id,
+                    "error": str(e),
+                    "message": f"Çıkış işlemi sırasında hata: {str(e)}"
+                }, RoomType.ADMIN))
+            )
+        except:
+            pass
+            
         return VehicleExitResponse(
             success=False,
             message=f"Araç çıkışı kaydedilirken hata: {str(e)}"
@@ -468,3 +581,279 @@ async def process_plate_for_exit(
             success=False,
             message=f"Plaka tanıma ve araç çıkışı sırasında hata: {str(e)}"
         )
+
+# -------------- WEBSOCKET ENDPOINTLERİ --------------
+
+@app.websocket("/ws")
+async def websocket_endpoint(websocket: WebSocket):
+    """
+    Genel WebSocket bağlantı noktası. 
+    Admin paneli veya diğer istemciler için genel bir WebSocket kanalı sağlar.
+    """
+    # Bağlantıyı kabul et
+    await websocket.accept()
+    
+    # Benzersiz bir client_id oluştur
+    client_id = str(uuid.uuid4())
+    
+    # Bağlantıyı kaydet
+    manager.add_connection(client_id, websocket, RoomType.ALL)
+    
+    try:
+        # Hoş geldin mesajı gönder
+        await websocket.send_text(json.dumps({
+            "type": "welcome",
+            "message": "Bağlantı başarıyla kuruldu!",
+            "client_id": client_id,
+            "timestamp": datetime.datetime.now().isoformat()
+        }))
+        
+        # İstemciden gelen mesajları dinle
+        while True:
+            data = await websocket.receive_text()
+            try:
+                message = json.loads(data)
+                message_type = message.get("type", "unknown")
+                
+                # İstemciden gelen mesaj türüne göre işlem yap
+                if message_type == "ping":
+                    await websocket.send_text(json.dumps({
+                        "type": "pong",
+                        "timestamp": datetime.datetime.now().isoformat()
+                    }))
+                elif message_type == "status":
+                    await websocket.send_text(json.dumps({
+                        "type": "status",
+                        "data": manager.get_connection_status(),
+                        "timestamp": datetime.datetime.now().isoformat()
+                    }))
+                else:
+                    logger.debug(f"Bilinmeyen mesaj türü: {message_type}, data: {data[:100]}")
+                    
+            except json.JSONDecodeError:
+                logger.warning(f"Geçersiz JSON formatı: {data[:100]}")
+                await websocket.send_text(json.dumps({
+                    "type": "error",
+                    "message": "Geçersiz JSON formatı",
+                    "timestamp": datetime.datetime.now().isoformat()
+                }))
+                
+    except WebSocketDisconnect:
+        # Bağlantı kapandığında
+        manager.remove_connection(client_id)
+        logger.info(f"Client bağlantısı kapandı: {client_id}")
+    except Exception as e:
+        # Diğer hatalar
+        logger.error(f"WebSocket hatası: {str(e)}")
+        manager.remove_connection(client_id)
+
+@app.websocket("/ws/admin")
+async def websocket_admin_endpoint(websocket: WebSocket):
+    """
+    Admin paneli için özel WebSocket bağlantı noktası.
+    Yönetici arayüzü için tüm sistem güncellemelerini içerir.
+    """
+    # Bağlantıyı kabul et
+    await websocket.accept()
+    
+    # Benzersiz bir client_id oluştur
+    client_id = f"admin-{str(uuid.uuid4())}"
+    
+    # Bağlantıyı kaydet (admin odasına)
+    manager.add_connection(client_id, websocket, RoomType.ADMIN)
+    
+    try:
+        # Hoş geldin mesajı gönder
+        await websocket.send_text(json.dumps({
+            "type": "welcome",
+            "message": "Admin WebSocket bağlantısı başarıyla kuruldu!",
+            "client_id": client_id,
+            "timestamp": datetime.datetime.now().isoformat()
+        }))
+        
+        # İstemciden gelen mesajları dinle
+        while True:
+            data = await websocket.receive_text()
+            try:
+                message = json.loads(data)
+                message_type = message.get("type", "unknown")
+                
+                # Admin komutlarını işle
+                if message_type == "broadcast":
+                    # Tüm istemcilere mesaj gönder
+                    message_data = message.get("data", {})
+                    target_room = message.get("room", RoomType.ALL)
+                    room_id = message.get("room_id")
+                    
+                    await manager.broadcast({
+                        "type": "broadcast",
+                        "source": "admin",
+                        "data": message_data
+                    }, target_room, room_id)
+                    
+                    await websocket.send_text(json.dumps({
+                        "type": "broadcast_sent",
+                        "timestamp": datetime.datetime.now().isoformat()
+                    }))
+                    
+                elif message_type == "status":
+                    # Bağlantı durumunu gönder
+                    await websocket.send_text(json.dumps({
+                        "type": "status",
+                        "data": manager.get_connection_status(),
+                        "timestamp": datetime.datetime.now().isoformat()
+                    }))
+                    
+                else:
+                    logger.debug(f"Bilinmeyen admin mesajı: {message_type}")
+                    
+            except json.JSONDecodeError:
+                logger.warning(f"Geçersiz JSON formatı: {data[:100]}")
+                await websocket.send_text(json.dumps({
+                    "type": "error",
+                    "message": "Geçersiz JSON formatı",
+                    "timestamp": datetime.datetime.now().isoformat()
+                }))
+                
+    except WebSocketDisconnect:
+        # Bağlantı kapandığında
+        manager.remove_connection(client_id)
+        logger.info(f"Admin bağlantısı kapandı: {client_id}")
+    except Exception as e:
+        # Diğer hatalar
+        logger.error(f"Admin WebSocket hatası: {str(e)}")
+        manager.remove_connection(client_id)
+
+@app.websocket("/ws/parking/{parking_id}")
+async def websocket_parking_endpoint(websocket: WebSocket, parking_id: int):
+    """
+    Belirli bir otopark için WebSocket bağlantı noktası.
+    Otopark ile ilgili tüm güncellemeleri içerir.
+    """
+    # Bağlantıyı kabul et
+    await websocket.accept()
+    
+    # Benzersiz bir client_id oluştur
+    client_id = f"parking-{parking_id}-{str(uuid.uuid4())}"
+    
+    # Bağlantıyı kaydet (otopark odasına)
+    manager.add_connection(client_id, websocket, RoomType.PARKING, str(parking_id))
+    
+    try:
+        # Hoş geldin mesajı gönder
+        await websocket.send_text(json.dumps({
+            "type": "welcome",
+            "message": f"Otopark ID={parking_id} WebSocket bağlantısı başarıyla kuruldu!",
+            "client_id": client_id,
+            "parking_id": parking_id,
+            "timestamp": datetime.datetime.now().isoformat()
+        }))
+        
+        # İstemciden gelen mesajları dinle
+        while True:
+            data = await websocket.receive_text()
+            try:
+                message = json.loads(data)
+                message_type = message.get("type", "unknown")
+                
+                # Otopark komutlarını işle
+                if message_type == "status":
+                    # Bağlantı durumunu gönder
+                    await websocket.send_text(json.dumps({
+                        "type": "status",
+                        "data": {
+                            "connection_count": manager.count_connections(RoomType.PARKING, str(parking_id)),
+                            "parking_id": parking_id
+                        },
+                        "timestamp": datetime.datetime.now().isoformat()
+                    }))
+                    
+                else:
+                    logger.debug(f"Bilinmeyen otopark mesajı: {message_type}")
+                    
+            except json.JSONDecodeError:
+                logger.warning(f"Geçersiz JSON formatı: {data[:100]}")
+                await websocket.send_text(json.dumps({
+                    "type": "error",
+                    "message": "Geçersiz JSON formatı",
+                    "timestamp": datetime.datetime.now().isoformat()
+                }))
+                
+    except WebSocketDisconnect:
+        # Bağlantı kapandığında
+        manager.remove_connection(client_id)
+        logger.info(f"Otopark bağlantısı kapandı: {client_id}")
+    except Exception as e:
+        # Diğer hatalar
+        logger.error(f"Otopark WebSocket hatası: {str(e)}")
+        manager.remove_connection(client_id)
+
+@app.websocket("/ws/vehicle/{license_plate}")
+async def websocket_vehicle_endpoint(websocket: WebSocket, license_plate: str):
+    """
+    Belirli bir araç için WebSocket bağlantı noktası.
+    Araç ile ilgili tüm güncellemeleri içerir.
+    """
+    # Bağlantıyı kabul et
+    await websocket.accept()
+    
+    # Benzersiz bir client_id oluştur
+    client_id = f"vehicle-{license_plate}-{str(uuid.uuid4())}"
+    
+    # Bağlantıyı kaydet (araç odasına)
+    manager.add_connection(client_id, websocket, RoomType.VEHICLE, license_plate)
+    
+    try:
+        # Hoş geldin mesajı gönder
+        await websocket.send_text(json.dumps({
+            "type": "welcome",
+            "message": f"Araç plaka={license_plate} WebSocket bağlantısı başarıyla kuruldu!",
+            "client_id": client_id,
+            "license_plate": license_plate,
+            "timestamp": datetime.datetime.now().isoformat()
+        }))
+        
+        # İstemciden gelen mesajları dinle
+        while True:
+            data = await websocket.receive_text()
+            try:
+                message = json.loads(data)
+                message_type = message.get("type", "unknown")
+                
+                # Araç komutlarını işle
+                if message_type == "status":
+                    # Bağlantı durumunu gönder
+                    await websocket.send_text(json.dumps({
+                        "type": "status",
+                        "data": {
+                            "connection_count": manager.count_connections(RoomType.VEHICLE, license_plate),
+                            "license_plate": license_plate
+                        },
+                        "timestamp": datetime.datetime.now().isoformat()
+                    }))
+                    
+                else:
+                    logger.debug(f"Bilinmeyen araç mesajı: {message_type}")
+                    
+            except json.JSONDecodeError:
+                logger.warning(f"Geçersiz JSON formatı: {data[:100]}")
+                await websocket.send_text(json.dumps({
+                    "type": "error",
+                    "message": "Geçersiz JSON formatı",
+                    "timestamp": datetime.datetime.now().isoformat()
+                }))
+                
+    except WebSocketDisconnect:
+        # Bağlantı kapandığında
+        manager.remove_connection(client_id)
+        logger.info(f"Araç bağlantısı kapandı: {client_id}")
+    except Exception as e:
+        # Diğer hatalar
+        logger.error(f"Araç WebSocket hatası: {str(e)}")
+        manager.remove_connection(client_id)
+
+# WebSocket bilgi endpointi
+@app.get("/ws/info")
+def websocket_info():
+    """WebSocket bağlantı durumu bilgilerini döndürür"""
+    return manager.get_connection_status()

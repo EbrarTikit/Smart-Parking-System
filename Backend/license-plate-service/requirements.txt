@@ -11,12 +11,14 @@ Pillow>=9.0.0  # PIL kütüphanesi, LANCZOS için >= 9.0.0 gerekiyor
 
 # Web Framework & API
 fastapi==0.95.0
-uvicorn==0.21.1
+uvicorn[standard]==0.21.1  # [standard] ekstra WebSocket desteği için
 sqlalchemy==2.0.9
 psycopg2-binary==2.9.6
 pydantic==1.10.7
 python-multipart==0.0.6
 python-dotenv==1.0.0
+websockets==11.0.3  # WebSocket desteği
+wsproto==1.2.0  # Ek WebSocket protokol desteği
 
 # Makine Öğrenmesi Kütüphaneleri - CPU
 # NOT: GPU gerektirmeyen, hafif deploymentlar için CPU sürümleri

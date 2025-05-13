@@ -118,21 +118,10 @@ def get_db():
         db.close()
 
 # Pydantic modelleri
-class PlateDetectionResponse(BaseModel):
-    success: bool
-    message: str
-    plates: List[str] = []
-    details: Dict[str, Any] = {}
-    
 class PlateInfo(BaseModel):
     plate_text: str
     confidence: float
     timestamp: str
-
-class PlateImage(BaseModel):
-    image: str = Field(..., description="Base64 kodlanmış görüntü verisi")
-    file_name: Optional[str] = None
-    save_debug: bool = False
 
 # API Route'ları
 @app.get("/health")
@@ -144,175 +133,6 @@ def health_check():
         "model_available": MODEL_AVAILABLE,
         "database_connected": engine is not None
     }
-
-@app.post("/detect-plate", response_model=PlateDetectionResponse)
-async def detect_license_plate(
-    file: UploadFile = File(...),
-    save_db: bool = Query(True, description="Sonuçları veritabanına kaydet"),
-    save_debug: bool = Query(False, description="Debug görsellerini kaydet"),
-    db: Session = Depends(get_db)
-):
-    """
-    Yüklenen görüntüde plaka tespiti ve tanıma yapar
-    """
-    if not MODEL_AVAILABLE:
-        return PlateDetectionResponse(
-            success=False,
-            message="Plaka tanıma modeli yüklenemedi, servis kullanılamıyor",
-            plates=[],
-            details={"error": "Model yüklenemedi"}
-        )
-        
-    try:
-        # Dosyayı oku
-        contents = await file.read()
-        
-        # Plaka tanıma işlemini gerçekleştir
-        results = process_image_for_plate_recognition(contents, save_debug=save_debug)
-        
-        if "error" in results:
-            return PlateDetectionResponse(
-                success=False,
-                message=f"Plaka tanıma sırasında hata: {results['error']}",
-                plates=[],
-                details=results
-            )
-        
-        # Sonuçları veritabanına kaydet
-        if save_db and "license_plates" in results and results["license_plates"]:
-            for plate_text in results["license_plates"]:
-                # Plaka bilgisini bul
-                plate_info = None
-                plate_confidence = 0.0
-                bbox_str = ""
-                
-                # Frame içindeki tüm araçlar ve plakalar
-                for frame_num, frame_data in results["results"].items():
-                    for obj_id, obj_data in frame_data.items():
-                        if "license_plate" in obj_data and obj_data["license_plate"]["text"] == plate_text:
-                            plate_info = obj_data["license_plate"]
-                            plate_confidence = plate_info.get("text_score", 0.0)
-                            bbox = plate_info.get("bbox", [0, 0, 0, 0])
-                            bbox_str = f"{bbox[0]},{bbox[1]},{bbox[2]},{bbox[3]}"
-                            break
-                
-                # Veritabanına kaydet
-                db_record = PlateRecord(
-                    plate_text=plate_text,
-                    confidence=plate_confidence,
-                    bbox=bbox_str,
-                    image_path=f"plates/{int(time.time())}_{plate_text}.jpg",
-                    processed=False
-                )
-                db.add(db_record)
-            
-            db.commit()
-            logger.info(f"Toplam {len(results['license_plates'])} plaka kaydı veritabanına eklendi")
-        
-        return PlateDetectionResponse(
-            success=True,
-            message=f"Plaka tanıma başarılı, {len(results.get('license_plates', []))} plaka tespit edildi",
-            plates=results.get("license_plates", []),
-            details=results
-        )
-        
-    except Exception as e:
-        logger.error(f"Plaka tanıma sırasında beklenmeyen hata: {str(e)}")
-        import traceback
-        traceback.print_exc()
-        return PlateDetectionResponse(
-            success=False,
-            message=f"Plaka tanıma sırasında beklenmeyen hata: {str(e)}",
-            plates=[],
-            details={"error": str(e)}
-        )
-
-@app.post("/detect-plate-base64", response_model=PlateDetectionResponse)
-async def detect_license_plate_base64(
-    plate_image: PlateImage,
-    save_db: bool = Query(True, description="Sonuçları veritabanına kaydet"),
-    db: Session = Depends(get_db)
-):
-    """
-    Base64 kodlanmış görüntüde plaka tespiti ve tanıma yapar
-    """
-    if not MODEL_AVAILABLE:
-        return PlateDetectionResponse(
-                    success=False,
-            message="Plaka tanıma modeli yüklenemedi, servis kullanılamıyor",
-            plates=[],
-            details={"error": "Model yüklenemedi"}
-        )
-    
-    try:
-        # Base64 kodunu çöz
-        if "," in plate_image.image:
-            # "data:image/jpeg;base64," gibi bir ön ek varsa kaldır
-            image_data = plate_image.image.split(",")[1]
-        else:
-            image_data = plate_image.image
-            
-        image_bytes = base64.b64decode(image_data)
-        
-        # Plaka tanıma işlemini gerçekleştir
-        results = process_image_for_plate_recognition(image_bytes, save_debug=plate_image.save_debug)
-        
-        if "error" in results:
-            return PlateDetectionResponse(
-                    success=False,
-                message=f"Plaka tanıma sırasında hata: {results['error']}",
-                plates=[],
-                details=results
-            )
-        
-        # Sonuçları veritabanına kaydet
-        if save_db and "license_plates" in results and results["license_plates"]:
-            for plate_text in results["license_plates"]:
-                # Plaka bilgisini bul
-                plate_info = None
-                plate_confidence = 0.0
-                bbox_str = ""
-                
-                # Frame içindeki tüm araçlar ve plakalar
-                for frame_num, frame_data in results["results"].items():
-                    for obj_id, obj_data in frame_data.items():
-                        if "license_plate" in obj_data and obj_data["license_plate"]["text"] == plate_text:
-                            plate_info = obj_data["license_plate"]
-                            plate_confidence = plate_info.get("text_score", 0.0)
-                            bbox = plate_info.get("bbox", [0, 0, 0, 0])
-                            bbox_str = f"{bbox[0]},{bbox[1]},{bbox[2]},{bbox[3]}"
-                            break
-                
-                # Veritabanına kaydet
-                db_record = PlateRecord(
-                    plate_text=plate_text,
-                    confidence=plate_confidence,
-                    bbox=bbox_str,
-                    image_path=f"plates/{int(time.time())}_{plate_text}.jpg",
-                    processed=False
-                )
-                db.add(db_record)
-            
-            db.commit()
-            logger.info(f"Toplam {len(results['license_plates'])} plaka kaydı veritabanına eklendi")
-        
-        return PlateDetectionResponse(
-            success=True,
-            message=f"Plaka tanıma başarılı, {len(results.get('license_plates', []))} plaka tespit edildi",
-            plates=results.get("license_plates", []),
-            details=results
-        )
-        
-    except Exception as e:
-        logger.error(f"Plaka tanıma sırasında beklenmeyen hata: {str(e)}")
-        import traceback
-        traceback.print_exc()
-        return PlateDetectionResponse(
-            success=False,
-            message=f"Plaka tanıma sırasında beklenmeyen hata: {str(e)}",
-            plates=[],
-            details={"error": str(e)}
-        )
 
 @app.get("/plates", response_model=List[PlateInfo])
 def get_all_plates(
@@ -409,6 +229,7 @@ class VehicleEntryResponse(BaseModel):
 
 class VehicleExitRequest(BaseModel):
     license_plate: str
+    parking_id: int = 1  # Varsayılan otopark ID'si
 
 class VehicleExitResponse(BaseModel):
     success: bool
@@ -488,6 +309,9 @@ def register_vehicle_exit(
     Araç otoparktan çıkış yaptığında, çıkış kaydı oluştur ve ücretlendirme yap
     """
     try:
+        # Logger oluştur
+        logger.info(f"Araç çıkışı işlemi başlatılıyor: {exit_req.license_plate}, Otopark ID: {exit_req.parking_id}")
+        
         # Plaka kontrolü
         if not exit_req.license_plate:
             return VehicleExitResponse(
@@ -511,24 +335,39 @@ def register_vehicle_exit(
                 message=f"Bu araca ait aktif park kaydı bulunamadı: {exit_req.license_plate}"
             )
         
-        # Park kaydını kapat ve ücretlendirme yap
-        closed_record = close_parking_record(db, active_record.id)
+        # Park kaydını kapat ve ücretlendirme yap (otopark ID'si ile)
+        logger.info(f"Araç çıkışı için park kaydı kapatılıyor: {active_record.id}, Otopark ID: {exit_req.parking_id}")
+        closed_record = close_parking_record(db, active_record.id, exit_req.parking_id)
         
         # Otopark süresini hesapla (saat olarak)
         duration = (closed_record.exit_time - closed_record.entry_time).total_seconds() / 3600
+        logger.info(f"Hesaplanan park süresi: {duration:.4f} saat")
         
-        # Ücret kuruş cinsinden, TL'ye çevir
-        fee_tl = closed_record.parking_fee / 100.0 if closed_record.parking_fee else 0
+        # ÜCRET DÖNÜŞÜMÜ (KRİTİK)
+        # Not: ParkingRecord.parking_fee kuruş cinsinden saklanıyor (örn: 3000 = 30 TL)
+        if closed_record.parking_fee is not None:
+            fee_kurus = closed_record.parking_fee  # Integer değer (kuruş)
+            fee_tl = float(fee_kurus) / 100.0  # TL'ye çevir (doğru yöntem)
+            
+            logger.info(f"Veritabanından çekilen ücret: {fee_kurus} kuruş")
+            logger.info(f"TL'ye çevrilen ücret: {fee_tl:.2f} TL")
+        else:
+            fee_tl = 0
+            logger.warning(f"Park kaydında ücret bilgisi bulunamadı!")
         
-        return VehicleExitResponse(
+        # Yanıt nesnesi oluştur
+        response = VehicleExitResponse(
             success=True,
             message=f"Araç çıkışı başarıyla kaydedildi: {exit_req.license_plate}",
             exit_time=closed_record.exit_time.isoformat(),
             entry_time=closed_record.entry_time.isoformat(),
             duration_hours=round(duration, 2),
-            parking_fee=round(fee_tl, 2),
+            parking_fee=round(fee_tl, 2),  # TL cinsinden (kuruştan çevrilmiş)
             parking_record_id=closed_record.id
         )
+        
+        logger.info(f"Çıkış cevabı hazırlandı: {response}")
+        return response
         
     except Exception as e:
         logger.error(f"Araç çıkışı kaydedilirken hata: {str(e)}")
@@ -588,6 +427,7 @@ async def process_plate_for_entry(
 async def process_plate_for_exit(
     file: UploadFile = File(...),
     save_debug: bool = Query(False, description="Debug görsellerini kaydet"),
+    parking_id: int = Query(1, description="Otopark ID'si"),
     db: Session = Depends(get_db)
 ):
     """
@@ -617,7 +457,7 @@ async def process_plate_for_exit(
         license_plate = results["license_plates"][0]
         
         # Araç çıkışı yap
-        vehicle_exit = VehicleExitRequest(license_plate=license_plate)
+        vehicle_exit = VehicleExitRequest(license_plate=license_plate, parking_id=parking_id)
         return register_vehicle_exit(vehicle_exit, db)
         
     except Exception as e:

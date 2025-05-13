@@ -13,4 +13,5 @@ public class LayoutResponseDto {
     private int columns;
     private List<ParkingSpotResponseDto> parkingSpots;
     private List<RoadResponseDto> roads;
+    private List<BuildingResponseDto> buildings;
 }

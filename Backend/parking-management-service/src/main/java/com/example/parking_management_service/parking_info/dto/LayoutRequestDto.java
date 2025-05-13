@@ -9,5 +9,6 @@ public class LayoutRequestDto {
 
     private List<ParkingSpotDto> parkingSpots;
     private List<RoadDTO> roads;
+    private List<BuildingDto> buildings;
 
 }

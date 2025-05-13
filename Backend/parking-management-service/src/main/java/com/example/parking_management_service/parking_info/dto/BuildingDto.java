@@ -7,8 +7,7 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class RoadDTO {
-    private int roadColumn;
-    private int roadRow;
-    private String roadIdentifier;
+public class BuildingDto {
+    private int buildingColumn;
+    private int buildingRow;
 }

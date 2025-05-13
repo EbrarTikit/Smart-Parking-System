@@ -53,7 +53,9 @@ RUN pip wheel --no-cache-dir -w /wheels \
     psycopg2-binary==2.9.6 \
     pydantic==1.10.7 \
     python-multipart==0.0.6 \
-    python-dotenv==1.0.0
+    python-dotenv==1.0.0 \
+    websockets==11.0.3 \
+    wsproto==1.2.0
 
 # 6. PyTorch aşaması (en uzun süren)
 FROM base-builder AS builder-pytorch
@@ -141,7 +143,9 @@ RUN pip install --no-cache-dir \
     python-multipart==0.0.6 \
     python-dotenv==1.0.0 \
     filterpy==1.4.5 \
-    Pillow>=9.0.0
+    Pillow>=9.0.0 \
+    websockets==11.0.3 \
+    wsproto==1.2.0
 
 # Diğer tüm wheelleri kopyala
 COPY --from=builder-core /wheels /wheels/

@@ -1,5 +1,6 @@
 package com.example.parking_management_service.parking_info.controller;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -15,11 +16,13 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.example.parking_management_service.parking_info.dto.BuildingResponseDto;
 import com.example.parking_management_service.parking_info.dto.LayoutRequestDto;
 import com.example.parking_management_service.parking_info.dto.LayoutResponseDto;
 import com.example.parking_management_service.parking_info.dto.LocationDto;
 import com.example.parking_management_service.parking_info.dto.ParkingSpotResponseDto;
 import com.example.parking_management_service.parking_info.dto.RoadResponseDto;
+import com.example.parking_management_service.parking_info.model.Building;
 import com.example.parking_management_service.parking_info.model.Parking;
 import com.example.parking_management_service.parking_info.model.ParkingSpot;
 import com.example.parking_management_service.parking_info.model.Road;
@@ -74,6 +77,15 @@ public class ParkingController {
         return ResponseEntity.noContent().build();
     }
 
+    @Operation(
+        summary = "Clear all buildings of a parking",
+        description = "Removes all buildings from the specified parking lot (empties the building list, does not delete the parking itself)"
+    )
+    @PutMapping("/parking/{parkingId}/clear-buildings")
+    public ResponseEntity<Void> clearBuildingsOfParking(@PathVariable Long parkingId) {
+        parkingService.clearBuildingsOfParking(parkingId);
+        return ResponseEntity.noContent().build();
+    }
 
     @GetMapping("/parkings/location/{id}")
     public ResponseEntity<LocationDto> getParkingLocation(@PathVariable Long id) {
@@ -181,27 +193,35 @@ public class ParkingController {
 
     @GetMapping("/{parkingId}/layout")
     public ResponseEntity<LayoutResponseDto> getParkingLayout(@PathVariable Long parkingId) {
-    Parking parking = parkingRepository.findById(parkingId)
-        .orElseThrow(() -> new RuntimeException("Parking not found"));
+        Parking parking = parkingRepository.findById(parkingId)
+            .orElseThrow(() -> new RuntimeException("Parking not found"));
 
-    List<ParkingSpotResponseDto> spotDtos = parking.getParkingSpots().stream()
-        .map(this::toParkingSpotDto)
-        .toList();
+        List<ParkingSpotResponseDto> spotDtos = parking.getParkingSpots().stream()
+            .map(this::toParkingSpotDto)
+            .toList();
 
-    List<RoadResponseDto> roadDtos = parking.getRoads().stream()
-        .map(this::toRoadDto)
-        .toList();
+        List<RoadResponseDto> roadDtos = parking.getRoads().stream()
+            .map(this::toRoadDto)
+            .toList();
+        
+        // Binaları da ekleyelim
+        List<BuildingResponseDto> buildingDtos = parking.getBuildings() != null ? 
+            parking.getBuildings().stream()
+                .map(this::toBuildingDto)
+                .toList() : 
+            new ArrayList<>();
 
-    LayoutResponseDto response = new LayoutResponseDto();
-    response.setParkingId(parking.getId());
-    response.setParkingName(parking.getName());
-    response.setCapacity(parking.getCapacity());
-    response.setRows(parking.getRows());
-    response.setColumns(parking.getColumns());
-    response.setParkingSpots(spotDtos);
-    response.setRoads(roadDtos);
+        LayoutResponseDto response = new LayoutResponseDto();
+        response.setParkingId(parking.getId());
+        response.setParkingName(parking.getName());
+        response.setCapacity(parking.getCapacity());
+        response.setRows(parking.getRows());
+        response.setColumns(parking.getColumns());
+        response.setParkingSpots(spotDtos);
+        response.setRoads(roadDtos);
+        response.setBuildings(buildingDtos);
 
-    return ResponseEntity.ok(response);
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/{parkingId}/layout")
@@ -227,6 +247,15 @@ public class ParkingController {
         dto.setId(road.getId());
         dto.setRoadColumn(road.getRoadColumn());
         dto.setRoadRow(road.getRoadRow());
+        dto.setRoadIdentifier(road.getRoadIdentifier());
+        return dto;
+    }
+
+    private BuildingResponseDto toBuildingDto(Building building) {
+        BuildingResponseDto dto = new BuildingResponseDto();
+        dto.setId(building.getId());
+        dto.setBuildingColumn(building.getBuildingColumn());
+        dto.setBuildingRow(building.getBuildingRow());
         return dto;
     }
 } 

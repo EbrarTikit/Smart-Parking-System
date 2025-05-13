@@ -72,6 +72,19 @@ public class Parking {
     @JsonManagedReference
     @OneToMany(mappedBy = "parking", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     private Set<ParkingSpot> parkingSpots = new HashSet<>();
+
+    // Parking sınıfına eklenecek buildings koleksiyonu
+    @OneToMany(mappedBy = "parking", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
+    private Set<Building> buildings = new HashSet<>();
+
+    // Getter ve Setter metodları
+    public Set<Building> getBuildings() {
+        return buildings;
+    }
+
+    public void setBuildings(Set<Building> buildings) {
+        this.buildings = buildings;
+    }
     
     public Parking() {
     }

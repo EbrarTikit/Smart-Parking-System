@@ -33,6 +33,7 @@ public class RoadController {
         Road road = new Road();
         road.setRoadColumn(roadDTO.getRoadColumn());
         road.setRoadRow(roadDTO.getRoadRow());
+        road.setRoadIdentifier(roadDTO.getRoadIdentifier());
         return roadService.saveRoad(road);
     }
 

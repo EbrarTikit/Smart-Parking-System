@@ -1,6 +1,8 @@
 package com.example.smartparkingsystem.data.repository
 
 import android.util.Log
+import com.example.smartparkingsystem.data.model.FavoriteListResponse
+import com.example.smartparkingsystem.data.model.FavoriteResponse
 import com.example.smartparkingsystem.data.model.SignInRequest
 import com.example.smartparkingsystem.data.model.SignInResponse
 import com.example.smartparkingsystem.data.model.SignUpRequest
@@ -66,6 +68,60 @@ class UserRepository @Inject constructor(
                     } ?: Result.failure(Exception("No response body"))
                 } else {
                     Result.failure(Exception("Error: ${response.code()} - ${response.message()}"))
+                }
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+        }
+    }
+
+    suspend fun addFavorite(userId: Int, parkingId: Int): Result<FavoriteResponse> {
+        return withContext(Dispatchers.IO) {
+            try {
+                val response = userService.addFavorite(userId, parkingId)
+                if (response.isSuccessful) {
+                    response.body()?.let {
+                        Result.success(it)
+                    } ?: Result.failure(Exception("No response body"))
+                } else {
+                    val errorBody = response.errorBody()?.string()
+                    Result.failure(Exception(errorBody ?: "Error: ${response.code()}"))
+                }
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+        }
+    }
+
+    suspend fun getFavorites(userId: Int): Result<FavoriteListResponse> {
+        return withContext(Dispatchers.IO) {
+            try {
+                val response = userService.getFavorites(userId)
+                if (response.isSuccessful) {
+                    response.body()?.let { body: FavoriteListResponse ->
+                        Result.success(body)
+                    } ?: Result.failure(Exception("No response body"))
+                } else {
+                    val errorBody = response.errorBody()?.string()
+                    Result.failure(Exception(errorBody ?: "Error: ${response.code()}"))
+                }
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+        }
+    }
+
+    suspend fun removeFavorite(userId: Int, parkingId: Int): Result<FavoriteResponse> {
+        return withContext(Dispatchers.IO) {
+            try {
+                val response = userService.removeFavorite(userId, parkingId)
+                if (response.isSuccessful) {
+                    response.body()?.let {
+                        Result.success(it)
+                    } ?: Result.failure(Exception("No response body"))
+                } else {
+                    val errorBody = response.errorBody()?.string()
+                    Result.failure(Exception(errorBody ?: "Error: ${response.code()}"))
                 }
             } catch (e: Exception) {
                 Result.failure(e)

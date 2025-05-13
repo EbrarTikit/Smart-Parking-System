@@ -33,3 +33,5 @@ easyocr==1.7.0
 
 # Docker kurulumu için bu dosyayı şu şekilde kullanın:
 # RUN pip install --no-cache-dir -r requirements.txt
+
+requests==2.28.2

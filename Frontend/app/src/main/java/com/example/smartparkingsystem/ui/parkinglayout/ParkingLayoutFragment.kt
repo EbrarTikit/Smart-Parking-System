@@ -20,9 +20,12 @@ import androidx.navigation.fragment.findNavController
 import com.example.smartparkingsystem.R
 import com.example.smartparkingsystem.data.model.ParkingLayoutResponse
 import com.example.smartparkingsystem.data.model.SensorUpdateDto
+import com.example.smartparkingsystem.data.model.Spot
+import com.example.smartparkingsystem.data.model.Road
 import com.example.smartparkingsystem.data.remote.ParkingWebSocketClient
 import com.example.smartparkingsystem.databinding.FragmentParkingLayoutBinding
 import com.example.smartparkingsystem.utils.state.UiState
+import com.google.android.material.internal.ViewUtils.dpToPx
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -114,7 +117,7 @@ class ParkingLayoutFragment : Fragment() {
 
     private fun setupToolbar() {
         try {
-            binding.btnBack?.setOnClickListener {
+            binding.btnBack.setOnClickListener {
                 findNavController().navigateUp()
             } ?: Log.e(TAG, "Back button not found")
         } catch (e: Exception) {
@@ -233,7 +236,7 @@ class ParkingLayoutFragment : Fragment() {
         frameLayout: FrameLayout,
         textView: TextView?,
         isDisabled: Boolean,
-        isOccupied: Boolean
+        isOccupied: Boolean,
     ) {
         // Remove all views but keep a reference to the identifier text
         frameLayout.removeAllViews()
@@ -256,6 +259,7 @@ class ParkingLayoutFragment : Fragment() {
         if (isDisabled) {
             addWheelchairIcon(frameLayout)
         }
+
     }
 
     override fun onDestroyView() {
@@ -282,7 +286,9 @@ class ParkingLayoutFragment : Fragment() {
             val spotHeight = (spotWidth * HEIGHT_TO_WIDTH_RATIO).toInt()
 
             val spotMap = layout.parkingSpots.associateBy { it.row to it.column }
-            val roadSet = layout.roads.map { it.roadRow to it.roadColumn }.toSet()
+            val roadMap = layout.roads.associateBy { it.roadRow to it.roadColumn }
+            val roadSet = roadMap.keys
+            val buildingSet = layout.buildings.map { it.buildingRow to it.buildingColumn }.toSet()
             val roadOrientations = determineRoadOrientations(layout.roads, roadSet)
 
             drawGridCells(
@@ -291,7 +297,8 @@ class ParkingLayoutFragment : Fragment() {
                 spotWidth,
                 spotHeight,
                 spotMap,
-                roadSet,
+                roadMap,
+                buildingSet,
                 roadOrientations
             )
 
@@ -321,7 +328,7 @@ class ParkingLayoutFragment : Fragment() {
     )
 
     private fun determineRoadOrientations(
-        roads: List<com.example.smartparkingsystem.data.model.Road>,
+        roads: List<Road>,
         roadSet: Set<Pair<Int, Int>>
     ): RoadOrientations {
         val horizontalRoads = mutableSetOf<Pair<Int, Int>>()
@@ -352,8 +359,9 @@ class ParkingLayoutFragment : Fragment() {
         columns: Int,
         spotWidth: Int,
         spotHeight: Int,
-        spotMap: Map<Pair<Int, Int>, com.example.smartparkingsystem.data.model.Spot>,
-        roadSet: Set<Pair<Int, Int>>,
+        spotMap: Map<Pair<Int, Int>, Spot>,
+        roadMap: Map<Pair<Int, Int>, Road>,
+        buildingSet: Set<Pair<Int, Int>>,
         roadOrientations: RoadOrientations
     ) {
         for (r in 0 until rows) {
@@ -364,10 +372,12 @@ class ParkingLayoutFragment : Fragment() {
                 val params = createGridLayoutParams(r, c, spotWidth, spotHeight)
 
                 when {
-                    roadSet.contains(position) -> {
+                    roadMap.containsKey(position) -> {
+                        val road = roadMap[position]
                         drawRoadCell(
                             frameLayout,
                             position,
+                            road,
                             roadOrientations,
                             spotWidth,
                             spotHeight
@@ -385,6 +395,11 @@ class ParkingLayoutFragment : Fragment() {
                         )
                         // Store reference for WebSocket updates
                         spotViews[spot.id.toLong()] = frameLayout
+                    }
+                    buildingSet.contains(position) -> {
+                        drawBuildingCell(
+                            frameLayout
+                        )
                     }
                     else -> {
                         drawEmptyCell(frameLayout)
@@ -415,6 +430,7 @@ class ParkingLayoutFragment : Fragment() {
     private fun drawRoadCell(
         frameLayout: FrameLayout,
         position: Pair<Int, Int>,
+        road: Road?,
         roadOrientations: RoadOrientations,
         spotWidth: Int,
         spotHeight: Int
@@ -422,16 +438,31 @@ class ParkingLayoutFragment : Fragment() {
         // Set road background
         frameLayout.background = createRoadBackground()
 
-        // Add road line
-        val isHorizontal = roadOrientations.horizontalRoads.contains(position)
-        addRoadLine(frameLayout, isHorizontal, spotWidth, spotHeight)
+        // Check the road identifier
+        when (road?.roadIdentifier?.lowercase()) {
+            "entry" -> {
+                // Add entry text
+                addRoadText(frameLayout, "ENTRY", Color.GREEN)
+            }
+
+            "exit" -> {
+                // Add exit text
+                addRoadText(frameLayout, "EXIT", Color.RED)
+            }
+
+            else -> {
+                // Add regular road line
+                val isHorizontal = roadOrientations.horizontalRoads.contains(position)
+                addRoadLine(frameLayout, isHorizontal, spotWidth, spotHeight)
+            }
+        }
     }
 
     private fun createRoadBackground(): GradientDrawable {
         return GradientDrawable().apply {
             shape = GradientDrawable.RECTANGLE
-            setColor(Color.parseColor(COLOR_WHITE))
             cornerRadius = 4f
+            setColor(Color.parseColor(COLOR_WHITE))
         }
     }
 
@@ -461,7 +492,7 @@ class ParkingLayoutFragment : Fragment() {
 
     private fun drawParkingSpotCell(
         frameLayout: FrameLayout,
-        spot: com.example.smartparkingsystem.data.model.Spot,
+        spot: Spot,
         spotWidth: Int,
         spotHeight: Int,
         row: Int,
@@ -491,10 +522,11 @@ class ParkingLayoutFragment : Fragment() {
         if (isDisabled) {
             addWheelchairIcon(frameLayout)
         }
+
     }
 
     private fun getSpotIdentifier(
-        spot: com.example.smartparkingsystem.data.model.Spot,
+        spot: Spot,
         row: Int,
         col: Int
     ): String {
@@ -706,5 +738,53 @@ class ParkingLayoutFragment : Fragment() {
         binding.apply {
             progressBar.visibility = if (isLoading) View.VISIBLE else View.GONE
         }
+    }
+
+    private fun addRoadText(frameLayout: FrameLayout, text: String, textColor: Int) {
+        val textView = TextView(requireContext()).apply {
+            this.text = text
+            this.setTextColor(textColor)
+            textSize = 12f
+            typeface = Typeface.create("sans-serif-medium", Typeface.BOLD)
+            gravity = Gravity.CENTER
+            layoutParams = FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.MATCH_PARENT
+            ).apply {
+                gravity = Gravity.CENTER
+            }
+        }
+        frameLayout.addView(textView)
+    }
+
+    private fun drawBuildingCell(frameLayout: FrameLayout) {
+        // Set building background
+        val buildingBackground = GradientDrawable().apply {
+            shape = GradientDrawable.RECTANGLE
+            setColor(Color.parseColor("#FFFFFF"))  // Light gray background
+            cornerRadius = 4f
+        }
+        frameLayout.background = buildingBackground
+
+        // Add building indicator (black square)
+        addBuildingIndicator(frameLayout)
+    }
+
+    private fun addBuildingIndicator(frameLayout: FrameLayout) {
+        val blackSquare = View(requireContext()).apply {
+            // Siyah arka plan ayarla
+            setBackgroundColor(Color.BLACK)
+
+            // 40x40dp boyutunda görünüm oluştur
+            layoutParams = FrameLayout.LayoutParams(
+                dpToPx(40),
+                dpToPx(40)
+            ).apply {
+                gravity = Gravity.CENTER // Merkeze konumlandır
+            }
+        }
+
+        // Kareyi frameLayout'a ekle
+        frameLayout.addView(blackSquare)
     }
 }

@@ -8,27 +8,29 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.Column;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name = "roads")
+@Table(name = "buildings")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class Road {
+public class Building {
     
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     
-    private int roadColumn;
-    private int roadRow;
-    private String roadIdentifier;
+    @Column(name = "building_column")
+    private int buildingColumn;
+    
+    @Column(name = "building_row")
+    private int buildingRow;
 
     @ManyToOne
     @JsonIgnore
     private Parking parking;
-
 }

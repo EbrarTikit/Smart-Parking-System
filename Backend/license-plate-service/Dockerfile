@@ -48,7 +48,7 @@ FROM base-builder AS builder-web
 COPY requirements.txt .
 RUN pip wheel --no-cache-dir -w /wheels \
     fastapi==0.95.0 \
-    uvicorn==0.21.1 \
+    uvicorn[standard]==0.21.1 \
     sqlalchemy==2.0.9 \
     psycopg2-binary==2.9.6 \
     pydantic==1.10.7 \
@@ -136,7 +136,7 @@ COPY app/model/sort /app/app/model/sort
 RUN pip install --no-cache-dir \
     numpy==1.24.2 \
     fastapi==0.95.0 \
-    uvicorn==0.21.1 \
+    uvicorn[standard]==0.21.1 \
     sqlalchemy==2.0.9 \
     psycopg2-binary==2.9.6 \
     pydantic==1.10.7 \
@@ -167,8 +167,9 @@ RUN pip install --no-cache-dir --no-index --find-links=/wheels /wheels/* || true
 # Ultralytics için git yapılandırmasını oluştur
 RUN mkdir -p /app/.git && touch /app/.git/config
 
-# Uvicorn çalıştırılabilir olduğunu kontrol et
-RUN which uvicorn || echo "Uvicorn bulunamadı!"
+# Uvicorn ve WebSocket kitaplıklarının doğru yüklendiğini kontrol et
+RUN pip list | grep -e uvicorn -e websockets -e wsproto && \
+    python -c "import uvicorn; print(f'Uvicorn {uvicorn.__version__} installed'); import websockets; print(f'Websockets {websockets.__version__} installed'); import wsproto; print(f'WSProto {wsproto.__version__} installed')" || echo "WebSocket kütüphaneleri doğru yüklenmedi!"
 
 # Uygulamayı kopyala - uygulama kodları en son kopyalanmalı çünkü daha sık değişir
 COPY app /app/app

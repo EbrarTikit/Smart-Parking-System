@@ -27,7 +27,7 @@ public class FavoriteParkingService {
     private final UserRepository userRepository;
     private final RestTemplate restTemplate;
     
-    @Value("${parking.management.service.url:http://localhost:8081}")
+    @Value("${parking.management.service.url:http://parking-management-service:8081}")
     private String parkingServiceUrl;
 
     public FavoriteParkingService(FavoriteParkingRepository favoriteParkingRepository,

@@ -225,6 +225,7 @@ if __name__ == "__main__":
 
 class VehicleEntryRequest(BaseModel):
     license_plate: str
+    parking_id: int = 1  # Varsayılan otopark ID'si
 
 class VehicleEntryResponse(BaseModel):
     success: bool
@@ -275,6 +276,9 @@ def register_vehicle_entry(
     (Yedek Yöntem: Kamera/görüntü işleme sisteminin çalışmadığı durumlarda yedek yöntem olarak)
     """
     try:
+        # Logger oluştur
+        logger.info(f"Araç girişi işlemi başlatılıyor: {entry.license_plate}, Otopark ID: {entry.parking_id}")
+        
         # Plaka kontrolü
         if not entry.license_plate:
             return VehicleEntryResponse(
@@ -312,14 +316,18 @@ def register_vehicle_entry(
                     "status": "already_parked",
                     "message": f"Araç zaten park halinde: {entry.license_plate}",
                     "parking_record_id": active_record.id,
-                    "entry_time": active_record.entry_time.isoformat()
+                    "entry_time": active_record.entry_time.isoformat(),
+                    "parking_id": entry.parking_id  # Otopark ID'sini ekle
                 }))
             )
             
             return response
         
         # Yeni park kaydı oluştur
-        parking_record_data = ParkingRecordCreate(vehicle_id=db_vehicle.id)
+        parking_record_data = ParkingRecordCreate(
+            vehicle_id=db_vehicle.id,
+            parking_id=entry.parking_id  # Otopark ID'sini ekle
+        )
         new_record = create_parking_record(db, parking_record_data)
         
         response = VehicleEntryResponse(
@@ -338,7 +346,8 @@ def register_vehicle_entry(
                 "license_plate": db_vehicle.license_plate,
                 "action": "entry",
                 "entry_time": new_record.entry_time.isoformat(),
-                "message": f"Araç girişi: {entry.license_plate}"
+                "message": f"Araç girişi: {entry.license_plate}",
+                "parking_id": entry.parking_id  # Otopark ID'sini ekle
             }))
         )
         
@@ -495,6 +504,7 @@ def register_vehicle_exit(
 async def process_plate_for_entry(
     file: UploadFile = File(...),
     save_debug: bool = Query(False, description="Debug görsellerini kaydet"),
+    parking_id: int = Query(1, description="Otopark ID'si"),
     db: Session = Depends(get_db)
 ):
     """
@@ -524,7 +534,7 @@ async def process_plate_for_entry(
         license_plate = results["license_plates"][0]
         
         # Araç girişi yap
-        vehicle_entry = VehicleEntryRequest(license_plate=license_plate)
+        vehicle_entry = VehicleEntryRequest(license_plate=license_plate, parking_id=parking_id)
         return register_vehicle_entry(vehicle_entry, db)
         
     except Exception as e:
@@ -703,7 +713,26 @@ async def websocket_admin_endpoint(websocket: WebSocket):
                         "data": manager.get_connection_status(),
                         "timestamp": datetime.datetime.now().isoformat()
                     }))
+                
+                elif message_type == "parking_change":
+                    # Otopark değişikliği olayını işle
+                    parking_data = message.get("data", {})
+                    parking_id = parking_data.get("parking_id")
                     
+                    if parking_id:
+                        logger.info(f"Admin tarafından otopark değişikliği: Otopark ID={parking_id}")
+                        
+                        # Otopark ile ilgili bilgileri döndür (ileride otopark API'den çekilebilir)
+                        await websocket.send_text(json.dumps({
+                            "type": "parking_info",
+                            "data": {
+                                "parking_id": parking_id,
+                                "timestamp": datetime.datetime.now().isoformat()
+                            }
+                        }))
+                    else:
+                        logger.warning(f"Geçersiz otopark ID'si parking_change mesajında: {message}")
+                
                 else:
                     logger.debug(f"Bilinmeyen admin mesajı: {message_type}")
                     
@@ -855,5 +884,124 @@ async def websocket_vehicle_endpoint(websocket: WebSocket, license_plate: str):
 # WebSocket bilgi endpointi
 @app.get("/ws/info")
 def websocket_info():
-    """WebSocket bağlantı durumu bilgilerini döndürür"""
+    """WebSocket bağlantı durumunu görüntüle"""
     return manager.get_connection_status()
+
+@app.get("/active-vehicles")
+def get_active_vehicles(
+    limit: int = Query(50, description="Maksimum kayıt sayısı"),
+    parking_id: int = Query(None, description="Otopark ID'si (filtreleme için)"),
+    db: Session = Depends(get_db)
+):
+    """
+    Şu anda otoparkta bulunan araçların listesini döndürür
+    """
+    try:
+        # Aktif park kayıtlarını getir
+        query = db.query(ParkingRecord).filter(
+            ParkingRecord.exit_time == None  # Çıkış yapmamış olanlar
+        ).join(Vehicle)
+        
+        # Otopark ID'si filtresi ekle
+        if parking_id is not None:
+            query = query.filter(ParkingRecord.parking_id == parking_id)
+            
+        active_records = query.order_by(ParkingRecord.entry_time.desc()).limit(limit).all()
+        
+        result = []
+        for record in active_records:
+            vehicle = record.vehicle  # İlişkili araç
+            result.append({
+                "id": vehicle.id,
+                "license_plate": vehicle.license_plate,
+                "entry_time": record.entry_time.isoformat(),
+                "parking_record_id": record.id,
+                "parking_id": record.parking_id or 1  # Default 1 olarak ayarla
+            })
+            
+        return result
+    except Exception as e:
+        logger.error(f"Aktif araçlar alınırken hata: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Veritabanı hatası: {str(e)}")
+
+@app.get("/recent-activities")
+def get_recent_activities(
+    limit: int = Query(20, description="Maksimum kayıt sayısı"),
+    parking_id: int = Query(None, description="Otopark ID'si (filtreleme için)"),
+    db: Session = Depends(get_db)
+):
+    """
+    Son giriş/çıkış aktivitelerinin listesini döndürür
+    """
+    try:
+        # Baz sorguları oluştur
+        completed_query = db.query(ParkingRecord).filter(
+            ParkingRecord.exit_time != None  # Çıkış yapmış olanlar
+        ).join(Vehicle)
+        
+        active_query = db.query(ParkingRecord).filter(
+            ParkingRecord.exit_time == None  # Çıkış yapmamış olanlar
+        ).join(Vehicle)
+        
+        # Otopark ID'si filtresi ekle
+        if parking_id is not None:
+            completed_query = completed_query.filter(ParkingRecord.parking_id == parking_id)
+            active_query = active_query.filter(ParkingRecord.parking_id == parking_id)
+        
+        # En son tamamlanan (çıkış yapılmış) park kayıtlarını getir    
+        completed_records = completed_query.order_by(ParkingRecord.exit_time.desc()).limit(limit).all()
+        
+        # En son giriş yapılmış (aktif) park kayıtlarını getir
+        active_records = active_query.order_by(ParkingRecord.entry_time.desc()).limit(limit).all()
+        
+        result = []
+        
+        # Çıkış aktiviteleri
+        for record in completed_records:
+            vehicle = record.vehicle
+            
+            # Park süresini hesapla (saat olarak)
+            duration = (record.exit_time - record.entry_time).total_seconds() / 3600
+            
+            # Ücret TL'ye çevrilmeli
+            fee_tl = float(record.parking_fee) / 100.0 if record.parking_fee else 0
+            
+            result.append({
+                "id": record.id,
+                "vehicle_id": vehicle.id,
+                "license_plate": vehicle.license_plate,
+                "action": "exit",
+                "entry_time": record.entry_time.isoformat(),
+                "exit_time": record.exit_time.isoformat(),
+                "duration_hours": round(duration, 2),
+                "parking_fee": round(fee_tl, 2),
+                "message": f"Araç çıkışı: {vehicle.license_plate}",
+                "parking_id": record.parking_id or 1  # Default 1 olarak ayarla
+            })
+        
+        # Giriş aktiviteleri
+        for record in active_records:
+            vehicle = record.vehicle
+            result.append({
+                "id": record.id,
+                "vehicle_id": vehicle.id,
+                "license_plate": vehicle.license_plate,
+                "action": "entry",
+                "entry_time": record.entry_time.isoformat(),
+                "message": f"Araç girişi: {vehicle.license_plate}",
+                "parking_id": record.parking_id or 1  # Default 1 olarak ayarla
+            })
+        
+        # Tarihe göre sırala (en yeni en üstte)
+        result.sort(key=lambda x: x.get("exit_time", x.get("entry_time")), reverse=True)
+        
+        # Sınırla
+        return result[:limit]
+        
+    except Exception as e:
+        logger.error(f"Son aktiviteler alınırken hata: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Veritabanı hatası: {str(e)}")

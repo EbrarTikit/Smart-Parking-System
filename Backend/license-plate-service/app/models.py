@@ -23,6 +23,7 @@ class ParkingRecord(Base):
     exit_time = Column(DateTime(timezone=True), nullable=True)
     is_active = Column(Boolean, default=True)
     parking_fee = Column(Integer, nullable=True)  # Kuruş cinsinden
+    parking_id = Column(Integer, default=1)  # Otopark ID'si
     
     # İlişkiler
     vehicle = relationship("Vehicle", back_populates="parking_records")

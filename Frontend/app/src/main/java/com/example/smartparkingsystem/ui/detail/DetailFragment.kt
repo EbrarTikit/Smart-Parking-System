@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.util.Log
 import androidx.fragment.app.Fragment
 import android.view.View
 import android.widget.Toast
@@ -15,7 +16,9 @@ import com.example.smartparkingsystem.data.model.ParkingListResponse
 import com.example.smartparkingsystem.databinding.FragmentDetailBinding
 import com.example.smartparkingsystem.utils.loadImage
 import com.example.smartparkingsystem.utils.state.UiState
+import com.example.smartparkingsystem.utils.SessionManager
 import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 import kotlinx.coroutines.flow.collectLatest
 
 @AndroidEntryPoint
@@ -26,11 +29,23 @@ class DetailFragment : Fragment(R.layout.fragment_detail) {
 
     private val viewModel: DetailViewModel by viewModels()
 
+    @Inject
+    lateinit var sessionManager: SessionManager
+
     private lateinit var parking: ParkingListResponse
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         _binding = FragmentDetailBinding.bind(view)
+
+        // Debug session info at fragment start
+        val userId = sessionManager.getUserId()
+        val isLoggedIn = sessionManager.isLoggedIn()
+        val token = sessionManager.getToken()
+        Log.d(
+            "DetailFragment",
+            "Session Info - userId: $userId, isLoggedIn: $isLoggedIn, token: $token"
+        )
 
         arguments?.getParcelable<ParkingListResponse>("parking")?.let { parking ->
             this.parking = parking
@@ -38,6 +53,7 @@ class DetailFragment : Fragment(R.layout.fragment_detail) {
             setupClickListeners()
             trackView()
             observeViewerCount()
+            checkFavoriteStatus()
         }
     }
 
@@ -63,7 +79,9 @@ class DetailFragment : Fragment(R.layout.fragment_detail) {
         }
 
         binding.btnFavorite.setOnClickListener {
-
+            val userId = getUserIdFromPrefsOrSession()
+            Log.d("DetailFragment", "Favorite button clicked, userId=$userId, parkingId=${parking.id}")
+            viewModel.toggleFavorite(userId, parking.id)
         }
 
         binding.btnSeeLocation.setOnClickListener {
@@ -127,15 +145,58 @@ class DetailFragment : Fragment(R.layout.fragment_detail) {
         }
     }
 
+    private fun checkFavoriteStatus() {
+        val userId = getUserIdFromPrefsOrSession()
+        viewModel.checkIfFavorite(userId, parking.id)
+
+        viewLifecycleOwner.lifecycleScope.launchWhenStarted {
+            viewModel.favoriteState.collectLatest { state ->
+                when (state) {
+                    is UiState.Loading -> {
+                        // Favori durumu kontrol edilirken butonu devre dışı bırak
+                        binding.btnFavorite.isEnabled = false
+                    }
+                    is UiState.Success -> {
+                        // Favori durumu başarıyla alındığında butonu aktif et
+                        binding.btnFavorite.isEnabled = true
+                        updateFavoriteIcon(state.data)
+                    }
+                    is UiState.Error -> {
+                        // Hata durumunda butonu aktif et ve hata mesajını göster
+                        binding.btnFavorite.isEnabled = true
+                        Toast.makeText(requireContext(), state.message, Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
+        }
+    }
+
+    private fun updateFavoriteIcon(isFavorite: Boolean) {
+        Log.d("DetailFragment", "Updating favorite icon, isFavorite=$isFavorite")
+        binding.btnFavorite.setImageResource(
+            if (isFavorite) R.drawable.ic_favorite_
+            else R.drawable.ic_favorite_unfilled
+        )
+    }
+
     private fun trackView() {
         val userId = getUserIdFromPrefsOrSession()
         viewModel.trackUserView(userId, parking.id)
     }
 
     private fun getUserIdFromPrefsOrSession(): Int {
-        val sharedPreferences =
-            requireContext().getSharedPreferences("user_prefs", Context.MODE_PRIVATE)
-        return sharedPreferences.getInt("userId", 0)
+        val userId = sessionManager.getUserId()
+        Log.d("DetailFragment", "Retrieved userId from SessionManager: $userId")
+        if (userId <= 0) {
+            Toast.makeText(
+                requireContext(),
+                "Oturum bilgisi bulunamadı. Lütfen tekrar giriş yapın.",
+                Toast.LENGTH_LONG
+            ).show()
+        } else {
+            Toast.makeText(requireContext(), "Using userId: $userId", Toast.LENGTH_SHORT).show()
+        }
+        return userId.toInt()
     }
 
     override fun onDestroyView() {

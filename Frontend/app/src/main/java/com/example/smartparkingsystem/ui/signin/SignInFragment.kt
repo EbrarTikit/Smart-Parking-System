@@ -9,6 +9,7 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
 import androidx.core.content.ContextCompat
 import androidx.core.widget.addTextChangedListener
 import androidx.fragment.app.viewModels
@@ -16,9 +17,11 @@ import androidx.navigation.NavOptions
 import androidx.navigation.fragment.findNavController
 import com.example.smartparkingsystem.R
 import com.example.smartparkingsystem.databinding.FragmentSignInBinding
+import com.example.smartparkingsystem.utils.SessionManager
 import com.example.smartparkingsystem.utils.state.UiState
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class SignInFragment : Fragment() {
@@ -27,6 +30,9 @@ class SignInFragment : Fragment() {
     private val binding get() = _binding!!
 
     private val viewModel: SignInViewModel by viewModels()
+
+    @Inject
+    lateinit var sessionManager: SessionManager
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -38,6 +44,11 @@ class SignInFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
+        // Clear any previous session to start fresh
+        sessionManager.clearSession()
+        Log.d("SignInFragment", "Cleared previous session")
+
         setupTextChangedListeners()
         setupClickListeners()
         setupObservers()
@@ -71,8 +82,19 @@ class SignInFragment : Fragment() {
                 is UiState.Success -> {
                     showLoading(false)
                     val userId = state.data.id
-                    val sharedPreferences = requireContext().getSharedPreferences("user_prefs", Context.MODE_PRIVATE)
-                    sharedPreferences.edit().putInt("userId", userId.toInt()).apply()
+                    try {
+                        Log.d("SignInFragment", "Using userId from response: $userId")
+                        // Verify the save worked
+                        val savedUserId = sessionManager.getUserId()
+                        Log.d("SignInFragment", "Verification - read userId: $savedUserId")
+                    } catch (e: Exception) {
+                        Log.e("SignInFragment", "Error saving userId", e)
+                        Toast.makeText(
+                            requireContext(),
+                            "Oturum bilgisi kaydedilemedi: ${e.message}",
+                            Toast.LENGTH_LONG
+                        ).show()
+                    }
 
                     if (ContextCompat.checkSelfPermission(
                             requireContext(),

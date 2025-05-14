@@ -1,6 +1,6 @@
 package com.example.parking_management_service.parking_info.model;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonBackReference;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -31,6 +31,6 @@ public class Building {
     private int buildingRow;
 
     @ManyToOne
-    @JsonIgnore
+    @JsonBackReference
     private Parking parking;
 }

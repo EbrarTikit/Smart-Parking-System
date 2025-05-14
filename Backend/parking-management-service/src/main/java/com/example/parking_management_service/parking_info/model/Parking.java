@@ -57,6 +57,7 @@ public class Parking {
     private String imageUrl;
 
     // Parking sınıfına eklenecek
+    @JsonManagedReference
     @OneToMany(mappedBy = "parking", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     private Set<Road> roads = new HashSet<>();
 
@@ -74,6 +75,7 @@ public class Parking {
     private Set<ParkingSpot> parkingSpots = new HashSet<>();
 
     // Parking sınıfına eklenecek buildings koleksiyonu
+    @JsonManagedReference
     @OneToMany(mappedBy = "parking", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     private Set<Building> buildings = new HashSet<>();
 

@@ -1,5 +1,6 @@
 package com.example.smartparkingsystem.ui
 
+import android.content.Context
 import android.os.Bundle
 import android.util.Log
 import android.view.View
@@ -14,12 +15,17 @@ import androidx.navigation.ui.setupWithNavController
 import androidx.navigation.navOptions
 import com.example.smartparkingsystem.R
 import com.example.smartparkingsystem.databinding.ActivityMainBinding
+import com.example.smartparkingsystem.utils.SessionManager
 import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private lateinit var navController: NavController
+
+    @Inject
+    lateinit var sessionManager: SessionManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -34,6 +40,7 @@ class MainActivity : AppCompatActivity() {
             insets
         }
 
+        checkUserLoginStatus()
         setupNavigation()
     }
 
@@ -105,6 +112,18 @@ class MainActivity : AppCompatActivity() {
                     .remove(fragment)
                     .commitNow()
             }
+        }
+    }
+
+    private fun checkUserLoginStatus() {
+        val userId = sessionManager.getUserId()
+        val isLoggedIn = sessionManager.isLoggedIn()
+        Log.d("MainActivity", "Application started with userId: $userId, isLoggedIn: $isLoggedIn")
+
+        if (userId <= 0 || !isLoggedIn) {
+            Log.d("MainActivity", "No valid userId found in SessionManager")
+        } else {
+            Log.d("MainActivity", "User is logged in with userId: $userId")
         }
     }
 

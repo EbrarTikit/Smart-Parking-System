@@ -43,7 +43,29 @@ class SignInViewModel @Inject constructor(
     }
 
     private fun saveUserSession(response: SignInResponse) {
-        sessionManager.saveUserSession(response.id, response.token)
+        // Debug info before save
+        android.util.Log.d(
+            "SignInViewModel",
+            "Before saving - userId: ${response.id} (type: ${response.id.javaClass.name}), token: ${response.token}"
+        )
+
+        // Print the full response object to see all fields
+        android.util.Log.d("SignInViewModel", "FULL RESPONSE: $response")
+
+        // Convert to ensure correct type
+        val userIdLong = response.id
+
+        // Save to session manager
+        sessionManager.saveUserSession(userIdLong, response.token)
+
+        // Verify session was saved correctly
+        val savedUserId = sessionManager.getUserId()
+        val isLoggedIn = sessionManager.isLoggedIn()
+        val token = sessionManager.getToken()
+        android.util.Log.d(
+            "SignInViewModel",
+            "Session saved - userId: $savedUserId, isLoggedIn: $isLoggedIn, token: $token"
+        )
     }
 
     private fun validateInput(username: String, password: String): Boolean {

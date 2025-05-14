@@ -174,7 +174,7 @@ class DetailFragment : Fragment(R.layout.fragment_detail) {
     private fun updateFavoriteIcon(isFavorite: Boolean) {
         Log.d("DetailFragment", "Updating favorite icon, isFavorite=$isFavorite")
         binding.btnFavorite.setImageResource(
-            if (isFavorite) R.drawable.ic_favorite_
+            if (isFavorite) R.drawable.favorite
             else R.drawable.ic_favorite_unfilled
         )
     }

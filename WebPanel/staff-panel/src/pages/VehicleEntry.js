@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { api } from "../services/api";
 import "./VehicleEntry.css";
 
 const VehicleEntry = () => {
+  const [searchParams] = useSearchParams();
   const [licensePlate, setLicensePlate] = useState("");
+  const [parkingId, setParkingId] = useState(17); // Varsayılan otopark ID'si (Merkez Otopark)
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -13,6 +15,15 @@ const VehicleEntry = () => {
   const [entryMode, setEntryMode] = useState("manual"); // manual veya image
 
   const navigate = useNavigate();
+
+  // URL parametrelerinden otopark ID'sini al
+  useEffect(() => {
+    const parkingFromUrl = searchParams.get("parking");
+
+    if (parkingFromUrl) {
+      setParkingId(parseInt(parkingFromUrl));
+    }
+  }, [searchParams]);
 
   // Image dosyası seçildiğinde önizleme oluşturma
   const handleImageChange = (e) => {
@@ -46,7 +57,7 @@ const VehicleEntry = () => {
     setError(null);
 
     try {
-      const result = await api.vehicleEntry(licensePlate.trim());
+      const result = await api.vehicleEntry(licensePlate.trim(), parkingId);
 
       if (result.success) {
         setSuccess(`Araç girişi başarılı: ${licensePlate}`);
@@ -79,7 +90,7 @@ const VehicleEntry = () => {
     setError(null);
 
     try {
-      const result = await api.processPlateForEntry(imageFile);
+      const result = await api.processPlateForEntry(imageFile, parkingId);
 
       if (result.success) {
         setSuccess(
@@ -132,6 +143,19 @@ const VehicleEntry = () => {
           <p>{success}</p>
         </div>
       )}
+
+      <div className="parking-selector">
+        <label htmlFor="parking-id">Otopark:</label>
+        <select
+          id="parking-id"
+          value={parkingId}
+          onChange={(e) => setParkingId(parseInt(e.target.value))}
+          disabled={loading}
+        >
+          <option value="17">Merkez Otopark (ID: 17)</option>
+          <option value="23">Milas Otopark (ID: 23)</option>
+        </select>
+      </div>
 
       {entryMode === "manual" ? (
         <form onSubmit={handleManualSubmit} className="entry-form">

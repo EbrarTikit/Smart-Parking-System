@@ -35,19 +35,25 @@ public class ParkingService {
         clearBuildingsOfParking(parkingId);
     }
 
+    @Transactional
     public void createParkingLayout(Long parkingId, LayoutRequestDto layoutRequestDto) {
         Parking parking = parkingRepository.findById(parkingId)
             .orElseThrow(() -> new RuntimeException("Parking not found"));
-    
-        // Layout var mı kontrolü
-        if (!parking.getParkingSpots().isEmpty() || !parking.getRoads().isEmpty() || !parking.getBuildings().isEmpty()) {
-            throw new IllegalStateException("This parking already has a layout. Please clear it before creating a new one.");
-        }
-    
+
+        // Öncelikle mevcut düzeni tamamen temizleyelim
+        // Bu sayede aynı konumda var olan kayıtlar silinir
+        clearParkingSpotsOfParking(parkingId);
+        clearRoadsOfParking(parkingId);
+        clearBuildingsOfParking(parkingId);
+        
+        // Yeniden çekiyoruz çünkü temizledik
+        parking = parkingRepository.findById(parkingId)
+            .orElseThrow(() -> new RuntimeException("Parking not found"));
+        
         // Binaları da içerecek şekilde pozisyon doğrulaması yapılır
         List<BuildingDto> buildings = layoutRequestDto.getBuildings() != null ? layoutRequestDto.getBuildings() : new ArrayList<>();
         PositionValidator.validateUniquePositions(layoutRequestDto.getParkingSpots(), layoutRequestDto.getRoads(), buildings);
-    
+
         for (ParkingSpotDto spotDto : layoutRequestDto.getParkingSpots()) {
             PositionValidator.validateWithinBounds(spotDto.getRow(), spotDto.getColumn(), parking.getRows(), parking.getColumns());
             ParkingSpot spot = new ParkingSpot();
@@ -59,7 +65,7 @@ public class ParkingService {
             spot.setParking(parking);
             parking.getParkingSpots().add(spot);
         }
-    
+
         for (RoadDTO roadDto : layoutRequestDto.getRoads()) {
             PositionValidator.validateWithinBounds(roadDto.getRoadRow(), roadDto.getRoadColumn(), parking.getRows(), parking.getColumns());
             Road road = new Road();
@@ -69,8 +75,8 @@ public class ParkingService {
             road.setParking(parking);
             parking.getRoads().add(road);
         }
-    
-         for (BuildingDto buildingDto : layoutRequestDto.getBuildings()) {
+
+        for (BuildingDto buildingDto : layoutRequestDto.getBuildings()) {
             PositionValidator.validateWithinBounds(buildingDto.getBuildingRow(), buildingDto.getBuildingColumn(), parking.getRows(), parking.getColumns());
             Building building = new Building();
             building.setBuildingRow(buildingDto.getBuildingRow());
@@ -78,6 +84,7 @@ public class ParkingService {
             building.setParking(parking);
             parking.getBuildings().add(building);
         }
+        
         parkingRepository.save(parking);
     }
 

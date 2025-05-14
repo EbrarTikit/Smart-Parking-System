@@ -236,6 +236,9 @@ public class ParkingService {
         // If rows or columns have changed and are not null, update the layout
         if ((newRows != null && newColumns != null) && 
             (oldRows != newRows || oldColumns != newColumns)) {
+            // Clear existing parking spots before creating new layout
+            clearParkingSpotsOfParking(id);
+            // Now create new layout
             parkingSpotService.createParkingLayout(id, newRows, newColumns);
             // Refresh the parking object after layout update
             updatedParking = parkingRepository.findById(id).get();

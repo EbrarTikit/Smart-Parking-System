@@ -1,12 +1,31 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Container, Typography, Button, Box, Grid, Paper } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import PageHeader from './common/PageHeader';
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const username = localStorage.getItem('username') || 'Kullanıcı';
-  const userId = localStorage.getItem('userId') || '0';
+  const [userData, setUserData] = useState({
+    username: 'Kullanıcı',
+    userId: '1',
+    userEmail: 'admin@example.com'
+  });
+
+  useEffect(() => {
+    // Sayfa yüklendiğinde localStorage'dan kullanıcı bilgilerini al
+    const username = localStorage.getItem('username');
+    const userId = localStorage.getItem('userId');
+    const userEmail = localStorage.getItem('userEmail');
+    
+    // Eğer kullanıcı bilgileri varsa state'i güncelle
+    if (username || userId || userEmail) {
+      setUserData({
+        username: username || 'Kullanıcı',
+        userId: userId || '1',
+        userEmail: userEmail || 'admin@example.com'
+      });
+    }
+  }, []);
   
   const handleLogout = () => {
     localStorage.removeItem('isLoggedIn');
@@ -19,20 +38,20 @@ const Dashboard = () => {
   return (
     <Container maxWidth="md">
       <Box sx={{ my: 4 }}>
-        <PageHeader title={`Hoş Geldiniz, ${username}`} />
+        <PageHeader title={`Hoş Geldiniz, ${userData.username}`} />
         
         <Box sx={{ mb: 3, p: 2, bgcolor: 'background.paper', borderRadius: 1 }}>
           <Typography variant="subtitle1" gutterBottom>
             Kullanıcı Bilgileri:
           </Typography>
           <Typography variant="body2">
-            ID: {userId}
+            ID: {userData.userId}
           </Typography>
           <Typography variant="body2">
-            Kullanıcı Adı: {username}
+            Kullanıcı Adı: {userData.username}
           </Typography>
           <Typography variant="body2">
-            E-posta: {localStorage.getItem('userEmail') || 'Belirtilmemiş'}
+            E-posta: {userData.userEmail}
           </Typography>
         </Box>
         

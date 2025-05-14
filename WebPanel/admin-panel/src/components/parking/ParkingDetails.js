@@ -415,13 +415,23 @@ const ParkingDetails = () => {
         >
           Otoparklar Listesine Dön
         </Button>
-        <Button 
-          variant="contained" 
-          startIcon={<EditIcon />} 
-          onClick={handleEditClick}
-        >
-          Otoparkı Düzenle
-        </Button>
+        <Box>
+          <Button 
+            variant="outlined" 
+            startIcon={<GridViewIcon />} 
+            onClick={() => navigate(`/parking-layout/${id}`)}
+            sx={{ mr: 2 }}
+          >
+            Otopark Düzenini Görüntüle
+          </Button>
+          <Button 
+            variant="contained" 
+            startIcon={<EditIcon />} 
+            onClick={handleEditClick}
+          >
+            Otoparkı Düzenle
+          </Button>
+        </Box>
       </Box>
     </Container>
   );

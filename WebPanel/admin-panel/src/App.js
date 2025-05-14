@@ -11,6 +11,8 @@ import AddParking from './components/parking/AddParking';
 import ParkingList from './components/parking/ParkingList';
 import ParkingDetails from './components/parking/ParkingDetails';
 import EditParking from './components/parking/EditParking';
+import ParkingLayout from './components/parking/ParkingLayout';
+import Dashboard from './components/Dashboard';
 
 // Tüm bileşenleri doğrudan App.js içinde tanımlayalım
 const SignIn = () => {
@@ -52,8 +54,9 @@ const SignIn = () => {
       
       // Kullanıcı bilgilerini localStorage'a kaydet
       localStorage.setItem('isLoggedIn', 'true');
-      localStorage.setItem('userId', response.data.id);
-      localStorage.setItem('username', response.data.username);
+      localStorage.setItem('userId', response.data.id || '1');
+      localStorage.setItem('username', response.data.username || formData.username);
+      localStorage.setItem('userEmail', response.data.email || 'admin@example.com');
       
       // Dashboard'a yönlendir
       navigate('/dashboard');
@@ -173,6 +176,12 @@ const SignUp = () => {
       });
       
       console.log('Kayıt başarılı:', response.data);
+      
+      // Kullanıcı bilgilerini localStorage'a da kaydet
+      localStorage.setItem('userId', response.data.id || '1');
+      localStorage.setItem('username', response.data.username || formData.username);
+      localStorage.setItem('userEmail', response.data.email || formData.email);
+      
       setSuccess('Kayıt başarılı! Giriş sayfasına yönlendiriliyorsunuz...');
       
       setTimeout(() => {
@@ -276,109 +285,6 @@ const SignUp = () => {
   );
 };
 
-const Dashboard = () => {
-  const navigate = useNavigate();
-  
-  const handleLogout = () => {
-    localStorage.removeItem('isLoggedIn');
-    localStorage.removeItem('authToken');
-    navigate('/signin');
-  };
-  
-  const saveCheckpoint = () => {
-    localStorage.setItem('lastCheckpoint', new Date().toISOString());
-    alert('Checkpoint kaydedildi!');
-  };
-  
-  const restoreCheckpoint = () => {
-    const lastCheckpoint = localStorage.getItem('lastCheckpoint');
-    if (lastCheckpoint) {
-      alert(`Son checkpoint: ${new Date(lastCheckpoint).toLocaleString()}`);
-    } else {
-      alert('Kaydedilmiş checkpoint bulunamadı!');
-    }
-  };
-  
-  return (
-    <Container maxWidth="md">
-      <Box sx={{ my: 4 }}>
-        <Typography variant="h4" component="h1" gutterBottom>
-          Otopark Yönetim Paneli
-        </Typography>
-        
-        <Grid container spacing={3} sx={{ mt: 2 }}>
-          <Grid item xs={12} md={6}>
-            <Paper 
-              elevation={3} 
-              sx={{ 
-                p: 3, 
-                textAlign: 'center',
-                cursor: 'pointer',
-                '&:hover': { backgroundColor: '#f5f5f5' }
-              }}
-              onClick={() => navigate('/add-parking')}
-            >
-              <Typography variant="h6" sx={{ mt: 1 }}>
-                Yeni Otopark Ekle
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Sisteme yeni bir otopark eklemek için tıklayın
-              </Typography>
-            </Paper>
-          </Grid>
-          
-          <Grid item xs={12} md={6}>
-            <Paper 
-              elevation={3} 
-              sx={{ 
-                p: 3, 
-                textAlign: 'center',
-                cursor: 'pointer',
-                '&:hover': { backgroundColor: '#f5f5f5' }
-              }}
-              onClick={() => navigate('/parkings')}
-            >
-              <Typography variant="h6" sx={{ mt: 1 }}>
-                Otoparkları Listele
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Mevcut otoparkları görüntülemek ve yönetmek için tıklayın
-              </Typography>
-            </Paper>
-          </Grid>
-        </Grid>
-        
-        <Box sx={{ mt: 4, display: 'flex', justifyContent: 'space-between' }}>
-          <Box>
-            <Button 
-              variant="outlined" 
-              color="primary" 
-              onClick={saveCheckpoint}
-              sx={{ mr: 2 }}
-            >
-              Checkpoint Kaydet
-            </Button>
-            <Button 
-              variant="outlined" 
-              color="secondary" 
-              onClick={restoreCheckpoint}
-            >
-              Checkpoint Görüntüle
-            </Button>
-          </Box>
-          <Button 
-            variant="outlined" 
-            color="error" 
-            onClick={handleLogout}
-          >
-            Çıkış Yap
-          </Button>
-        </Box>
-      </Box>
-    </Container>
-  );
-};
-
 // Tema oluştur
 const theme = createTheme({
   palette: {
@@ -455,6 +361,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <EditParking />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/parking-layout/:id" 
+            element={
+              <ProtectedRoute>
+                <ParkingLayout />
               </ProtectedRoute>
             } 
           />

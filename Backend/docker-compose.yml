@@ -80,6 +80,16 @@ services:
       - backend_network
     restart: always
 
+
+    admin-panel:
+    build: ../WebPanel/admin-panel
+    ports:
+      - "3000:80"
+    depends_on:
+      - user-service
+      - parking-management-service
+
+ 
   license-plate-service:
     build:
       context: ./license-plate-service
@@ -123,7 +133,7 @@ services:
           memory: 2G  # CPU için yeterli bellek
         reservations:
           memory: 1G  # Minimum bellek garantisi
-
+          
   user-service:
     build: 
       context: ./user-service

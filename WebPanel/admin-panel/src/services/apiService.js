@@ -92,4 +92,5 @@ export const updateParkingLayout = (parkingId, layoutData) => {
 
 export const clearParkingLayout = (parkingId) => {
   return axios.put(`${PARKING_SERVICE_URL}/${parkingId}/clear-layout`);
+
 };

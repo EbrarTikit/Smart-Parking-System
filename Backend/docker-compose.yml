@@ -161,6 +161,48 @@ services:
       - backend_network
     restart: always
 
+  # Frontend uygulaması - Geliştirme modu (hot reloading)
+  staff-panel-dev:
+    build:
+      context: ../WebPanel/staff-panel
+      dockerfile: Dockerfile
+      target: development  # Dockerfile'daki geliştirme aşamasını kullan
+    container_name: staff_panel_dev
+    ports:
+      - "3000:3000"  # React geliştirme sunucusu portu
+    volumes:
+      - ../WebPanel/staff-panel:/app  # Kod değişikliklerini anında yansıtmak için
+      - /app/node_modules  # Container'daki node_modules klasörünü koru
+    environment:
+      - NODE_ENV=development
+      # ÖNEMLİ: Docker dışında erişim için localhost:8005, Docker içindeyse service_name:port kullanılmalı
+      - REACT_APP_API_URL=http://localhost:8005     # Host makineden erişimde kullanılan port (8005)
+      - REACT_APP_WS_URL=ws://localhost:8005        # Host makineden WebSocket için kullanılan port (8005)
+      - CHOKIDAR_USEPOLLING=true  # Docker içinde dosya değişikliklerini algılamak için
+    depends_on:
+      - license-plate-service
+    networks:
+      - backend_network
+      
+  # Frontend uygulaması - Üretim modu
+  staff-panel:
+    build:
+      context: ../WebPanel/staff-panel
+      dockerfile: Dockerfile
+      target: production  # Dockerfile'daki üretim aşamasını kullan
+    container_name: staff_panel
+    ports:
+      - "80:80"  # Nginx portu
+    depends_on:
+      - license-plate-service
+    environment:
+      # Nginx yapılandırması için proxy_pass değerlerinin çalışması için
+      - API_HOST=license_plate_service
+      - API_PORT=8000
+    networks:
+      - backend_network
+    restart: always
+
 networks:
   backend_network:
     driver: bridge

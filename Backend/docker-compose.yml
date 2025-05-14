@@ -80,6 +80,14 @@ services:
       - backend_network
     restart: always
 
+    admin-panel:
+    build: ../WebPanel/admin-panel
+    ports:
+      - "3000:80"
+    depends_on:
+      - user-service
+      - parking-management-service
+
   # license-plate-service:
   #   build:
   #     context: ./license-plate-service

@@ -95,7 +95,8 @@ public class FavoriteParkingService {
                         parkingDetails.getId(),
                         parkingDetails.getName(),
                         parkingDetails.getLocation(),
-                        parkingDetails.getImageUrl()
+                        parkingDetails.getImageUrl(),
+                        parkingDetails.getRate()
                     );
                 } catch (Exception e) {
                     logger.error("Error fetching parking details: ", e);

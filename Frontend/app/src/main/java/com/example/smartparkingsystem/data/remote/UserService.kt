@@ -34,7 +34,7 @@ interface UserService {
     suspend fun addFavorite(
         @Path("userId") userId: Int,
         @Path("parkingId") parkingId: Int
-    ): Response<FavoriteResponse>
+    ): Response<Unit>
 
     @GET(GET_FAVORITE)
     suspend fun getFavorites(
@@ -45,6 +45,6 @@ interface UserService {
     suspend fun removeFavorite(
         @Path("userId") userId: Int,
         @Path("parkingId") parkingId: Int
-    ): Response<FavoriteResponse>
+    ): Response<Unit>
 
 }

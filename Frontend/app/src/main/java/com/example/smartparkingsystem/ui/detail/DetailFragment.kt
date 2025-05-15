@@ -38,7 +38,6 @@ class DetailFragment : Fragment(R.layout.fragment_detail) {
         super.onViewCreated(view, savedInstanceState)
         _binding = FragmentDetailBinding.bind(view)
 
-        // Debug session info at fragment start
         val userId = sessionManager.getUserId()
         val isLoggedIn = sessionManager.isLoggedIn()
         val token = sessionManager.getToken()
@@ -153,16 +152,13 @@ class DetailFragment : Fragment(R.layout.fragment_detail) {
             viewModel.favoriteState.collectLatest { state ->
                 when (state) {
                     is UiState.Loading -> {
-                        // Favori durumu kontrol edilirken butonu devre dışı bırak
                         binding.btnFavorite.isEnabled = false
                     }
                     is UiState.Success -> {
-                        // Favori durumu başarıyla alındığında butonu aktif et
                         binding.btnFavorite.isEnabled = true
                         updateFavoriteIcon(state.data)
                     }
                     is UiState.Error -> {
-                        // Hata durumunda butonu aktif et ve hata mesajını göster
                         binding.btnFavorite.isEnabled = true
                         Toast.makeText(requireContext(), state.message, Toast.LENGTH_SHORT).show()
                     }
@@ -174,7 +170,7 @@ class DetailFragment : Fragment(R.layout.fragment_detail) {
     private fun updateFavoriteIcon(isFavorite: Boolean) {
         Log.d("DetailFragment", "Updating favorite icon, isFavorite=$isFavorite")
         binding.btnFavorite.setImageResource(
-            if (isFavorite) R.drawable.ic_favorite_
+            if (isFavorite) R.drawable.favorite
             else R.drawable.ic_favorite_unfilled
         )
     }

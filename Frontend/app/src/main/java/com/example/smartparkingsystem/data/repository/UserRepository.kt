@@ -81,7 +81,7 @@ class UserRepository @Inject constructor(
         }
     }
 
-    suspend fun addFavorite(userId: Int, parkingId: Int): Result<FavoriteResponse> {
+    suspend fun addFavorite(userId: Int, parkingId: Int): Result<Unit> {
         return withContext(Dispatchers.IO) {
             try {
                 Log.d("UserRepository", "Adding favorite: userId=$userId, parkingId=$parkingId")
@@ -108,7 +108,7 @@ class UserRepository @Inject constructor(
         }
     }
 
-    suspend fun removeFavorite(userId: Int, parkingId: Int): Result<FavoriteResponse> {
+    suspend fun removeFavorite(userId: Int, parkingId: Int): Result<Unit> {
         return withContext(Dispatchers.IO) {
             try {
                 Log.d("UserRepository", "Removing favorite: userId=$userId, parkingId=$parkingId")

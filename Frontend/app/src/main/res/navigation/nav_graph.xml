@@ -98,7 +98,11 @@
     <fragment
         android:id="@+id/navigation_favorites"
         android:name="com.example.smartparkingsystem.ui.favorites.FavoritesFragment"
-        android:label="Favorites" />
+        android:label="Favorites">
+        <action
+            android:id="@+id/action_navigation_favorites_to_detailFragment"
+            app:destination="@id/detailFragment" />
+    </fragment>
     <fragment
         android:id="@+id/navigation_profile"
         android:name="com.example.smartparkingsystem.ui.profile.ProfileFragment"

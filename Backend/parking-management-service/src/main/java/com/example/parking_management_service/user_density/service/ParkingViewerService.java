@@ -27,6 +27,9 @@ public class ParkingViewerService {
 
     @Autowired
     private ParkingRepository parkingRepository;
+    
+    @Autowired
+    private NotificationSenderService notificationSenderService;
 
     // Track when a user views a parking
     public ViewerCountDTO trackUserViewing(Long userId, Long parkingId) {
@@ -100,29 +103,23 @@ public class ParkingViewerService {
         return false;
     }
     
-    // This method will be called by notification service when implemented
+    // This method now uses the notification sender service
     @Scheduled(fixedRate = 60000) // Run every minute
     public void checkParkingStatusForNotifications() {
+        logger.info("Starting scheduled notification check");
         List<Parking> parkings = parkingRepository.findAll();
+        logger.info("Found {} parkings to check", parkings.size());
         
         for (Parking parking : parkings) {
+            logger.info("Checking parking: {} (ID: {})", parking.getName(), parking.getId());
             boolean isFull = isParkingFull(parking.getId());
+            logger.info("Parking {} is full: {}", parking.getId(), isFull);
             
             if (isFull) {
-                List<ParkingViewer> viewers = getUsersToNotifyForFullParking(parking.getId());
-                
-                // Log the users who would be notified (for now)
-                if (!viewers.isEmpty()) {
-                    logger.info("Parking {} is full. Would notify {} users.", 
-                        parking.getName(), viewers.size());
-                        
-                    // When notification service is implemented, it will handle this
-                    // For now, we'll just mark them as notified
-                    for (ParkingViewer viewer : viewers) {
-                        markUserAsNotified(viewer.getId());
-                    }
-                }
+                logger.info("Sending notifications for parking {}", parking.getId());
+                notificationSenderService.sendParkingFullNotification(parking.getId());
             }
         }
+        logger.info("Completed scheduled notification check");
     }
 }

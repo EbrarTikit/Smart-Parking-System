@@ -10,5 +10,5 @@ import lombok.NoArgsConstructor;
 public class RoadDTO {
     private int roadColumn;
     private int roadRow;
-
+    private String roadIdentifier;
 }

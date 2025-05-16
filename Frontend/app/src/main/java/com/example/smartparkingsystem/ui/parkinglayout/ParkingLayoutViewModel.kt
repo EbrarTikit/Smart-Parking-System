@@ -18,6 +18,9 @@ class ParkingLayoutViewModel @Inject constructor(
     private val _layout = MutableLiveData<UiState<ParkingLayoutResponse>>()
     val layout: LiveData<UiState<ParkingLayoutResponse>> = _layout
 
+    private val _webSocketState = MutableLiveData<Boolean>()
+    val webSocketState: LiveData<Boolean> = _webSocketState
+
     fun getParkingLayout(parkingId: Int) {
         _layout.value = UiState.Loading
         viewModelScope.launch {
@@ -25,7 +28,7 @@ class ParkingLayoutViewModel @Inject constructor(
                 val response = parkingManagementRepository.getParkingLayout(parkingId)
                 _layout.value = UiState.Success(response)
             } catch (e: Exception) {
-                _layout.value = UiState.Error(e.message ?: "An error occurred")
+                _layout.value = UiState.Error(e.message ?: "Unknown error occurred")
             }
         }
     }

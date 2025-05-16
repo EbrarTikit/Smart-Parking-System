@@ -7,4 +7,5 @@ public class RoadResponseDto {
     private Long id;
     private int roadColumn;
     private int roadRow;
+    private String roadIdentifier;
 }

@@ -1,11 +1,13 @@
 package com.example.parking_management_service.parking_info.controller;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -15,21 +17,25 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.example.parking_management_service.parking_info.dto.BuildingResponseDto;
 import com.example.parking_management_service.parking_info.dto.LayoutRequestDto;
 import com.example.parking_management_service.parking_info.dto.LayoutResponseDto;
 import com.example.parking_management_service.parking_info.dto.LocationDto;
 import com.example.parking_management_service.parking_info.dto.ParkingSpotResponseDto;
 import com.example.parking_management_service.parking_info.dto.RoadResponseDto;
+import com.example.parking_management_service.parking_info.model.Building;
 import com.example.parking_management_service.parking_info.model.Parking;
 import com.example.parking_management_service.parking_info.model.ParkingSpot;
 import com.example.parking_management_service.parking_info.model.Road;
 import com.example.parking_management_service.parking_info.repository.ParkingRepository;
 import com.example.parking_management_service.parking_info.service.ParkingService;
+import com.example.parking_management_service.parking_info.service.ParkingSpotService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 
+@CrossOrigin(origins = "http://localhost:3000")
 @RestController
 @RequestMapping("/api")
 public class ParkingController {
@@ -38,7 +44,50 @@ public class ParkingController {
     private ParkingService parkingService;
 
     @Autowired
+    private ParkingSpotService parkingSpotService;
+
+    @Autowired
     private ParkingRepository parkingRepository;   
+
+    @Operation(
+        summary = "Clear layout of a parking",
+        description = "Removes all parking spots and roads from the specified parking lot (empties the layout, does not delete the parking itself)"
+    )
+    @PutMapping("/{parkingId}/clear-layout")
+    public ResponseEntity<Void> clearLayoutOfParking(@PathVariable Long parkingId) {
+        parkingService.clearLayoutOfParking(parkingId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @Operation(
+        summary = "Clear all roads of a parking",
+        description = "Removes all roads from the specified parking lot (empties the road list, does not delete the parking itself)"
+    )
+    @PutMapping("/parking/{parkingId}/clear-roads")
+    public ResponseEntity<Void> clearRoadsOfParking(@PathVariable Long parkingId) {
+        parkingService.clearRoadsOfParking(parkingId);
+        return ResponseEntity.noContent().build();
+    }
+    
+    @Operation(
+        summary = "Clear all spots of a parking",
+        description = "Removes all parking spots from the specified parking lot (empties the spot list, does not delete the parking itself)"
+    )
+    @PutMapping("/parking/{parkingId}/clear-spots")
+    public ResponseEntity<Void> clearParkingSpotsOfParking(@PathVariable Long parkingId) {
+        parkingSpotService.clearParkingSpotsOfParking(parkingId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @Operation(
+        summary = "Clear all buildings of a parking",
+        description = "Removes all buildings from the specified parking lot (empties the building list, does not delete the parking itself)"
+    )
+    @PutMapping("/parking/{parkingId}/clear-buildings")
+    public ResponseEntity<Void> clearBuildingsOfParking(@PathVariable Long parkingId) {
+        parkingService.clearBuildingsOfParking(parkingId);
+        return ResponseEntity.noContent().build();
+    }
 
     @GetMapping("/parkings/location/{id}")
     public ResponseEntity<LocationDto> getParkingLocation(@PathVariable Long id) {
@@ -146,39 +195,41 @@ public class ParkingController {
 
     @GetMapping("/{parkingId}/layout")
     public ResponseEntity<LayoutResponseDto> getParkingLayout(@PathVariable Long parkingId) {
-    Parking parking = parkingRepository.findById(parkingId)
-        .orElseThrow(() -> new RuntimeException("Parking not found"));
+        Parking parking = parkingRepository.findById(parkingId)
+            .orElseThrow(() -> new RuntimeException("Parking not found"));
 
-    List<ParkingSpotResponseDto> spotDtos = parking.getParkingSpots().stream()
-        .map(this::toParkingSpotDto)
-        .toList();
+        List<ParkingSpotResponseDto> spotDtos = parking.getParkingSpots().stream()
+            .map(this::toParkingSpotDto)
+            .toList();
 
-    List<RoadResponseDto> roadDtos = parking.getRoads().stream()
-        .map(this::toRoadDto)
-        .toList();
+        List<RoadResponseDto> roadDtos = parking.getRoads().stream()
+            .map(this::toRoadDto)
+            .toList();
+        
+        // Binaları da ekleyelim
+        List<BuildingResponseDto> buildingDtos = parking.getBuildings() != null ? 
+            parking.getBuildings().stream()
+                .map(this::toBuildingDto)
+                .toList() : 
+            new ArrayList<>();
 
-    LayoutResponseDto response = new LayoutResponseDto();
-    response.setParkingId(parking.getId());
-    response.setParkingName(parking.getName());
-    response.setCapacity(parking.getCapacity());
-    response.setRows(parking.getRows());
-    response.setColumns(parking.getColumns());
-    response.setParkingSpots(spotDtos);
-    response.setRoads(roadDtos);
+        LayoutResponseDto response = new LayoutResponseDto();
+        response.setParkingId(parking.getId());
+        response.setParkingName(parking.getName());
+        response.setCapacity(parking.getCapacity());
+        response.setRows(parking.getRows());
+        response.setColumns(parking.getColumns());
+        response.setParkingSpots(spotDtos);
+        response.setRoads(roadDtos);
+        response.setBuildings(buildingDtos);
 
-    return ResponseEntity.ok(response);
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/{parkingId}/layout")
-    public ResponseEntity<Void> updateParkingLayout(
-        @PathVariable Long parkingId,
-        @RequestBody LayoutRequestDto layoutRequestDto) {
-        parkingService.updateParkingLayout(
-        parkingId,
-        layoutRequestDto.getParkingSpots(),
-        layoutRequestDto.getRoads()
-        );
-    return ResponseEntity.ok().build();
+    public ResponseEntity<Void> createParkingLayout(@PathVariable Long parkingId,@RequestBody LayoutRequestDto layoutRequestDto) {
+        parkingService.createParkingLayout(parkingId, layoutRequestDto);
+        return ResponseEntity.ok().build();
     }
 
     
@@ -187,6 +238,9 @@ public class ParkingController {
         dto.setId(spot.getId());
         dto.setColumn(spot.getColumn());
         dto.setRow(spot.getRow());
+        dto.setSpotIdentifier(spot.getSpotIdentifier());
+        dto.setSensorId(spot.getSensorId());
+        dto.setOccupied(spot.isOccupied());
         return dto;
     }
 
@@ -195,6 +249,15 @@ public class ParkingController {
         dto.setId(road.getId());
         dto.setRoadColumn(road.getRoadColumn());
         dto.setRoadRow(road.getRoadRow());
+        dto.setRoadIdentifier(road.getRoadIdentifier());
+        return dto;
+    }
+
+    private BuildingResponseDto toBuildingDto(Building building) {
+        BuildingResponseDto dto = new BuildingResponseDto();
+        dto.setId(building.getId());
+        dto.setBuildingColumn(building.getBuildingColumn());
+        dto.setBuildingRow(building.getBuildingRow());
         return dto;
     }
 } 

@@ -1,0 +1,284 @@
+.dashboard {
+  width: 100%;
+}
+
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+/* Yeni otopark seçici stilleri */
+.parking-selector-container {
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+
+.parking-selector-container label {
+  margin-right: 10px;
+  font-weight: 600;
+  color: #333;
+}
+
+.custom-select {
+  position: relative;
+  display: inline-block;
+  width: 250px;
+}
+
+.custom-select select {
+  display: block;
+  width: 100%;
+  padding: 10px 15px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #333;
+  background-color: #fff;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.custom-select select:hover {
+  border-color: #3498db;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
+}
+
+.custom-select select:focus {
+  outline: none;
+  border-color: #3498db;
+  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.25);
+}
+
+.custom-select::after {
+  content: "▼";
+  position: absolute;
+  top: 50%;
+  right: 15px;
+  transform: translateY(-50%);
+  font-size: 10px;
+  color: #666;
+  pointer-events: none;
+  transition: all 0.3s ease;
+}
+
+.custom-select:hover::after {
+  color: #3498db;
+}
+
+.custom-select select option {
+  padding: 10px;
+  background-color: #fff;
+  color: #333;
+}
+
+/* Dropdown kutusunu Görselleştirme */
+.custom-select select:focus option {
+  background-color: #f5f8fa;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.custom-select select option:hover,
+.custom-select select option:checked {
+  background-color: #e6f7ff;
+  color: #2980b9;
+}
+
+/* Eski stilleri kaldırıyorum */
+/* .parking-selector,
+.parking-selector label,
+.parking-selector select,
+.parking-select {
+  /* Bu stiller artık kullanılmıyor */
+/*} */
+
+/* Bağlantı durumu ve diğer stiller */
+.connection-status {
+  margin-bottom: 20px;
+  padding: 12px 15px;
+  border-radius: 5px;
+  display: flex;
+  align-items: center;
+  background-color: #f8f9fa;
+  border: 1px solid #eaeaea;
+}
+
+.status-indicator {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  margin-right: 10px;
+}
+
+.status-indicator.connected {
+  background-color: #2ecc71;
+  box-shadow: 0 0 5px #2ecc71;
+}
+
+.status-indicator.disconnected {
+  background-color: #e74c3c;
+  box-shadow: 0 0 5px #e74c3c;
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.badge {
+  background-color: #3498db;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 14px;
+}
+
+.no-data {
+  text-align: center;
+  color: #777;
+  padding: 20px;
+}
+
+.loading {
+  text-align: center;
+  color: #3498db;
+  padding: 20px;
+  font-weight: 500;
+  animation: pulse 1.5s infinite ease-in-out;
+  position: relative;
+}
+
+.loading:after {
+  content: "";
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border: 3px solid #3498db;
+  border-radius: 50%;
+  border-top-color: transparent;
+  animation: spin 1s linear infinite;
+  margin-left: 10px;
+  vertical-align: middle;
+}
+
+@keyframes pulse {
+  0% { opacity: 0.6; }
+  50% { opacity: 1; }
+  100% { opacity: 0.6; }
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.action-buttons {
+  margin-top: 20px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.btn-sm {
+  padding: 5px 10px;
+  font-size: 14px;
+}
+
+.activity-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  max-height: 500px;
+  overflow-y: auto;
+}
+
+.activity-item {
+  display: flex;
+  padding: 15px 0;
+  border-bottom: 1px solid #eee;
+}
+
+.activity-item:last-child {
+  border-bottom: none;
+}
+
+.activity-item.entry {
+  border-left: 4px solid #2ecc71;
+  padding-left: 15px;
+}
+
+.activity-item.exit {
+  border-left: 4px solid #e74c3c;
+  padding-left: 15px;
+}
+
+.activity-icon {
+  margin-right: 15px;
+  font-size: 20px;
+  color: #777;
+}
+
+.activity-content {
+  flex: 1;
+}
+
+.activity-message {
+  font-weight: 600;
+  margin-bottom: 5px;
+}
+
+.activity-time {
+  font-size: 14px;
+  color: #777;
+  margin-bottom: 5px;
+}
+
+.activity-details {
+  font-size: 14px;
+  color: #333;
+  background-color: #f5f5f5;
+  padding: 5px 8px;
+  border-radius: 4px;
+  display: inline-block;
+}
+
+/* Mobil cihazlar için otopark seçici düzeni */
+@media (max-width: 768px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .dashboard-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .parking-selector-container {
+    margin-top: 10px;
+    width: 100%;
+  }
+  
+  .custom-select {
+    width: 100%;
+  }
+  
+  .custom-select select {
+    min-width: 180px;
+    width: 100%;
+  }
+} 

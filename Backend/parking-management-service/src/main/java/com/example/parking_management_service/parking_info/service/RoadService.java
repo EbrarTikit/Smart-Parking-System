@@ -40,9 +40,14 @@ public class RoadService {
         roadRepository.deleteById(id);
     }
 
+
     public Road addRoadToParking(Long parkingId, RoadDTO roadDto) {
         Parking parking = parkingRepository.findById(parkingId)
             .orElseThrow(() -> new RuntimeException("Parking not found"));
+    
+        // Validate road position is within the parking bounds
+        PositionValidator.validateWithinBounds(roadDto.getRoadRow(), roadDto.getRoadColumn(), 
+            parking.getRows(), parking.getColumns());
     
         List<ParkingSpotDto> allSpots = parking.getParkingSpots().stream()
             .map(existingSpot -> {
@@ -57,6 +62,7 @@ public class RoadService {
                 RoadDTO dto = new RoadDTO();
                 dto.setRoadRow(existingRoad.getRoadRow());
                 dto.setRoadColumn(existingRoad.getRoadColumn());
+                dto.setRoadIdentifier(existingRoad.getRoadIdentifier());
                 return dto;
             }).toList();
     
@@ -69,12 +75,18 @@ public class RoadService {
         Road road = new Road();
         road.setRoadRow(roadDto.getRoadRow());
         road.setRoadColumn(roadDto.getRoadColumn());
+        road.setRoadIdentifier(roadDto.getRoadIdentifier());
         road.setParking(parking);
     
-        parking.getRoads().add(road);
+        // Önce Road nesnesini kaydedip ID alalım
+        Road savedRoad = roadRepository.save(road);
+        
+        // Kaydedilen Road nesnesini parking'e ekleyelim
+        parking.getRoads().add(savedRoad);
         parkingRepository.save(parking);
     
-        return road;
+        // ID değeri atanmış Road nesnesini döndürelim
+        return savedRoad;
     }
 
     public List<Road> addRoadsToParking(Long parkingId, List<RoadDTO> roadDTOs) {
@@ -84,9 +96,14 @@ public class RoadService {
         List<Road> roads = new ArrayList<>();
     
         for (RoadDTO roadDTO : roadDTOs) {
+            // Validate road position is within the parking bounds
+            PositionValidator.validateWithinBounds(roadDTO.getRoadRow(), roadDTO.getRoadColumn(), 
+                parking.getRows(), parking.getColumns());
+            
             Road road = new Road();
             road.setRoadColumn(roadDTO.getRoadColumn());
             road.setRoadRow(roadDTO.getRoadRow());
+            road.setRoadIdentifier(roadDTO.getRoadIdentifier());
             road.setParking(parking);
     
             

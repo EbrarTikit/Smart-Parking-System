@@ -9,9 +9,12 @@ object Constants {
     const val NAVIGATION = "rest/api/car_park/parking-location/{id}"
     const val NAVIGATION_LIST = "rest/api/car_park/parking-location/list"
     const val PARKING_LIST = "api/parkings"
-    const val LAYOUT= "api/parkings/{parkingId}/layout"
+    const val LAYOUT= "api/{parkingId}/layout"
     const val VIEWER_TRACK = "/api/parking-viewers/track"
     const val VIEWER_COUNT = "/api/parking-viewers/{parkingId}/count"
+    const val ADD_FAVORITE = "/api/users/{userId}/favorites/{parkingId}"
+    const val GET_FAVORITE = "/api/users/{userId}/favorites"
+    const val DELETE_FAVORITE = "/api/users/{userId}/favorites/{parkingId}"
 
 
     //Session Manager

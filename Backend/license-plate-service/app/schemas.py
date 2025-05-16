@@ -20,6 +20,7 @@ class Vehicle(VehicleBase):
 # Parking Record Schemas
 class ParkingRecordBase(BaseModel):
     vehicle_id: int
+    parking_id: Optional[int] = 1  # Varsayılan otopark ID'si
     
 class ParkingRecordCreate(ParkingRecordBase):
     pass

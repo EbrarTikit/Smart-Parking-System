@@ -103,6 +103,11 @@ dependencies {
 
     //Grid
     implementation(libs.androidx.gridlayout)
+
+    //WebSocket
+    implementation(libs.java.websocket)
+    implementation(libs.moshi.kotlin)
+    implementation(libs.okhttp)
 }
 
 kapt {

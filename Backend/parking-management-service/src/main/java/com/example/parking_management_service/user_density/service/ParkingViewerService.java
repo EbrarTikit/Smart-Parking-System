@@ -1,6 +1,8 @@
 package com.example.parking_management_service.user_density.service;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -21,6 +23,7 @@ import org.slf4j.LoggerFactory;
 public class ParkingViewerService {
     
     private static final Logger logger = LoggerFactory.getLogger(ParkingViewerService.class);
+    private static final ZoneId ZONE_ID = ZoneId.of("Europe/Istanbul");
 
     @Autowired
     private ParkingViewerRepository parkingViewerRepository;
@@ -33,7 +36,10 @@ public class ParkingViewerService {
 
     // Track when a user views a parking
     public ViewerCountDTO trackUserViewing(Long userId, Long parkingId) {
-        LocalDateTime now = LocalDateTime.now();
+        // Use ZonedDateTime to ensure correct timezone
+        ZonedDateTime zonedNow = ZonedDateTime.now(ZONE_ID);
+        LocalDateTime now = zonedNow.toLocalDateTime();
+        
         // Add 45 minutes (average between 30-60 minutes)
         LocalDateTime expiryTime = now.plusMinutes(45);
 
@@ -60,7 +66,10 @@ public class ParkingViewerService {
 
     // Get the current viewer count for a parking
     public ViewerCountDTO getViewerCount(Long parkingId) {
-        LocalDateTime now = LocalDateTime.now();
+        // Use ZonedDateTime to ensure correct timezone
+        ZonedDateTime zonedNow = ZonedDateTime.now(ZONE_ID);
+        LocalDateTime now = zonedNow.toLocalDateTime();
+        
         Long viewerCount = parkingViewerRepository.countActiveViewersByParkingId(parkingId, now);
         return new ViewerCountDTO(parkingId, viewerCount);
     }
@@ -68,14 +77,20 @@ public class ParkingViewerService {
     // Clean up expired viewers
     @Scheduled(fixedRate = 600000) // Run every 10 minutes
     public void cleanupExpiredViewers() {
-        LocalDateTime now = LocalDateTime.now();
+        // Use ZonedDateTime to ensure correct timezone
+        ZonedDateTime zonedNow = ZonedDateTime.now(ZONE_ID);
+        LocalDateTime now = zonedNow.toLocalDateTime();
+        
         List<ParkingViewer> expiredViewers = parkingViewerRepository.findByExpiryTimeLessThan(now);
         parkingViewerRepository.deleteAll(expiredViewers);
     }
 
     // Get list of users who should be notified when parking becomes full
     public List<ParkingViewer> getUsersToNotifyForFullParking(Long parkingId) {
-        LocalDateTime now = LocalDateTime.now();
+        // Use ZonedDateTime to ensure correct timezone
+        ZonedDateTime zonedNow = ZonedDateTime.now(ZONE_ID);
+        LocalDateTime now = zonedNow.toLocalDateTime();
+        
         return parkingViewerRepository.findActiveNonNotifiedViewersByParkingId(parkingId, now);
     }
     

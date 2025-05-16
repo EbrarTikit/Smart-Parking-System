@@ -5,4 +5,5 @@ data class FavoriteParking(
     val name: String,
     val location: String,
     val imageUrl: String,
+    val rate: Double
 )

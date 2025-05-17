@@ -37,6 +37,7 @@ playServicesMapsVersion = "18.2.0"
 retrofit = "2.9.0"
 retrofit2KotlinxSerializationConverter = "1.0.0"
 truth = "1.1.3"
+firebaseMessagingKtx = "24.1.1"
 
 
 [libraries]
@@ -79,6 +80,7 @@ play-services-maps-v1820 = { module = "com.google.android.gms:play-services-maps
 retrofit = { module = "com.squareup.retrofit2:retrofit", version.ref = "retrofit" }
 retrofit2-kotlinx-serialization-converter = { module = "com.jakewharton.retrofit:retrofit2-kotlinx-serialization-converter", version.ref = "retrofit2KotlinxSerializationConverter" }
 truth = { module = "com.google.truth:truth", version.ref = "truth" }
+firebase-messaging-ktx = { group = "com.google.firebase", name = "firebase-messaging-ktx", version.ref = "firebaseMessagingKtx" }
 
 
 [plugins]

@@ -41,6 +41,7 @@ public class SecurityConfig {
                     .requestMatchers(HttpMethod.DELETE, "/api/users/**").permitAll()
                     .requestMatchers("/api/users/*/notification-preferences").permitAll()
                     .requestMatchers("/api/users/*/notification-preferences/toggle").permitAll()
+                    .requestMatchers("/api/users/*/fcm/**").permitAll()
                     .anyRequest().authenticated()
             )
             // JWT filtresi eklemek yerine öncelikle genel endpoint erişimine izin verin

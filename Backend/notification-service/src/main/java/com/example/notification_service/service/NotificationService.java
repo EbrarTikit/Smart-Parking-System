@@ -8,33 +8,36 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
-import java.util.HashMap;
-import java.util.Map;
-
 @Service
 public class NotificationService {
     private static final Logger logger = LoggerFactory.getLogger(NotificationService.class);
     
     private final WebClient userServiceClient;
+    private final FirebaseNotificationService firebaseNotificationService;
     
     @Autowired
-    public NotificationService(WebClient.Builder webClientBuilder) {
+    public NotificationService(WebClient.Builder webClientBuilder, FirebaseNotificationService firebaseNotificationService) {
         this.userServiceClient = webClientBuilder.baseUrl("http://user-service:8050").build();
+        this.firebaseNotificationService = firebaseNotificationService;
     }
     
     public void processParkingFullNotification(ParkingFullNotification notification) {
         logger.info("Processing parking full notification for parking: {}", notification.getParkingName());
         
-        notification.getUserIds().forEach(userId -> {
-            // Check if user has enabled notifications
-            boolean hasNotificationsEnabled = checkUserNotificationPreference(userId);
-            
-            if (hasNotificationsEnabled) {
-                sendMobileNotification(userId, notification.getParkingName());
-            } else {
-                logger.info("User {} has not enabled parking full notifications", userId);
-            }
-        });
+        // Create notification title and body
+        String title = "Parking Full Alert";
+        String body = "The parking " + notification.getParkingName() + " is now full.";
+        
+        // Send to all users who should receive this notification
+        for (Long userId : notification.getUserIds()) {
+            // Send to user's specific topic
+            String userTopic = "user_" + userId;
+            firebaseNotificationService.sendNotificationToTopic(userTopic, title, body);
+        }
+        
+        // Also send to a general topic for this parking
+        String parkingTopic = "parking_" + notification.getParkingId();
+        firebaseNotificationService.sendNotificationToTopic(parkingTopic, title, body);
     }
     
     private boolean checkUserNotificationPreference(Long userId) {
@@ -51,16 +54,16 @@ public class NotificationService {
         }
     }
     
-    private void sendMobileNotification(Long userId, String parkingName) {
-        // In a real implementation, this would use Firebase Cloud Messaging or another mobile push notification service
-        logger.info("Sending mobile notification to user {} about parking {} being full", userId, parkingName);
-        
-        // Simulate sending a notification
-        Map<String, Object> notificationData = new HashMap<>();
-        notificationData.put("title", "Parking Full Alert");
-        notificationData.put("body", "The parking " + parkingName + " is now full");
-        notificationData.put("userId", userId);
-        
-        logger.info("Mobile notification sent: {}", notificationData);
+    private String getUserFcmToken(Long userId) {
+        try {
+            return userServiceClient.get()
+                .uri("/api/users/{userId}/fcm/token", userId)
+                .retrieve()
+                .bodyToMono(String.class)
+                .block();
+        } catch (Exception e) {
+            logger.error("Error fetching FCM token for user {}: {}", userId, e.getMessage());
+            return null;
+        }
     }
 }

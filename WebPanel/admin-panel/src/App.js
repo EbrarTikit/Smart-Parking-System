@@ -13,6 +13,7 @@ import ParkingDetails from './components/parking/ParkingDetails';
 import EditParking from './components/parking/EditParking';
 import ParkingLayout from './components/parking/ParkingLayout';
 import Dashboard from './components/Dashboard';
+import SensorList from './components/sensors/SensorList';
 
 // Tüm bileşenleri doğrudan App.js içinde tanımlayalım
 const SignIn = () => {
@@ -372,6 +373,7 @@ function App() {
               </ProtectedRoute>
             } 
           />
+          <Route path="/sensors" element={<SensorList />} />
           <Route path="/" element={<Navigate to="/signin" />} />
           <Route path="*" element={<Navigate to="/signin" />} />
         </Routes>

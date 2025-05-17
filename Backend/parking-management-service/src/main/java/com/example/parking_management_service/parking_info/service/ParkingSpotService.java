@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.example.parking_management_service.iot_manage.service.impl.SensorServiceImpl;
 import com.example.parking_management_service.parking_info.dto.ParkingLayoutDto;
 import com.example.parking_management_service.parking_info.dto.ParkingSpotDto;
 import com.example.parking_management_service.parking_info.dto.RoadDTO;
@@ -25,6 +26,9 @@ public class ParkingSpotService {
     
     @Autowired
     private ParkingSpotRepository parkingSpotRepository;
+    
+    @Autowired
+    private SensorServiceImpl sensorService;
     
 
     @Transactional
@@ -140,24 +144,33 @@ public class ParkingSpotService {
     
     @Transactional
     public ParkingSpotDto assignSensorToSpot(Long parkingId, int row, int column, String sensorId) {
-        ParkingSpot spot = parkingSpotRepository.findByParkingIdAndRowAndColumn(parkingId, row, column);
+        // Önce sensörün var olup olmadığını kontrol et
+        if (sensorId != null && !sensorId.isEmpty()) {
+            // Sensör servisinden sensörün varlığını kontrol et
+            try {
+                sensorService.getSensor(sensorId);
+            } catch (Exception e) {
+                throw new ResourceNotFoundException("Sensor not found with id: " + sensorId);
+            }
+        }
         
+        // Park yerini bul
+        ParkingSpot spot = parkingSpotRepository.findByParkingIdAndRowAndColumn(parkingId, row, column);
         if (spot == null) {
             throw new ResourceNotFoundException("Parking spot not found at position (" + row + "," + column + ") in parking with id: " + parkingId);
         }
         
+        // Sensör ID'sini güncelle
         spot.setSensorId(sensorId);
         parkingSpotRepository.save(spot);
         
-        
-        ParkingSpotDto spotDto = new ParkingSpotDto( 
-            spot.getRow(), 
-            spot.getColumn(), 
+        // DTO'ya dönüştür ve dön
+        ParkingSpotDto spotDto = new ParkingSpotDto(
+            spot.getRow(),
+            spot.getColumn(),
             spot.isOccupied(),
             spot.getSpotIdentifier()
         );
-        
-
         spotDto.setSensorId(spot.getSensorId());
         
         return spotDto;

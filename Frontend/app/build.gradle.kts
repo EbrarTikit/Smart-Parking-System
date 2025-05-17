@@ -5,7 +5,7 @@ plugins {
     alias(libs.plugins.navigation.safe.args.gradle.plugin)
     id("kotlin-kapt")
     id("kotlin-parcelize")
-}
+    id("com.google.gms.google-services")}
 
 android {
     namespace = "com.example.smartparkingsystem"
@@ -49,6 +49,7 @@ dependencies {
     implementation(libs.material)
     implementation(libs.androidx.constraintlayout)
     implementation(libs.play.services.maps)
+    implementation(libs.firebase.messaging.ktx)
 
     // Test dependencies
     testImplementation(libs.junit)
@@ -108,6 +109,10 @@ dependencies {
     implementation(libs.java.websocket)
     implementation(libs.moshi.kotlin)
     implementation(libs.okhttp)
+
+    //Firebase
+    implementation(platform("com.google.firebase:firebase-bom:33.13.0"))
+    implementation("com.google.firebase:firebase-analytics")
 }
 
 kapt {

@@ -81,7 +81,7 @@ services:
     restart: always
 
 
-    admin-panel:
+  admin-panel:
     build: ../WebPanel/admin-panel
     ports:
       - "3000:80"
@@ -179,7 +179,7 @@ services:
       target: development  # Dockerfile'daki geliştirme aşamasını kullan
     container_name: staff_panel_dev
     ports:
-      - "3000:3000"  # React geliştirme sunucusu portu
+      - "3001:3000"  # React geliştirme sunucusu portu
     volumes:
       - ../WebPanel/staff-panel:/app  # Kod değişikliklerini anında yansıtmak için
       - /app/node_modules  # Container'daki node_modules klasörünü koru

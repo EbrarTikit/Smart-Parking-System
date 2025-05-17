@@ -169,7 +169,8 @@ public class ParkingController {
                             "  \"longitude\": 28.9784,\n" +
                             "  \"rows\": 6,\n" +
                             "  \"columns\": 5,\n" +
-                            "  \"imageUrl\": \"https://example.com/parking-updated-image.jpg\"\n" +
+                            "  \"imageUrl\": \"https://example.com/parking-updated-image.jpg\",\n" +
+                            "  \"description\": \"lorem ipsum dolor sit amet\"\n" +
                             "}"
                 )
             )

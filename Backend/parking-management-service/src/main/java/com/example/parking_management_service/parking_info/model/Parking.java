@@ -56,6 +56,9 @@ public class Parking {
     @Column(name = "image_url", nullable = true)
     private String imageUrl;
 
+    @Column(name = "description", nullable = true)
+    private String description;
+
     // Parking sınıfına eklenecek
     @JsonManagedReference
     @OneToMany(mappedBy = "parking", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
@@ -128,16 +131,17 @@ public class Parking {
         this.imageUrl = null;  // Default to null
     }
     
-    public Parking(String name, String location, int capacity, String openingHours, String closingHours, double rate, String imageUrl) {
+    public Parking(String name, String location, int capacity, String openingHours, String closingHours, double rate, String description, String imageUrl) {
         this.name = name;
         this.location = location;
         this.capacity = capacity;
         this.openingHours = openingHours;
         this.closingHours = closingHours;
         this.rate = rate;
+        this.description = description;
         this.imageUrl = imageUrl;
     }
-    
+
     public Parking(String name, String location, int capacity, String openingHours, String closingHours, double rate, Double latitude, Double longitude, String imageUrl) {
         this.name = name;
         this.location = location;
@@ -163,6 +167,8 @@ public class Parking {
         this.columns = columns;
         this.imageUrl = imageUrl;
     }
+    
+    
     
     // Helper method to add a parking spot
     public void addParkingSpot(ParkingSpot spot) {
@@ -279,5 +285,13 @@ public class Parking {
     
     public void setParkingSpots(Set<ParkingSpot> parkingSpots) {
         this.parkingSpots = parkingSpots;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
     }
 } 

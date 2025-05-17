@@ -117,27 +117,27 @@ public class ParkingController {
         return ResponseEntity.ok(parking);
     }
 
-    //Create Parking
     @Operation(
-        summary = "Create a new parking lot",
-        description = "Creates a new parking lot with the provided details. Use string format 'HH:mm' for time values. Optionally include rows and columns to create a layout.",
-        requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
-            content = @Content(
-                mediaType = "application/json",
-                examples = @ExampleObject(
-                    value = "{\n" + 
-                            "  \"name\": \"Central Parking\",\n" +
-                            "  \"location\": \"Downtown\",\n" +
-                            "  \"capacity\": 100,\n" +
-                            "  \"openingHours\": \"08:00\",\n" +
-                            "  \"closingHours\": \"22:00\",\n" +
-                            "  \"rate\": 10.50,\n" +
-                            "  \"latitude\": 41.0082,\n" +
-                            "  \"longitude\": 28.9784,\n" +
-                            "  \"rows\": 5,\n" +
-                            "  \"columns\": 4,\n" +
-                            "  \"imageUrl\": \"https://example.com/parking-image.jpg\"\n" +
-                            "}"
+    summary = "Create a new parking lot",
+    description = "Creates a new parking lot with the provided details. Use string format 'HH:mm' for time values. Optionally include rows and columns to create a layout.",
+    requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
+        content = @Content(
+            mediaType = "application/json",
+            examples = @ExampleObject(
+                value = "{\n" +
+                        "  \"name\": \"Central Parking\",\n" +
+                        "  \"location\": \"Downtown\",\n" +
+                        "  \"capacity\": 100,\n" +
+                        "  \"openingHours\": \"08:00\",\n" +
+                        "  \"closingHours\": \"22:00\",\n" +
+                        "  \"rate\": 10.5,\n" +
+                        "  \"latitude\": 41.0082,\n" +
+                        "  \"longitude\": 28.9784,\n" +
+                        "  \"rows\": 5,\n" +
+                        "  \"columns\": 4,\n" +
+                        "  \"imageUrl\": \"https://example.com/parking-image.jpg\",\n" +
+                        "  \"description\": \"lorem ipsum.\"\n" +
+                        "}"
                 )
             )
         )

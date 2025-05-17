@@ -67,7 +67,7 @@ class DetailFragment : Fragment(R.layout.fragment_detail) {
 
             val isOpen = isCurrentlyOpen(parking.openingHours, parking.closingHours)
             chipStatus.text = if (isOpen) "Open" else "Closed"
-
+            tvDescription.text = parking.description
             tvPrice.text = "₺${parking.rate}"
         }
     }

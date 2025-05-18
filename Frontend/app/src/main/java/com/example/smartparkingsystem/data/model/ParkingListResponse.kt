@@ -17,5 +17,6 @@ data class ParkingListResponse(
     val imageUrl: String,
     val rows: Int,
     val columns: Int,
+    val description: String,
     val parkingSpots: List<ParkingSpotResponse>
 ) : Parcelable

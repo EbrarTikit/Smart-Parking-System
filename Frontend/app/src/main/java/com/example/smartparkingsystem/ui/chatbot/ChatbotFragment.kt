@@ -9,6 +9,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.fragment.app.viewModels
+import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.smartparkingsystem.databinding.FragmentChatbotBinding
 import dagger.hilt.android.AndroidEntryPoint
@@ -68,6 +69,14 @@ class ChatbotFragment : Fragment() {
 
             binding.layoutChatbotOpening.visibility = View.GONE
             binding.layoutChatbot.visibility = View.VISIBLE
+        }
+
+        binding.icBack.setOnClickListener{
+            findNavController().navigateUp()
+        }
+
+        binding.btnBack.setOnClickListener {
+            findNavController().navigateUp()
         }
 
     }

@@ -1,5 +1,7 @@
 package com.example.user_service.controller;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -21,6 +23,7 @@ import jakarta.validation.Valid;
 @CrossOrigin(origins = "*")
 public class FcmTokenController {
     
+    private static final Logger log = LoggerFactory.getLogger(FcmTokenController.class);
     private final FcmTokenService fcmTokenService;
     
     @Autowired
@@ -32,6 +35,8 @@ public class FcmTokenController {
     public ResponseEntity<Void> registerToken(
             @PathVariable Long userId,
             @Valid @RequestBody FcmTokenDto tokenDto) {
+        log.info("Received FCM token registration request for user: {}, deviceId: {}", 
+            userId, tokenDto.getDeviceId());
         fcmTokenService.registerToken(userId, tokenDto);
         return ResponseEntity.ok().build();
     }

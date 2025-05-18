@@ -1,0 +1,50 @@
+services: 
+  redis:
+    image: redis:6
+    container_name: redis_service
+    ports:
+      - "6379:6379"
+    networks:
+      - backend_network
+    restart: always
+
+  parking-management-service:
+    build: 
+      context: ./parking-management-service
+      dockerfile: Dockerfile
+    container_name: parking_management_service
+    ports:
+      - "8081:8081"
+    environment:
+      - REDIS_HOST=redis_service
+    depends_on:
+      - redis
+    restart: always
+    networks:
+      - backend_network
+
+  navigation-service:
+    build: 
+      context: ./navigation-service
+      dockerfile: Dockerfile
+    container_name: navigation_service
+    ports:
+      - "8003:8080"
+    networks:
+      - backend_network
+    restart: always
+
+  user-service:
+    build: 
+      context: ./user-service
+      dockerfile: Dockerfile
+    container_name: user_service
+    ports:
+      - "8080:8080"
+    restart: always
+    networks:
+      - backend_network
+
+networks:
+  backend_network:
+    driver: bridge

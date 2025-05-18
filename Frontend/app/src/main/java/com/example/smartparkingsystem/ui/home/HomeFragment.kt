@@ -1,12 +1,16 @@
 package com.example.smartparkingsystem.ui.home
 
 import android.Manifest
+import android.app.AlertDialog
 import android.content.pm.PackageManager
 import android.graphics.Rect
+import android.os.Build
 import android.os.Bundle
 import android.view.View
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
@@ -14,6 +18,7 @@ import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.RecyclerView
 import com.example.smartparkingsystem.R
 import com.example.smartparkingsystem.databinding.FragmentHomeBinding
+import com.example.smartparkingsystem.utils.SessionManager
 import com.example.smartparkingsystem.utils.state.UiState
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
@@ -25,6 +30,7 @@ import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.MarkerOptions
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.collectLatest
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class HomeFragment : Fragment(R.layout.fragment_home), OnMapReadyCallback {
@@ -39,6 +45,19 @@ class HomeFragment : Fragment(R.layout.fragment_home), OnMapReadyCallback {
     private val defaultZoom = 13f
     private val userLocationZoom = 15f
 
+    @Inject
+    lateinit var sessionManager: SessionManager
+
+    private val notificationPermissionRequest = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            updateNotificationPreferences(true)
+        } else {
+            updateNotificationPreferences(false)
+        }
+    }
+
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         _binding = FragmentHomeBinding.bind(view)
@@ -49,6 +68,7 @@ class HomeFragment : Fragment(R.layout.fragment_home), OnMapReadyCallback {
         setupRecyclerView()
         observeUiState()
         viewModel.fetchParkings()
+        checkNotificationPermissions()
     }
 
     private fun setupAdapter() {
@@ -210,6 +230,53 @@ class HomeFragment : Fragment(R.layout.fragment_home), OnMapReadyCallback {
             requireContext(),
             Manifest.permission.ACCESS_FINE_LOCATION
         ) == PackageManager.PERMISSION_GRANTED
+    }
+
+    private fun checkNotificationPermissions() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            when {
+                ContextCompat.checkSelfPermission(
+                    requireContext(),
+                    Manifest.permission.POST_NOTIFICATIONS
+                ) == PackageManager.PERMISSION_GRANTED -> {
+                    // İzin zaten verilmiş, tercihleri güncelle
+                    updateNotificationPreferences(true)
+                }
+                shouldShowRequestPermissionRationale(Manifest.permission.POST_NOTIFICATIONS) -> {
+                    // Kullanıcıya neden izin istediğimizi açıkla
+                    showNotificationPermissionRationale()
+                }
+                else -> {
+                    // İzin iste
+                    requestNotificationPermission()
+                }
+            }
+        }
+    }
+
+    private fun showNotificationPermissionRationale() {
+        AlertDialog.Builder(requireContext())
+            .setTitle("Bildirim İzni")
+            .setMessage("Otopark doluluk durumu hakkında bildirim almak için bildirim iznine ihtiyacımız var.")
+            .setPositiveButton("İzin Ver") { _, _ ->
+                requestNotificationPermission()
+            }
+            .setNegativeButton("İptal") { dialog, _ ->
+                dialog.dismiss()
+                updateNotificationPreferences(false)
+            }
+            .show()
+    }
+
+    private fun requestNotificationPermission() {
+        notificationPermissionRequest.launch(Manifest.permission.POST_NOTIFICATIONS)
+    }
+
+    private fun updateNotificationPreferences(isEnabled: Boolean) {
+        val userId = sessionManager.getUserId()
+        if (userId > 0) {
+            viewModel.updateNotificationPreferences(userId.toInt(), isEnabled)
+        }
     }
 
     override fun onDestroyView() {

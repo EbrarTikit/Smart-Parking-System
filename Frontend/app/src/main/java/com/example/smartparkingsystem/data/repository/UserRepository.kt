@@ -3,6 +3,7 @@ package com.example.smartparkingsystem.data.repository
 import android.util.Log
 import com.example.smartparkingsystem.data.model.FavoriteListResponse
 import com.example.smartparkingsystem.data.model.FavoriteResponse
+import com.example.smartparkingsystem.data.model.NotificationPreferences
 import com.example.smartparkingsystem.data.model.SignInRequest
 import com.example.smartparkingsystem.data.model.SignInResponse
 import com.example.smartparkingsystem.data.model.SignUpRequest
@@ -149,6 +150,40 @@ class UserRepository @Inject constructor(
                 } else {
                     val errorBody = response.errorBody()?.string()
                     Result.failure(Exception(errorBody ?: "Error: ${response.code()}"))
+                }
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+        }
+    }
+
+    suspend fun getNotificationPreferences(userId: Int): Result<NotificationPreferences> {
+        return withContext(Dispatchers.IO) {
+            try {
+                val response = userService.getNotificationPreferences(userId)
+                if (response.isSuccessful) {
+                    response.body()?.let {
+                        Result.success(it)
+                    } ?: Result.failure(Exception("No response body"))
+                } else {
+                    Result.failure(Exception("Error: ${response.code()} - ${response.message()}"))
+                }
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+        }
+    }
+
+    suspend fun toggleNotificationPreferences(userId: Int): Result<NotificationPreferences> {
+        return withContext(Dispatchers.IO) {
+            try {
+                val response = userService.toggleNotificationPreferences(userId)
+                if (response.isSuccessful) {
+                    response.body()?.let {
+                        Result.success(it)
+                    } ?: Result.failure(Exception("No response body"))
+                } else {
+                    Result.failure(Exception("Error: ${response.code()} - ${response.message()}"))
                 }
             } catch (e: Exception) {
                 Result.failure(e)

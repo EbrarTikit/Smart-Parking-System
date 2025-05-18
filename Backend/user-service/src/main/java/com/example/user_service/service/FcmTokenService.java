@@ -3,6 +3,8 @@ package com.example.user_service.service;
 import java.util.List;
 import java.util.Optional;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -13,6 +15,7 @@ import com.example.user_service.repository.FcmTokenRepository;
 @Service
 public class FcmTokenService {
     
+    private static final Logger log = LoggerFactory.getLogger(FcmTokenService.class);
     private final FcmTokenRepository fcmTokenRepository;
     
     @Autowired
@@ -21,12 +24,16 @@ public class FcmTokenService {
     }
     
     public void registerToken(Long userId, FcmTokenDto tokenDto) {
+        log.info("Registering FCM token for user: {}, token: {}, deviceId: {}", 
+            userId, tokenDto.getToken(), tokenDto.getDeviceId());
+            
         // Check if token already exists for this device
         Optional<FcmToken> existingToken = fcmTokenRepository.findByTokenAndDeviceId(
             tokenDto.getToken(), tokenDto.getDeviceId());
         
         if (existingToken.isPresent()) {
             FcmToken token = existingToken.get();
+            log.info("Updating existing token for user: {}", userId);
             // Update user ID if needed
             if (!token.getUserId().equals(userId)) {
                 token.setUserId(userId);
@@ -34,6 +41,7 @@ public class FcmTokenService {
                 fcmTokenRepository.save(token);
             }
         } else {
+            log.info("Creating new token for user: {}", userId);
             // Create new token
             FcmToken newToken = new FcmToken();
             newToken.setUserId(userId);

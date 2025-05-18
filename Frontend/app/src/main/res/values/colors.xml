@@ -14,5 +14,8 @@
     <color name="box">#D9D9D9</color>
     <color name="green_box">#F1FEF9</color>
 
-
+    <color name="switch_thumb_enabled">#37B089</color>
+    <color name="switch_thumb_disabled">#CCCCCC</color>
+    <color name="switch_track_enabled">#80D4B5</color>
+    <color name="switch_track_disabled">#E0E0E0</color>
 </resources>

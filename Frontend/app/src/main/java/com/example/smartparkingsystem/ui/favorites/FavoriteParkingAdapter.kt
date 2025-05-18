@@ -51,8 +51,7 @@ class FavoriteParkingAdapter(
             with(binding) {
                 tvParkingName.text = parking.name
                 tvParkingLocation.text = parking.location
-                tvParkingPrice.text =
-                    "$10/h"
+                tvParkingPrice.text = "$ ${parking.rate}/h"
                 ivParkingImage.loadImage(parking.imageUrl)
                 btnFavorite.setImageResource(R.drawable.favorite)
             }

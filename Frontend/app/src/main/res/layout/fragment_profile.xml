@@ -99,8 +99,8 @@
                         android:id="@+id/switchNotifications"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        app:thumbTint="@color/secondary"
-                        app:trackTint="@color/green_box"/>
+                        app:thumbTint="@color/switch_thumb_enabled"
+                        app:trackTint="@color/switch_track_enabled"/>
                 </LinearLayout>
 
                 <View

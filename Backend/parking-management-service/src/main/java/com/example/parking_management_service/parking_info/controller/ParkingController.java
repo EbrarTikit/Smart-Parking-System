@@ -7,6 +7,7 @@ import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -34,6 +35,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 
+@CrossOrigin(origins = "http://localhost:3000")
 @RestController
 @RequestMapping("/api")
 public class ParkingController {
@@ -115,27 +117,27 @@ public class ParkingController {
         return ResponseEntity.ok(parking);
     }
 
-    //Create Parking
     @Operation(
-        summary = "Create a new parking lot",
-        description = "Creates a new parking lot with the provided details. Use string format 'HH:mm' for time values. Optionally include rows and columns to create a layout.",
-        requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
-            content = @Content(
-                mediaType = "application/json",
-                examples = @ExampleObject(
-                    value = "{\n" + 
-                            "  \"name\": \"Central Parking\",\n" +
-                            "  \"location\": \"Downtown\",\n" +
-                            "  \"capacity\": 100,\n" +
-                            "  \"openingHours\": \"08:00\",\n" +
-                            "  \"closingHours\": \"22:00\",\n" +
-                            "  \"rate\": 10.50,\n" +
-                            "  \"latitude\": 41.0082,\n" +
-                            "  \"longitude\": 28.9784,\n" +
-                            "  \"rows\": 5,\n" +
-                            "  \"columns\": 4,\n" +
-                            "  \"imageUrl\": \"https://example.com/parking-image.jpg\"\n" +
-                            "}"
+    summary = "Create a new parking lot",
+    description = "Creates a new parking lot with the provided details. Use string format 'HH:mm' for time values. Optionally include rows and columns to create a layout.",
+    requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
+        content = @Content(
+            mediaType = "application/json",
+            examples = @ExampleObject(
+                value = "{\n" +
+                        "  \"name\": \"Central Parking\",\n" +
+                        "  \"location\": \"Downtown\",\n" +
+                        "  \"capacity\": 100,\n" +
+                        "  \"openingHours\": \"08:00\",\n" +
+                        "  \"closingHours\": \"22:00\",\n" +
+                        "  \"rate\": 10.5,\n" +
+                        "  \"latitude\": 41.0082,\n" +
+                        "  \"longitude\": 28.9784,\n" +
+                        "  \"rows\": 5,\n" +
+                        "  \"columns\": 4,\n" +
+                        "  \"imageUrl\": \"https://example.com/parking-image.jpg\",\n" +
+                        "  \"description\": \"lorem ipsum.\"\n" +
+                        "}"
                 )
             )
         )
@@ -167,7 +169,8 @@ public class ParkingController {
                             "  \"longitude\": 28.9784,\n" +
                             "  \"rows\": 6,\n" +
                             "  \"columns\": 5,\n" +
-                            "  \"imageUrl\": \"https://example.com/parking-updated-image.jpg\"\n" +
+                            "  \"imageUrl\": \"https://example.com/parking-updated-image.jpg\",\n" +
+                            "  \"description\": \"lorem ipsum dolor sit amet\"\n" +
                             "}"
                 )
             )

@@ -18,7 +18,9 @@ import com.example.user_service.dto.NotificationPreferencesDto;
 import com.example.user_service.model.User;
 import com.example.user_service.service.UserService;
 
+
 @CrossOrigin(origins = { "http://localhost:3000", "http://localhost:80" })
+  
 @RestController
 @RequestMapping("/api/users")
 public class UserController {

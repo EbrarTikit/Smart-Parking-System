@@ -25,7 +25,9 @@ import com.example.user_service.security.JwtUtil;
 import com.example.user_service.service.CustomUserDetailsService;
 import com.example.user_service.service.UserService;
 
+
 @CrossOrigin(origins = { "http://localhost:3000", "http://localhost:80" })
+
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {

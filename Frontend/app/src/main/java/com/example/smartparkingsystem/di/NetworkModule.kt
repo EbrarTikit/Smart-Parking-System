@@ -58,7 +58,7 @@ object NetworkModule {
     @Named("chatbotRetrofit")
     fun provideChatbotRetrofit(okHttpClient: OkHttpClient, gson: Gson): Retrofit {
         return Retrofit.Builder()
-            .baseUrl("http://10.0.2.2:8001")
+            .baseUrl("http://192.168.1.243:8001")
             .client(okHttpClient)
             .addConverterFactory(GsonConverterFactory.create(gson))
             .build()
@@ -74,7 +74,7 @@ object NetworkModule {
         stringConverterFactory: StringConverterFactory
     ): Retrofit {
         return Retrofit.Builder()
-            .baseUrl("http://10.0.2.2:8050")
+            .baseUrl("http://192.168.1.243:8050")
             .client(okHttpClient)
             .addConverterFactory(stringConverterFactory)
             .addConverterFactory(GsonConverterFactory.create(gson))
@@ -91,7 +91,7 @@ object NetworkModule {
         stringConverterFactory: StringConverterFactory
     ): Retrofit {
         return Retrofit.Builder()
-            .baseUrl("http://10.0.2.2:8080")
+            .baseUrl("http://192.168.1.243:8080")
             .client(okHttpClient)
             .addConverterFactory(stringConverterFactory)
             .addConverterFactory(GsonConverterFactory.create(gson))
@@ -108,7 +108,7 @@ object NetworkModule {
         stringConverterFactory: StringConverterFactory
     ): Retrofit {
         return Retrofit.Builder()
-            .baseUrl("http://10.0.2.2:8081")
+            .baseUrl("http://192.168.1.243:8081")
             .client(okHttpClient)
             .addConverterFactory(stringConverterFactory)
             .addConverterFactory(GsonConverterFactory.create(gson))

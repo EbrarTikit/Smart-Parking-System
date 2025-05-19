@@ -2,7 +2,6 @@ package com.example.smartparkingsystem.di
 
 import com.example.smartparkingsystem.data.remote.ChatbotService
 import com.example.smartparkingsystem.data.remote.NavigationService
-import com.example.smartparkingsystem.data.remote.NotificationService
 import com.example.smartparkingsystem.data.remote.ParkingManagementService
 import com.example.smartparkingsystem.data.remote.UserService
 import com.example.smartparkingsystem.utils.StringConverterFactory
@@ -70,12 +69,12 @@ object NetworkModule {
     @Singleton
     @Named("userRetrofit")
     fun provideUserRetrofit(
-        okHttpClient: OkHttpClient,
+        okHttpClient: OkHttpClient, 
         gson: Gson,
         stringConverterFactory: StringConverterFactory
     ): Retrofit {
         return Retrofit.Builder()
-            .baseUrl("http://192.168.1.243:8050/")
+            .baseUrl("http://192.168.1.243:8050")
             .client(okHttpClient)
             .addConverterFactory(stringConverterFactory)
             .addConverterFactory(GsonConverterFactory.create(gson))
@@ -116,8 +115,6 @@ object NetworkModule {
             .build()
     }
 
-
-
     @Provides
     @Singleton
     fun provideChatbotService(@Named("chatbotRetrofit") retrofit: Retrofit): ChatbotService {
@@ -140,11 +137,5 @@ object NetworkModule {
     @Singleton
     fun provideParkingManagementService(@Named("parkingManagementRetrofit") retrofit: Retrofit): ParkingManagementService {
         return retrofit.create(ParkingManagementService::class.java)
-    }
-
-    @Provides
-    @Singleton
-    fun provideNotificationService(@Named("userRetrofit") retrofit: Retrofit): NotificationService {
-        return retrofit.create(NotificationService::class.java)
     }
 }

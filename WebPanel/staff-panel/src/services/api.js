@@ -1,6 +1,8 @@
 // API URL'leri
 const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:8005";
 const WS_BASE_URL = process.env.REACT_APP_WS_URL || "ws://localhost:8005";
+const USER_SERVICE_URL =
+  process.env.REACT_APP_USER_SERVICE_URL || "http://localhost:8050";
 
 // API istek göndermek için ortak fonksiyon
 const fetchWithTimeout = async (url, options = {}, timeout = 8000) => {
@@ -31,6 +33,153 @@ export const api = {
   // API URL sabitleri
   API_BASE_URL,
   WS_BASE_URL,
+  USER_SERVICE_URL,
+
+  // Giriş Yapma (Login)
+  login: async (username, password) => {
+    try {
+      console.log(`Kullanıcı girişi yapılıyor: ${username}`);
+      const response = await fetch(`${USER_SERVICE_URL}/api/auth/signin`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          username,
+          password,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || `HTTP hatası: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      // JWT token'ı local storage'a kaydet
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("userId", data.userId);
+
+      console.log("Kullanıcı girişi başarılı:", data);
+      return data;
+    } catch (error) {
+      console.error("Kullanıcı girişi sırasında hata:", error);
+      throw error;
+    }
+  },
+
+  // Kayıt Olma (Register)
+  register: async (username, email, password) => {
+    try {
+      console.log(`Yeni kullanıcı kaydı yapılıyor: ${username}, ${email}`);
+      const response = await fetch(`${USER_SERVICE_URL}/api/auth/signup`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          username,
+          email,
+          password,
+        }),
+      });
+
+      if (!response.ok) {
+        // Hata mesajını text olarak alıp konsola yazdıralım
+        const errorText = await response.text();
+        console.error("Hata yanıtı (ham metin):", errorText);
+
+        // Eğer JSON olarak ayrıştırılabilirse, message'ı alalım
+        let errorMessage = `HTTP hatası: ${response.status}`;
+        try {
+          const errorData = JSON.parse(errorText);
+          if (errorData && errorData.message) {
+            errorMessage = errorData.message;
+          }
+        } catch (jsonError) {
+          console.error("Hata yanıtı JSON olarak ayrıştırılamadı:", jsonError);
+        }
+
+        throw new Error(errorMessage);
+      }
+
+      // Başarılı yanıtı text olarak alıp konsola yazdıralım
+      const responseText = await response.text();
+      console.log("Başarılı yanıt (ham metin):", responseText);
+
+      // Boş yanıt kontrolü
+      if (!responseText || responseText.trim() === "") {
+        console.log("Boş yanıt alındı, varsayılan başarı mesajı kullanılıyor");
+        return { message: "Kullanıcı kaydı başarılı" };
+      }
+
+      // JSON olarak ayrıştırmayı dene
+      try {
+        const data = JSON.parse(responseText);
+        console.log("Kullanıcı kaydı başarılı:", data);
+        return data;
+      } catch (jsonError) {
+        console.error("Yanıt JSON olarak ayrıştırılamadı:", jsonError);
+        // JSON ayrıştırma başarısız olursa, ham metni bir mesaj olarak döndür
+        return { message: responseText };
+      }
+    } catch (error) {
+      console.error("Kullanıcı kaydı sırasında hata:", error);
+      throw error;
+    }
+  },
+
+  // Çıkış Yapma (Logout)
+  logout: () => {
+    // Token ve kullanıcı bilgilerini local storage'dan temizle
+    localStorage.removeItem("token");
+    localStorage.removeItem("userId");
+    console.log("Kullanıcı çıkışı yapıldı");
+  },
+
+  // Kullanıcı Bilgilerini Getir
+  getUserInfo: async (userId) => {
+    try {
+      console.log(`Kullanıcı bilgileri alınıyor: ID=${userId}`);
+
+      // JWT token'ı al
+      const token = localStorage.getItem("token");
+
+      if (!token) {
+        throw new Error("Oturum bulunamadı");
+      }
+
+      const response = await fetch(`${USER_SERVICE_URL}/api/users/${userId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          // Token geçersiz veya süresi dolmuş
+          localStorage.removeItem("token");
+          localStorage.removeItem("userId");
+          throw new Error("Oturum süresi dolmuş");
+        }
+        throw new Error(`HTTP hatası: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log("Kullanıcı bilgileri alındı:", data);
+      return data;
+    } catch (error) {
+      console.error("Kullanıcı bilgileri alınırken hata:", error);
+      throw error;
+    }
+  },
+
+  // Token kontrolü - oturum açık mı?
+  isAuthenticated: () => {
+    const token = localStorage.getItem("token");
+    return !!token; // token varsa true, yoksa false döner
+  },
 
   // Araç Girişi
   vehicleEntry: async (licensePlate, parkingId = 1) => {

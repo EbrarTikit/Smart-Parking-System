@@ -3,7 +3,7 @@ package com.example.user_service.dto;
 public class JwtResponse {
     private String token;
     private String type = "Bearer";
-    private Long userId; 
+    private Long userId;
 
     public JwtResponse(String token, Long userId) {
         this.token = token;

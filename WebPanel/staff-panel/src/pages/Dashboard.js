@@ -297,6 +297,9 @@ const Dashboard = () => {
             </div>
           </div>
         </div>
+        <a href="/webcam-demo.html" className="camera-demo-button">
+          <span>Kameralı Demo</span>
+        </a>
       </div>
 
       {error && (

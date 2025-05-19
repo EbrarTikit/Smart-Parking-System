@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -17,6 +18,7 @@ import com.example.user_service.dto.NotificationPreferencesDto;
 import com.example.user_service.model.User;
 import com.example.user_service.service.UserService;
 
+@CrossOrigin(origins = { "http://localhost:3000", "http://localhost:80" })
 @RestController
 @RequestMapping("/api/users")
 public class UserController {
@@ -35,8 +37,8 @@ public class UserController {
     @GetMapping("/{id}")
     public ResponseEntity<User> getUserById(@PathVariable Long id) {
         return userService.findUserById(id)
-            .map(ResponseEntity::ok)
-            .orElseGet(() -> ResponseEntity.notFound().build());
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @PostMapping
@@ -49,14 +51,14 @@ public class UserController {
         userService.deleteUser(id);
         return ResponseEntity.ok().build();
     }
-    
+
     // Notification preferences endpoints
     @GetMapping("/{id}/notification-preferences")
     public ResponseEntity<NotificationPreferencesDto> getNotificationPreferences(@PathVariable Long id) {
         NotificationPreferencesDto preferences = userService.getNotificationPreferences(id);
         return ResponseEntity.ok(preferences);
     }
-    
+
     @PutMapping("/{id}/notification-preferences/toggle")
     public ResponseEntity<NotificationPreferencesDto> toggleNotificationPreferences(@PathVariable Long id) {
         NotificationPreferencesDto updatedPreferences = userService.toggleNotificationPreferences(id);

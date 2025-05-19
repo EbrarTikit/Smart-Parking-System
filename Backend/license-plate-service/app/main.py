@@ -410,7 +410,7 @@ def register_vehicle_exit(
                 success=False,
                 message=f"Bu araca ait aktif park kaydı bulunamadı: {exit_req.license_plate}"
             )
-            
+        
             # WebSocket bildirimi gönder (aktif kayıt yok)
             background_tasks.add_task(
                 lambda: run_async(manager.broadcast({

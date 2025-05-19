@@ -22,6 +22,7 @@ import org.springframework.security.core.Authentication;
 
 import com.example.user_service.dto.JwtResponse;
 import com.example.user_service.dto.LoginRequest;
+import com.example.user_service.dto.MessageResponse;
 import com.example.user_service.dto.SignupRequest;
 import com.example.user_service.exception.InvalidCredentialsException;
 import com.example.user_service.model.User;
@@ -111,13 +112,13 @@ public class AuthControllerTest {
     void registerUser_WhenUsernameIsUnique_ShouldReturnSuccess() {
         // Given
         when(userService.existsByUsername("newuser")).thenReturn(false);
-        
+
         User savedUser = new User();
         savedUser.setId(2L);
         savedUser.setUsername("newuser");
         savedUser.setEmail("new@example.com");
         savedUser.setPassword("encodedPassword");
-        
+
         when(userService.registerUser(any(User.class))).thenReturn(savedUser);
 
         // When
@@ -125,10 +126,10 @@ public class AuthControllerTest {
 
         // Then
         assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertTrue(response.getBody() instanceof String);
-        String message = (String) response.getBody();
-        assertTrue(message.contains("User registered successfully"));
-        assertTrue(message.contains("2"));  // ID of the user
+        assertTrue(response.getBody() instanceof MessageResponse);
+        MessageResponse messageResponse = (MessageResponse) response.getBody();
+        assertTrue(messageResponse.getMessage().contains("User registered successfully"));
+        assertTrue(messageResponse.getMessage().contains("2")); // ID of the user
 
         verify(userService).existsByUsername("newuser");
         verify(userService).registerUser(any(User.class));
@@ -144,9 +145,9 @@ public class AuthControllerTest {
 
         // Then
         assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
-        assertTrue(response.getBody() instanceof String);
-        String message = (String) response.getBody();
-        assertTrue(message.contains("Username is already taken"));
+        assertTrue(response.getBody() instanceof MessageResponse);
+        MessageResponse messageResponse = (MessageResponse) response.getBody();
+        assertTrue(messageResponse.getMessage().contains("Username is already taken"));
 
         verify(userService).existsByUsername("newuser");
         verify(userService, never()).registerUser(any(User.class));

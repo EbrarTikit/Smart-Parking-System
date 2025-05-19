@@ -4,22 +4,36 @@
 
 .dashboard-header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  justify-content: space-between;
+  margin-bottom: 25px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid #e0e0e0;
+  flex-wrap: wrap;
 }
 
-/* Yeni otopark seçici stilleri */
+.dashboard-header h2 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 600;
+  color: #303f9f;
+  flex: 1;
+  margin-right: 20px;
+}
+
+/* Otopark seçici stilleri */
 .parking-selector-container {
   display: flex;
   align-items: center;
-  position: relative;
+  margin-right: 20px;
+  margin-bottom: 10px;
 }
 
 .parking-selector-container label {
   margin-right: 10px;
   font-weight: 600;
   color: #333;
+  white-space: nowrap;
 }
 
 .custom-select {
@@ -42,139 +56,174 @@
   -webkit-appearance: none;
   -moz-appearance: none;
   cursor: pointer;
-  transition: all 0.3s ease;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
 .custom-select select:hover {
-  border-color: #3498db;
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
+  border-color: #aaa;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
 }
 
 .custom-select select:focus {
   outline: none;
-  border-color: #3498db;
-  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.25);
+  border-color: #3f51b5;
+  box-shadow: 0 0 0 2px rgba(63, 81, 181, 0.2);
 }
 
 .custom-select::after {
   content: "▼";
-  position: absolute;
-  top: 50%;
-  right: 15px;
-  transform: translateY(-50%);
   font-size: 10px;
   color: #666;
+  position: absolute;
+  right: 15px;
+  top: 50%;
+  transform: translateY(-50%);
   pointer-events: none;
-  transition: all 0.3s ease;
 }
 
 .custom-select:hover::after {
-  color: #3498db;
+  color: #333;
 }
 
 .custom-select select option {
   padding: 10px;
+  font-weight: 500;
   background-color: #fff;
   color: #333;
 }
 
 /* Dropdown kutusunu Görselleştirme */
 .custom-select select:focus option {
-  background-color: #f5f8fa;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  background-color: #f5f5f5;
 }
 
 .custom-select select option:hover,
-.custom-select select option:checked {
-  background-color: #e6f7ff;
-  color: #2980b9;
+.custom-select select option:focus {
+  background-color: #e8eaf6;
+  color: #3f51b5;
 }
 
-/* Eski stilleri kaldırıyorum */
-/* .parking-selector,
-.parking-selector label,
-.parking-selector select,
-.parking-select {
-  /* Bu stiller artık kullanılmıyor */
-/*} */
-
-/* Bağlantı durumu ve diğer stiller */
-.connection-status {
-  margin-bottom: 20px;
-  padding: 12px 15px;
+/* Kameralı demo butonu */
+.camera-demo-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #3f51b5, #303f9f);
+  color: white;
+  text-decoration: none;
+  padding: 10px 20px;
   border-radius: 5px;
+  font-weight: 500;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  white-space: nowrap;
+  margin-bottom: 10px;
+}
+
+.camera-demo-button:hover {
+  background: linear-gradient(135deg, #303f9f, #1a237e);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.camera-demo-button::before {
+  content: "📷";
+  margin-right: 8px;
+  font-size: 16px;
+}
+
+/* Bağlantı durumu */
+.connection-status {
   display: flex;
   align-items: center;
-  background-color: #f8f9fa;
-  border: 1px solid #eaeaea;
+  background-color: #f5f7fa;
+  padding: 10px 15px;
+  border-radius: 6px;
+  font-size: 14px;
+  color: #555;
+  margin-bottom: 20px;
+  border: 1px solid #e0e0e0;
 }
 
 .status-indicator {
-  display: inline-block;
   width: 12px;
   height: 12px;
   border-radius: 50%;
   margin-right: 10px;
+  background-color: #f44336;
+  box-shadow: 0 0 5px rgba(244, 67, 54, 0.5);
 }
 
 .status-indicator.connected {
-  background-color: #2ecc71;
-  box-shadow: 0 0 5px #2ecc71;
+  background-color: #4caf50;
+  box-shadow: 0 0 5px rgba(76, 175, 80, 0.5);
 }
 
 .status-indicator.disconnected {
-  background-color: #e74c3c;
-  box-shadow: 0 0 5px #e74c3c;
+  background-color: #f44336;
+  box-shadow: 0 0 5px rgba(244, 67, 54, 0.5);
 }
 
 .dashboard-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 20px;
+  grid-template-columns: 3fr 2fr;
+  gap: 25px;
 }
 
 .section-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 15px;
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #eaeaea;
+}
+
+.section-header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #303f9f;
 }
 
 .badge {
-  background-color: #3498db;
+  background-color: #3f51b5;
   color: white;
-  padding: 4px 8px;
+  padding: 4px 10px;
   border-radius: 12px;
-  font-size: 14px;
+  font-size: 12px;
+  font-weight: 600;
 }
 
 .no-data {
+  padding: 30px;
   text-align: center;
-  color: #777;
-  padding: 20px;
+  color: #757575;
+  font-style: italic;
+  background-color: #f9f9f9;
+  border-radius: 6px;
+  margin: 20px 0;
 }
 
 .loading {
-  text-align: center;
-  color: #3498db;
-  padding: 20px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 40px;
+  color: #3f51b5;
   font-weight: 500;
-  animation: pulse 1.5s infinite ease-in-out;
-  position: relative;
 }
 
 .loading:after {
   content: "";
-  display: inline-block;
   width: 20px;
   height: 20px;
-  border: 3px solid #3498db;
+  margin-left: 15px;
+  border: 3px solid #3f51b5;
   border-radius: 50%;
   border-top-color: transparent;
   animation: spin 1s linear infinite;
-  margin-left: 10px;
-  vertical-align: middle;
 }
 
 @keyframes pulse {
@@ -184,8 +233,7 @@
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  to { transform: rotate(360deg); }
 }
 
 .action-buttons {
@@ -195,22 +243,31 @@
 }
 
 .btn-sm {
-  padding: 5px 10px;
+  padding: 6px 12px;
   font-size: 14px;
+  border-radius: 4px;
 }
 
+/* Aktivite listesi */
 .activity-list {
   list-style: none;
   padding: 0;
   margin: 0;
   max-height: 500px;
   overflow-y: auto;
+  border: 1px solid #eaeaea;
+  border-radius: 6px;
 }
 
 .activity-item {
   display: flex;
-  padding: 15px 0;
-  border-bottom: 1px solid #eee;
+  padding: 15px;
+  border-bottom: 1px solid #eaeaea;
+  transition: background-color 0.2s;
+}
+
+.activity-item:hover {
+  background-color: #f5f7fa;
 }
 
 .activity-item:last-child {
@@ -218,19 +275,33 @@
 }
 
 .activity-item.entry {
-  border-left: 4px solid #2ecc71;
-  padding-left: 15px;
+  border-left: 4px solid #4caf50;
 }
 
 .activity-item.exit {
-  border-left: 4px solid #e74c3c;
-  padding-left: 15px;
+  border-left: 4px solid #f44336;
 }
 
 .activity-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   margin-right: 15px;
-  font-size: 20px;
-  color: #777;
+  color: white;
+  flex-shrink: 0;
+}
+
+.activity-item.entry .activity-icon {
+  background-color: #4caf50;
+  content: "↓";
+}
+
+.activity-item.exit .activity-icon {
+  background-color: #f44336;
+  content: "↑";
 }
 
 .activity-content {
@@ -238,27 +309,39 @@
 }
 
 .activity-message {
-  font-weight: 600;
-  margin-bottom: 5px;
+  margin: 0 0 5px;
+  font-weight: 500;
+  color: #333;
 }
 
 .activity-time {
-  font-size: 14px;
-  color: #777;
-  margin-bottom: 5px;
+  margin: 0;
+  font-size: 13px;
+  color: #757575;
 }
 
 .activity-details {
+  margin: 5px 0 0;
   font-size: 14px;
-  color: #333;
-  background-color: #f5f5f5;
-  padding: 5px 8px;
+  color: #555;
+  background-color: #f5f7fa;
+  padding: 5px 10px;
   border-radius: 4px;
   display: inline-block;
 }
 
-/* Mobil cihazlar için otopark seçici düzeni */
-@media (max-width: 768px) {
+/* Responsive düzenlemeler */
+@media (max-width: 1200px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  
+  .custom-select {
+    width: 220px;
+  }
+}
+
+@media (max-width: 992px) {
   .dashboard-grid {
     grid-template-columns: 1fr;
   }
@@ -268,17 +351,35 @@
     align-items: flex-start;
   }
   
+  .dashboard-header h2 {
+    margin-bottom: 15px;
+  }
+  
   .parking-selector-container {
-    margin-top: 10px;
-    width: 100%;
+    margin-bottom: 15px;
+    margin-right: 0;
   }
   
   .custom-select {
     width: 100%;
   }
   
-  .custom-select select {
-    min-width: 180px;
-    width: 100%;
+  .camera-demo-button {
+    align-self: flex-start;
+  }
+}
+
+@media (max-width: 768px) {
+  .dashboard-header {
+    padding-bottom: 10px;
+  }
+  
+  .section-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .activity-list {
+    max-height: 400px;
   }
 } 

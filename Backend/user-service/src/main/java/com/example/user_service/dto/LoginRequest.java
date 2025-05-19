@@ -1,5 +1,5 @@
 
-package com.example.user_service.dto;  
+package com.example.user_service.dto;
 
 public class LoginRequest {
     private String username;
@@ -22,4 +22,3 @@ public class LoginRequest {
         this.password = password;
     }
 }
-

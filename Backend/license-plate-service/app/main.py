@@ -233,6 +233,8 @@ class VehicleEntryResponse(BaseModel):
     entry_time: Optional[str] = None
     vehicle: Optional[VehicleSchema] = None
     parking_record_id: Optional[int] = None
+    license_plate: Optional[str] = None
+    confidence: Optional[float] = None
 
 class VehicleExitRequest(BaseModel):
     license_plate: str
@@ -246,6 +248,8 @@ class VehicleExitResponse(BaseModel):
     duration_hours: Optional[float] = None
     parking_fee: Optional[float] = None  # TL cinsinden
     parking_record_id: Optional[int] = None
+    license_plate: Optional[str] = None
+    confidence: Optional[float] = None
 
 # Asenkron task'leri güvenli şekilde çalıştırmak için yardımcı fonksiyon
 def run_async(coroutine):
@@ -520,22 +524,55 @@ async def process_plate_for_entry(
         if "error" in results:
             return VehicleEntryResponse(
                 success=False,
-                message=f"Plaka tanıma sırasında hata: {results['error']}"
+                message=f"Plaka tanıma sırasında hata: {results['error']}",
+                license_plate=None,
+                confidence=None
             )
         
         # Plaka bulunamadıysa
         if not results.get("license_plates", []):
+            # Sonuçlarda detaylı bilgi var mı kontrol et
+            partial_plate = None
+            confidence = 0
+            
+            # Sonuçlarda ayrıntılı bilgi varsa, ilk plaka bilgisini al
+            if results.get("results") and len(results["results"]) > 0:
+                frame_results = results["results"].get("0", {})
+                for car_id, car_info in frame_results.items():
+                    if "license_plate" in car_info and "text" in car_info["license_plate"]:
+                        partial_plate = car_info["license_plate"]["text"]
+                        confidence = car_info["license_plate"].get("text_score", 0)
+                        break
+            
             return VehicleEntryResponse(
                 success=False,
-                message="Görüntüde plaka bulunamadı"
+                message="Görüntüde plaka bulunamadı veya tanınamadı",
+                license_plate=partial_plate,
+                confidence=confidence
             )
         
-        # İlk plakayı al
+        # İlk plakayı al ve güven skorunu bul
         license_plate = results["license_plates"][0]
+        confidence = 0
+        
+        # Güven skorunu bul
+        if results.get("results") and len(results["results"]) > 0:
+            frame_results = results["results"].get("0", {})
+            for car_id, car_info in frame_results.items():
+                if "license_plate" in car_info and "text" in car_info["license_plate"]:
+                    if car_info["license_plate"]["text"] == license_plate:
+                        confidence = car_info["license_plate"].get("text_score", 0)
+                        break
         
         # Araç girişi yap
         vehicle_entry = VehicleEntryRequest(license_plate=license_plate, parking_id=parking_id)
-        return register_vehicle_entry(vehicle_entry, db)
+        response = register_vehicle_entry(vehicle_entry, db)
+        
+        # Yanıta plaka bilgisini ekle
+        response.license_plate = license_plate
+        response.confidence = confidence
+        
+        return response
         
     except Exception as e:
         logger.error(f"Plaka tanıma ve araç girişi sırasında hata: {str(e)}")
@@ -543,7 +580,9 @@ async def process_plate_for_entry(
         traceback.print_exc()
         return VehicleEntryResponse(
             success=False,
-            message=f"Plaka tanıma ve araç girişi sırasında hata: {str(e)}"
+            message=f"Plaka tanıma ve araç girişi sırasında hata: {str(e)}",
+            license_plate=None,
+            confidence=None
         )
 
 @app.post("/process-plate-exit", response_model=VehicleExitResponse)
@@ -566,22 +605,55 @@ async def process_plate_for_exit(
         if "error" in results:
             return VehicleExitResponse(
                 success=False,
-                message=f"Plaka tanıma sırasında hata: {results['error']}"
+                message=f"Plaka tanıma sırasında hata: {results['error']}",
+                license_plate=None,
+                confidence=None
             )
         
         # Plaka bulunamadıysa
         if not results.get("license_plates", []):
+            # Sonuçlarda detaylı bilgi var mı kontrol et
+            partial_plate = None
+            confidence = 0
+            
+            # Sonuçlarda ayrıntılı bilgi varsa, ilk plaka bilgisini al
+            if results.get("results") and len(results["results"]) > 0:
+                frame_results = results["results"].get("0", {})
+                for car_id, car_info in frame_results.items():
+                    if "license_plate" in car_info and "text" in car_info["license_plate"]:
+                        partial_plate = car_info["license_plate"]["text"]
+                        confidence = car_info["license_plate"].get("text_score", 0)
+                        break
+            
             return VehicleExitResponse(
                 success=False,
-                message="Görüntüde plaka bulunamadı"
+                message="Görüntüde plaka bulunamadı veya tanınamadı",
+                license_plate=partial_plate,
+                confidence=confidence
             )
         
-        # İlk plakayı al
+        # İlk plakayı al ve güven skorunu bul
         license_plate = results["license_plates"][0]
+        confidence = 0
+        
+        # Güven skorunu bul
+        if results.get("results") and len(results["results"]) > 0:
+            frame_results = results["results"].get("0", {})
+            for car_id, car_info in frame_results.items():
+                if "license_plate" in car_info and "text" in car_info["license_plate"]:
+                    if car_info["license_plate"]["text"] == license_plate:
+                        confidence = car_info["license_plate"].get("text_score", 0)
+                        break
         
         # Araç çıkışı yap
         vehicle_exit = VehicleExitRequest(license_plate=license_plate, parking_id=parking_id)
-        return register_vehicle_exit(vehicle_exit, db)
+        response = register_vehicle_exit(vehicle_exit, db)
+        
+        # Yanıta plaka bilgisini ekle
+        response.license_plate = license_plate
+        response.confidence = confidence
+        
+        return response
         
     except Exception as e:
         logger.error(f"Plaka tanıma ve araç çıkışı sırasında hata: {str(e)}")
@@ -589,7 +661,9 @@ async def process_plate_for_exit(
         traceback.print_exc()
         return VehicleExitResponse(
             success=False,
-            message=f"Plaka tanıma ve araç çıkışı sırasında hata: {str(e)}"
+            message=f"Plaka tanıma ve araç çıkışı sırasında hata: {str(e)}",
+            license_plate=None,
+            confidence=None
         )
 
 # -------------- WEBSOCKET ENDPOINTLERİ --------------

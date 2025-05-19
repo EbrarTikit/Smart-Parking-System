@@ -62,68 +62,80 @@
       }
       .result-container {
         margin-top: 20px;
-        display: none;
-      }
-      .result-content {
-        background-color: #f9f9f9;
-        padding: 15px;
-        border-radius: 4px;
-        border-left: 4px solid #3498db;
+        padding: 20px;
+        background-color: #fff;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
       }
       .result-success {
-        border-left-color: #2ecc71;
-      }
-      .result-error {
-        border-left-color: #e74c3c;
-      }
-      .form-group {
+        padding: 15px;
+        border-left: 4px solid #4caf50;
+        background-color: #f9f9f9;
+        border-radius: 4px;
         margin-bottom: 15px;
       }
-      .form-group label {
-        display: block;
-        margin-bottom: 5px;
-        font-weight: 600;
-      }
-      select {
-        padding: 8px;
+      .result-error {
+        padding: 15px;
+        border-left: 4px solid #f44336;
+        background-color: #f9f9f9;
         border-radius: 4px;
-        border: 1px solid #ddd;
-        width: 100%;
-        max-width: 300px;
+        margin-bottom: 15px;
       }
-      .actions {
-        display: flex;
-        gap: 10px;
+      .plate-result {
+        text-align: center;
+        margin: 20px 0;
+      }
+      .plate-text {
+        display: inline-block;
+        padding: 10px 20px;
+        background-color: #ffeb3b;
+        color: #000;
+        font-size: 24px;
+        font-weight: bold;
+        border: 2px solid #000;
+        border-radius: 4px;
+        letter-spacing: 2px;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+      }
+      .result-details {
+        margin-top: 15px;
+      }
+      .result-details p {
+        margin: 8px 0;
+      }
+      .debug-images {
         margin-top: 20px;
       }
-      #resultData {
-        max-height: 300px;
-        overflow-y: auto;
-        font-family: monospace;
+      .debug-images h4 {
+        margin-bottom: 10px;
+        color: #333;
+      }
+      .debug-images img {
+        max-width: 100%;
+        border: 1px solid #ddd;
+        border-radius: 4px;
       }
       .loading {
-        display: none;
-        text-align: center;
-        margin-top: 10px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 20px;
+        font-size: 18px;
+        color: #3f51b5;
       }
-      .loading:after {
-        content: "...";
-        animation: dots 1.5s infinite;
+      .loading::after {
+        content: "";
+        width: 20px;
+        height: 20px;
+        margin-left: 10px;
+        border: 3px solid #3f51b5;
+        border-radius: 50%;
+        border-top-color: transparent;
+        animation: spin 1s linear infinite;
       }
-      @keyframes dots {
-        0%,
-        20% {
-          content: ".";
-        }
-        40% {
-          content: "..";
-        }
-        60% {
-          content: "...";
-        }
-        80%,
-        100% {
-          content: "";
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
         }
       }
       .home-link {
@@ -221,6 +233,15 @@
       .debug-tab-content.active {
         display: block;
       }
+
+      .debug-section {
+        margin-bottom: 15px;
+      }
+
+      .debug-note {
+        font-size: 0.8em;
+        color: #777;
+      }
     </style>
   </head>
   <body>
@@ -234,7 +255,7 @@
 
       <!-- Debug modu için anahtar ekleyelim -->
       <div class="debug-switch">
-        <input type="checkbox" id="debugMode" />
+        <input type="checkbox" id="debugMode" checked />
         <label for="debugMode">Debug Modu</label>
       </div>
     </div>
@@ -324,10 +345,13 @@
 
       <div id="loading" class="loading">İşleniyor</div>
 
-      <div id="resultContainer" class="result-container">
-        <h3>Sonuç:</h3>
-        <div id="resultContent" class="result-content">
-          <pre id="resultData"></pre>
+      <div id="resultContainer" class="result-container" style="display: none">
+        <h3>Plaka Tanıma Sonucu</h3>
+        <div id="resultContent" class="result-content"></div>
+        <div class="action-buttons" style="margin-top: 20px; text-align: right">
+          <button id="newCaptureBtn" class="btn btn-primary">
+            Yeni Görüntü Çek
+          </button>
         </div>
       </div>
 
@@ -343,22 +367,27 @@
         </div>
 
         <div id="imageInfoTab" class="debug-tab-content active">
-          <div class="debug-info" id="imageDebugInfo"></div>
-
-          <div class="debug-image-preview">
-            <h4>Orijinal Yakalanan Görüntü</h4>
-            <img id="debugImagePreview" src="" alt="Debug Görüntü Önizleme" />
-          </div>
-
-          <div class="debug-controls">
-            <button id="downloadDebugImage" class="btn btn-sm">
-              Görüntüyü İndir
-            </button>
-            <select id="imageQualitySelect">
-              <option value="0.95">Yüksek Kalite (0.95)</option>
-              <option value="0.85" selected>Orta Kalite (0.85)</option>
-              <option value="0.65">Düşük Kalite (0.65)</option>
+          <div class="debug-section">
+            <h4>Görüntü Kalitesi</h4>
+            <select id="imageQualitySelect" class="form-control">
+              <option value="1.0">Çok Yüksek (1.0)</option>
+              <option value="0.9">Yüksek (0.9)</option>
+              <option value="0.8" selected>Orta (0.8)</option>
+              <option value="0.7">Düşük (0.7)</option>
+              <option value="0.5">Çok Düşük (0.5)</option>
             </select>
+            <p class="debug-note">
+              Not: Daha yüksek kalite, daha büyük dosya boyutu demektir.
+            </p>
+          </div>
+          <div class="debug-section">
+            <h4>Görüntü Önizleme</h4>
+            <img id="debugImagePreview" src="" alt="Debug Görüntü Önizleme" />
+            <button id="downloadDebugImage" class="btn btn-sm">İndir</button>
+          </div>
+          <div class="debug-section">
+            <h4>Görüntü Bilgileri</h4>
+            <pre id="imageDebugInfo">Henüz görüntü yakalanmadı.</pre>
           </div>
         </div>
 
@@ -584,55 +613,85 @@
 
       // Görüntü yakalama fonksiyonu
       function captureImage() {
-        if (!isStreaming) return;
+        if (!isStreaming) return null;
 
-        // Canvas boyutlarını ayarla
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
+        try {
+          // Canvas boyutlarını ayarla
+          canvas.width = video.videoWidth;
+          canvas.height = video.videoHeight;
 
-        // Videodan görüntüyü canvas'a çiz
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+          if (debugMode.checked) {
+            console.log(`Canvas boyutları: ${canvas.width}x${canvas.height}`);
+          }
 
-        // Görüntü kalitesini alın
-        const imageQuality = parseFloat(imageQualitySelect.value);
+          // Görüntü kalitesini alın
+          const imageQuality = parseFloat(imageQualitySelect.value);
+          if (debugMode.checked) {
+            console.log(`Seçilen görüntü kalitesi: ${imageQuality}`);
+          }
 
-        // Canvas'taki görüntüyü base64 formatında al
-        capturedImage = canvas.toDataURL("image/jpeg", imageQuality);
+          // Videodan görüntüyü canvas'a çiz
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-        // Debug için görüntü ön izleme ve bilgileri güncelle
-        if (debugMode.checked) {
-          debugImageData = capturedImage;
-          debugImagePreview.src = capturedImage;
+          // Canvas'taki görüntüyü base64 formatında al
+          const capturedImage = canvas.toDataURL("image/jpeg", imageQuality);
 
-          // Görüntü boyutu hesaplama (yaklaşık)
-          const base64Size = capturedImage.length * 0.75;
+          // Görüntü boyutu hesaplama
+          const base64Length = capturedImage.length;
+          const base64Size = (base64Length - 22) * 0.75; // base64 overhead'i çıkar ve 3/4 oranını uygula
           const kbSize = (base64Size / 1024).toFixed(2);
 
-          // Debug bilgilerini güncelle
-          const debugInfo = `Görüntü Bilgileri:
-- Boyut: ${canvas.width}x${canvas.height} piksel
-- Dosya Boyutu: ~ ${kbSize} KB 
-- Format: JPEG
-- Kalite: ${imageQuality}
-- Tarih: ${new Date().toLocaleString()}\n`;
+          if (debugMode.checked) {
+            console.log(
+              `Yakalanan görüntü boyutu: ~${kbSize} KB (${base64Length} karakter)`
+            );
+          }
 
-          logDebugInfo(debugInfo, "image");
+          // Debug için görüntü ön izleme ve bilgileri güncelle
+          if (debugMode.checked) {
+            debugImageData = capturedImage;
+            debugImagePreview.src = capturedImage;
+
+            // Debug bilgilerini güncelle
+            const debugInfo = `Yakalama Zamanı: ${new Date().toLocaleTimeString()}
+Görüntü Boyutları: ${canvas.width}x${canvas.height} piksel
+Dosya Boyutu: ~ ${kbSize} KB 
+Format: JPEG
+Kalite: ${imageQuality}
+Base64 Uzunluğu: ${base64Length} karakter`;
+
+            logDebugInfo(debugInfo, "image");
+          }
+
+          // Düğme durumlarını güncelle
+          captureBtn.disabled = true;
+          resetBtn.disabled = false;
+          entryBtn.disabled = false;
+          exitBtn.disabled = false;
+
+          // Kamerayı durdur
+          stopCamera();
+
+          // Canvas'ı göster
+          canvas.style.display = "block";
+          video.style.display = "none";
+
+          // Sonuç panelini gizle (yeni görüntü çekildiğinde)
+          resultContainer.style.display = "none";
+
+          console.log("Görüntü başarıyla yakalandı");
+          return capturedImage;
+        } catch (err) {
+          console.error("Görüntü yakalama hatası:", err);
+          if (debugMode.checked) {
+            logDebugInfo(
+              `HATA: Görüntü yakalama hatası - ${err.message}`,
+              "image"
+            );
+            logDebugInfo(`Görüntü yakalama hatası: ${err.message}`, "api");
+          }
+          return null;
         }
-
-        // Düğme durumlarını güncelle
-        captureBtn.disabled = true;
-        resetBtn.disabled = false;
-        entryBtn.disabled = false;
-        exitBtn.disabled = false;
-
-        // Kamerayı durdur
-        stopCamera();
-
-        // Canvas'ı göster
-        canvas.style.display = "block";
-        video.style.display = "none";
-
-        console.log("Görüntü yakalandı");
       }
 
       // Kamerayı durdurma fonksiyonu
@@ -680,166 +739,348 @@
         console.log("Görüntü sıfırlandı");
       }
 
-      // Base64 görüntüyü Blob'a dönüştür
-      function base64ToBlob(base64, contentType) {
-        contentType = contentType || "";
-        const sliceSize = 1024;
-        const byteCharacters = atob(base64.split(",")[1]);
-        const byteArrays = [];
-
-        for (
-          let offset = 0;
-          offset < byteCharacters.length;
-          offset += sliceSize
-        ) {
-          const slice = byteCharacters.slice(offset, offset + sliceSize);
-          const byteNumbers = new Array(slice.length);
-
-          for (let i = 0; i < slice.length; i++) {
-            byteNumbers[i] = slice.charCodeAt(i);
-          }
-
-          const byteArray = new Uint8Array(byteNumbers);
-          byteArrays.push(byteArray);
-        }
-
-        return new Blob(byteArrays, { type: contentType });
-      }
-
-      // Görüntüyü API'ye gönder (araç girişi)
-      async function processEntryImage() {
-        if (!capturedImage) {
-          alert("Lütfen önce bir görüntü yakalayın");
-          return;
-        }
-
-        showLoading();
-
+      // Base64'ten Blob'a dönüştürme yardımcı fonksiyonu
+      function base64ToBlob(base64, mimeType) {
         try {
-          const parkingId = parkingSelect.value;
-          const blob = base64ToBlob(capturedImage, "image/jpeg");
-          const formData = new FormData();
-          formData.append("file", blob, "plate.jpg");
+          const byteCharacters = atob(base64);
+          const byteArrays = [];
 
-          // Debug modunda API isteği bilgilerini logla
-          if (debugMode.checked) {
-            logDebugInfo(
-              `API İsteği: POST ${API_URL}/process-plate-entry
-Parametreler: parking_id=${parkingId}
-Görüntü Boyutu: ${(blob.size / 1024).toFixed(2)} KB`,
-              "api"
-            );
-          }
+          for (let offset = 0; offset < byteCharacters.length; offset += 512) {
+            const slice = byteCharacters.slice(offset, offset + 512);
 
-          const response = await fetch(
-            `${API_URL}/process-plate-entry?parking_id=${parkingId}`,
-            {
-              method: "POST",
-              body: formData,
+            const byteNumbers = new Array(slice.length);
+            for (let i = 0; i < slice.length; i++) {
+              byteNumbers[i] = slice.charCodeAt(i);
             }
-          );
 
-          const data = await response.json();
+            const byteArray = new Uint8Array(byteNumbers);
+            byteArrays.push(byteArray);
+          }
 
-          // Debug modunda yanıtı logla
+          return new Blob(byteArrays, { type: mimeType });
+        } catch (error) {
+          console.error("Base64 -> Blob dönüşüm hatası:", error);
           if (debugMode.checked) {
             logDebugInfo(
-              `API Yanıtı (HTTP ${response.status}):
-${JSON.stringify(data, null, 2)}`,
+              `Base64 -> Blob dönüşüm hatası: ${error.message}`,
               "api"
             );
           }
-
-          // Sonucu göster
-          showResults(data, response.ok);
-
-          console.log("API yanıtı (giriş):", data);
-        } catch (err) {
-          console.error("API isteği sırasında hata oluştu:", err);
-
-          // Debug modunda hatayı logla
-          if (debugMode.checked) {
-            logDebugInfo(`API Hatası: ${err.message}`, "api");
-          }
-
-          showResults(
-            {
-              success: false,
-              message: "API isteği sırasında hata oluştu: " + err.message,
-            },
-            false
-          );
-        } finally {
-          hideLoading();
+          throw new Error(`Görüntü dönüştürme hatası: ${error.message}`);
         }
       }
 
-      // Görüntüyü API'ye gönder (araç çıkışı)
-      async function processExitImage() {
-        if (!capturedImage) {
-          alert("Lütfen önce bir görüntü yakalayın");
+      // Giriş görüntüsünü işle
+      function processEntryImage(imageData) {
+        if (!imageData) {
+          console.error("İşlenecek görüntü bulunamadı");
           return;
         }
 
-        showLoading();
-
         try {
           const parkingId = parkingSelect.value;
-          const blob = base64ToBlob(capturedImage, "image/jpeg");
+          if (debugMode.checked) {
+            logDebugInfo(`Seçilen otopark ID: ${parkingId}`, "api");
+          }
+
+          // Base64'ten Blob'a dönüştür
+          const base64Data = imageData.split(",")[1];
+          const blob = base64ToBlob(base64Data, "image/jpeg");
+          const blobSizeKB = Math.round(blob.size / 1024);
+
+          if (debugMode.checked) {
+            logDebugInfo(`Görüntü Blob boyutu: ~${blobSizeKB} KB`, "api");
+          }
+
+          // Form verisi oluştur
           const formData = new FormData();
           formData.append("file", blob, "plate.jpg");
 
-          // Debug modunda API isteği bilgilerini logla
+          // API URL'sini oluştur
+          const apiUrl = `${API_URL}/process-plate-entry?parking_id=${parkingId}&debug=${
+            debugMode.checked ? "true" : "false"
+          }&save_debug=true`;
+
           if (debugMode.checked) {
+            logDebugInfo(`API İsteği: ${apiUrl}`, "api");
             logDebugInfo(
-              `API İsteği: POST ${API_URL}/process-plate-exit
-Parametreler: parking_id=${parkingId}
-Görüntü Boyutu: ${(blob.size / 1024).toFixed(2)} KB`,
+              `Görüntü boyutu: ~${blobSizeKB} KB, Format: JPEG, Base64 uzunluğu: ${base64Data.length} karakter`,
               "api"
             );
           }
 
-          const response = await fetch(
-            `${API_URL}/process-plate-exit?parking_id=${parkingId}`,
-            {
-              method: "POST",
-              body: formData,
-            }
-          );
+          // Sonuç panelini göster ve yükleniyor mesajı
+          resultContainer.style.display = "block";
+          resultContent.innerHTML = `<div class="loading">İşleniyor...</div>`;
+          loading.style.display = "block";
 
-          const data = await response.json();
+          // API isteği zamanını ölç
+          const startTime = new Date().getTime();
 
-          // Debug modunda yanıtı logla
+          // API isteği gönder
+          fetch(apiUrl, {
+            method: "POST",
+            body: formData,
+          })
+            .then((response) => {
+              const endTime = new Date().getTime();
+              const duration = endTime - startTime;
+
+              if (debugMode.checked) {
+                logDebugInfo(`API yanıt süresi: ${duration}ms`, "api");
+                logDebugInfo(`API yanıt durumu: ${response.status}`, "api");
+              }
+
+              if (!response.ok) {
+                throw new Error(`API yanıt hatası: ${response.status}`);
+              }
+              return response.json();
+            })
+            .then((data) => {
+              loading.style.display = "none";
+
+              if (debugMode.checked) {
+                logDebugInfo(
+                  `API yanıtı: ${JSON.stringify(data, null, 2)}`,
+                  "api"
+                );
+              }
+
+              // Sonucu göster
+              displayResult(data, "entry");
+            })
+            .catch((error) => {
+              loading.style.display = "none";
+              console.error("API hatası:", error);
+              resultContent.innerHTML = `<div class="error">Hata: ${error.message}</div>`;
+
+              if (debugMode.checked) {
+                logDebugInfo(`API hatası: ${error.message}`, "api");
+              }
+            });
+        } catch (error) {
+          loading.style.display = "none";
+          console.error("İşlem hatası:", error);
+          resultContent.innerHTML = `<div class="error">İşlem hatası: ${error.message}</div>`;
+
           if (debugMode.checked) {
-            logDebugInfo(
-              `API Yanıtı (HTTP ${response.status}):
-${JSON.stringify(data, null, 2)}`,
-              "api"
-            );
+            logDebugInfo(`İşlem hatası: ${error.message}`, "api");
           }
-
-          // Sonucu göster
-          showResults(data, response.ok);
-
-          console.log("API yanıtı (çıkış):", data);
-        } catch (err) {
-          console.error("API isteği sırasında hata oluştu:", err);
-
-          // Debug modunda hatayı logla
-          if (debugMode.checked) {
-            logDebugInfo(`API Hatası: ${err.message}`, "api");
-          }
-
-          showResults(
-            {
-              success: false,
-              message: "API isteği sırasında hata oluştu: " + err.message,
-            },
-            false
-          );
-        } finally {
-          hideLoading();
         }
+      }
+
+      // Çıkış görüntüsünü işle
+      function processExitImage(imageData) {
+        if (!imageData) {
+          console.error("İşlenecek görüntü bulunamadı");
+          return;
+        }
+
+        try {
+          const parkingId = parkingSelect.value;
+          if (debugMode.checked) {
+            logDebugInfo(`Seçilen otopark ID: ${parkingId}`, "api");
+          }
+
+          // Base64'ten Blob'a dönüştür
+          const base64Data = imageData.split(",")[1];
+          const blob = base64ToBlob(base64Data, "image/jpeg");
+          const blobSizeKB = Math.round(blob.size / 1024);
+
+          if (debugMode.checked) {
+            logDebugInfo(`Görüntü Blob boyutu: ~${blobSizeKB} KB`, "api");
+          }
+
+          // Form verisi oluştur
+          const formData = new FormData();
+          formData.append("file", blob, "plate.jpg");
+
+          // API URL'sini oluştur
+          const apiUrl = `${API_URL}/process-plate-exit?parking_id=${parkingId}&debug=${
+            debugMode.checked ? "true" : "false"
+          }&save_debug=true`;
+
+          if (debugMode.checked) {
+            logDebugInfo(`API İsteği: ${apiUrl}`, "api");
+            logDebugInfo(
+              `Görüntü boyutu: ~${blobSizeKB} KB, Format: JPEG, Base64 uzunluğu: ${base64Data.length} karakter`,
+              "api"
+            );
+          }
+
+          // Sonuç panelini göster ve yükleniyor mesajı
+          resultContainer.style.display = "block";
+          resultContent.innerHTML = `<div class="loading">İşleniyor...</div>`;
+          loading.style.display = "block";
+
+          // API isteği zamanını ölç
+          const startTime = new Date().getTime();
+
+          // API isteği gönder
+          fetch(apiUrl, {
+            method: "POST",
+            body: formData,
+          })
+            .then((response) => {
+              const endTime = new Date().getTime();
+              const duration = endTime - startTime;
+
+              if (debugMode.checked) {
+                logDebugInfo(`API yanıt süresi: ${duration}ms`, "api");
+                logDebugInfo(`API yanıt durumu: ${response.status}`, "api");
+              }
+
+              if (!response.ok) {
+                throw new Error(`API yanıt hatası: ${response.status}`);
+              }
+              return response.json();
+            })
+            .then((data) => {
+              loading.style.display = "none";
+
+              if (debugMode.checked) {
+                logDebugInfo(
+                  `API yanıtı: ${JSON.stringify(data, null, 2)}`,
+                  "api"
+                );
+              }
+
+              // Sonucu göster
+              displayResult(data, "exit");
+            })
+            .catch((error) => {
+              loading.style.display = "none";
+              console.error("API hatası:", error);
+              resultContent.innerHTML = `<div class="error">Hata: ${error.message}</div>`;
+
+              if (debugMode.checked) {
+                logDebugInfo(`API hatası: ${error.message}`, "api");
+              }
+            });
+        } catch (error) {
+          loading.style.display = "none";
+          console.error("İşlem hatası:", error);
+          resultContent.innerHTML = `<div class="error">İşlem hatası: ${error.message}</div>`;
+
+          if (debugMode.checked) {
+            logDebugInfo(`İşlem hatası: ${error.message}`, "api");
+          }
+        }
+      }
+
+      // Sonucu görüntüle
+      function displayResult(data, type) {
+        // Yükleniyor göstergesini gizle
+        loading.style.display = "none";
+
+        // Sonuç panelini göster
+        resultContainer.style.display = "block";
+
+        let html = "";
+
+        if (data.success) {
+          // Plaka bilgisini al (API'den dönen değer)
+          const plateText = data.plate_number || data.license_plate || "";
+
+          // Başarılı sonuç
+          html = `
+            <div class="result-success">
+              <h3>İşlem Başarılı</h3>
+              <div class="plate-result">
+                <span class="plate-text">${plateText}</span>
+              </div>
+              <div class="result-details">
+                <p><strong>İşlem:</strong> ${
+                  type === "entry" ? "Araç Girişi" : "Araç Çıkışı"
+                }</p>
+                <p><strong>Otopark:</strong> ${
+                  parkingSelect.options[parkingSelect.selectedIndex].text
+                }</p>
+                <p><strong>Zaman:</strong> ${new Date().toLocaleString()}</p>
+                ${
+                  data.confidence
+                    ? `<p><strong>Güven Oranı:</strong> %${Math.round(
+                        data.confidence * 100
+                      )}</p>`
+                    : ""
+                }
+                ${
+                  data.processing_time
+                    ? `<p><strong>İşlem Süresi:</strong> ${data.processing_time.toFixed(
+                        2
+                      )}ms</p>`
+                    : ""
+                }
+                ${
+                  data.parking_fee
+                    ? `<p><strong>Park Ücreti:</strong> ${data.parking_fee} TL</p>`
+                    : ""
+                }
+                ${
+                  data.duration_hours
+                    ? `<p><strong>Park Süresi:</strong> ${data.duration_hours.toFixed(
+                        2
+                      )} saat</p>`
+                    : ""
+                }
+              </div>
+            </div>
+          `;
+
+          // Debug görüntüsü varsa ekle
+          if (data.debug_image) {
+            html += `
+              <div class="debug-images">
+                <h4>İşlenmiş Görüntü</h4>
+                <img src="data:image/jpeg;base64,${data.debug_image}" alt="İşlenmiş Görüntü" />
+              </div>
+            `;
+          }
+        } else {
+          // Plaka bilgisini al (API'den dönen değer)
+          const plateText = data.plate_number || data.license_plate || "";
+          const errorMessage =
+            data.error || data.message || "Bilinmeyen bir hata oluştu";
+
+          // Hata mesajı
+          html = `
+            <div class="result-error">
+              <h3>İşlem Başarısız</h3>
+              ${
+                plateText
+                  ? `
+                <div class="plate-result">
+                  <span class="plate-text">${plateText}</span>
+                  <p><small>(Kısmi tanıma)</small></p>
+                </div>
+              `
+                  : ""
+              }
+              <div class="result-details">
+                <p><strong>Hata:</strong> ${errorMessage}</p>
+                <p><strong>İşlem:</strong> ${
+                  type === "entry" ? "Araç Girişi" : "Araç Çıkışı"
+                }</p>
+                <p><strong>Otopark:</strong> ${
+                  parkingSelect.options[parkingSelect.selectedIndex].text
+                }</p>
+                <p><strong>Zaman:</strong> ${new Date().toLocaleString()}</p>
+              </div>
+            </div>
+          `;
+        }
+
+        // Debug görüntüsü varsa ekle
+        if (data.debug_image) {
+          html += `
+            <div class="debug-image">
+              <h4>Debug Görüntüsü</h4>
+              <img src="data:image/jpeg;base64,${data.debug_image}" alt="Debug Image" />
+            </div>
+          `;
+        }
+
+        resultContent.innerHTML = html;
       }
 
       // Sonuçları gösterme fonksiyonu
@@ -942,8 +1183,8 @@ ${JSON.stringify(data, null, 2)}`,
         console.log("Otomatik çekim durduruldu");
       }
 
-      // Otomatik çekim fonksiyonu
-      async function autoCapture() {
+      // Otomatik görüntü yakalama ve işleme
+      function autoCapture() {
         if (!isStreaming || !autoCapturing) return;
 
         try {
@@ -951,107 +1192,166 @@ ${JSON.stringify(data, null, 2)}`,
           canvas.width = video.videoWidth;
           canvas.height = video.videoHeight;
 
-          // Videodan görüntüyü canvas'a çiz
-          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+          if (debugMode.checked) {
+            console.log(
+              `Otomatik çekim - Canvas boyutları: ${canvas.width}x${canvas.height}`
+            );
+          }
 
           // Görüntü kalitesini alın
           const imageQuality = parseFloat(imageQualitySelect.value);
+          if (debugMode.checked) {
+            console.log(
+              `Otomatik çekim - Seçilen görüntü kalitesi: ${imageQuality}`
+            );
+          }
+
+          // Videodan görüntüyü canvas'a çiz
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
           // Canvas'taki görüntüyü base64 formatında al
-          const image = canvas.toDataURL("image/jpeg", imageQuality);
+          const capturedImage = canvas.toDataURL("image/jpeg", imageQuality);
 
-          // Debug için görüntü bilgileri
+          // Görüntü boyutu hesaplama
+          const base64Length = capturedImage.length;
+          const base64Size = (base64Length - 22) * 0.75; // base64 overhead'i çıkar ve 3/4 oranını uygula
+          const kbSize = (base64Size / 1024).toFixed(2);
+
           if (debugMode.checked) {
-            debugImageData = image;
-            debugImagePreview.src = image;
+            console.log(
+              `Otomatik çekim - Yakalanan görüntü boyutu: ~${kbSize} KB (${base64Length} karakter)`
+            );
+            logDebugInfo(
+              `Otomatik çekim #${++autoCount} başlatıldı - ${new Date().toLocaleTimeString()}`,
+              "api"
+            );
+          }
 
-            // Görüntü boyutu hesaplama (yaklaşık)
-            const base64Size = image.length * 0.75;
-            const kbSize = (base64Size / 1024).toFixed(2);
+          // Debug için görüntü ön izleme ve bilgileri güncelle
+          if (debugMode.checked) {
+            debugImageData = capturedImage;
+            debugImagePreview.src = capturedImage;
 
             // Debug bilgilerini güncelle
-            const debugInfo = `Otomatik Çekim Görüntü Bilgileri:
-- Boyut: ${canvas.width}x${canvas.height} piksel
-- Dosya Boyutu: ~ ${kbSize} KB 
-- Format: JPEG
-- Kalite: ${imageQuality}
-- Çekim #${autoCount}
-- Tarih: ${new Date().toLocaleString()}\n`;
+            const debugInfo = `Otomatik Yakalama #${autoCount}
+Zaman: ${new Date().toLocaleTimeString()}
+Boyutlar: ${canvas.width}x${canvas.height} piksel
+Dosya Boyutu: ~ ${kbSize} KB 
+Format: JPEG
+Kalite: ${imageQuality}
+Base64 Uzunluğu: ${base64Length} karakter`;
 
             logDebugInfo(debugInfo, "image");
           }
 
-          // Blob oluştur
-          const blob = base64ToBlob(image, "image/jpeg");
+          // Seçilen moda göre işlemi yap
+          const mode = autoMode.value;
+          const parkingId = parkingSelect.value;
 
-          // FormData oluştur
+          // Base64'ten Blob'a dönüştür
+          const base64Data = capturedImage.split(",")[1];
+          const blob = base64ToBlob(base64Data, "image/jpeg");
+
+          // Form verisi oluştur
           const formData = new FormData();
           formData.append("file", blob, "plate.jpg");
 
-          // Otopark ID'sini al
-          const parkingId = parkingSelect.value;
+          // API URL'sini oluştur
+          const apiUrl = `${API_URL}/process-plate-${mode}?parking_id=${parkingId}&debug=${
+            debugMode.checked ? "true" : "false"
+          }&save_debug=true`;
 
-          // Mod seçimi
-          const mode = autoMode.value;
-
-          // İstek URL'ini oluştur
-          const url = `${API_URL}/process-plate-${mode}?parking_id=${parkingId}`;
-
-          autoCount++;
-          console.log(
-            `Otomatik çekim #${autoCount} gerçekleştiriliyor: ${mode} modu, Otopark ID: ${parkingId}`
-          );
-
-          // Debug modunda API isteği bilgilerini logla
           if (debugMode.checked) {
+            logDebugInfo(`Otomatik API İsteği: ${apiUrl}`, "api");
             logDebugInfo(
-              `Otomatik API İsteği: POST ${url}
-Görüntü Boyutu: ${(blob.size / 1024).toFixed(2)} KB
-Çekim #${autoCount}`,
+              `İşlem modu: ${mode === "entry" ? "Araç Girişi" : "Araç Çıkışı"}`,
               "api"
             );
           }
+
+          // API isteği zamanını ölç
+          const startTime = new Date().getTime();
 
           // API isteği gönder
-          const response = await fetch(url, {
+          fetch(apiUrl, {
             method: "POST",
             body: formData,
-          });
+          })
+            .then((response) => {
+              const endTime = new Date().getTime();
+              const duration = endTime - startTime;
 
-          // Yanıtı al
-          const data = await response.json();
+              if (debugMode.checked) {
+                logDebugInfo(`Otomatik API yanıt süresi: ${duration}ms`, "api");
+                logDebugInfo(
+                  `Otomatik API yanıt durumu: ${response.status}`,
+                  "api"
+                );
+              }
 
-          // Debug modunda yanıtı logla
-          if (debugMode.checked) {
-            logDebugInfo(
-              `Otomatik API Yanıtı #${autoCount} (HTTP ${response.status}):
-${JSON.stringify(data, null, 2)}`,
-              "api"
-            );
-          }
+              if (!response.ok) {
+                throw new Error(`API yanıt hatası: ${response.status}`);
+              }
+              return response.json();
+            })
+            .then((data) => {
+              if (debugMode.checked) {
+                logDebugInfo(
+                  `Otomatik API yanıtı: ${JSON.stringify(data, null, 2)}`,
+                  "api"
+                );
+              }
 
-          // Sonucu göster
-          showResults(data, response.ok);
+              // Sonucu göster
+              displayResult(data, mode);
 
-          console.log(`Otomatik çekim #${autoCount} sonucu:`, data);
+              // Başarılı sonuç durumunda bildirim göster
+              if (data.success && data.plate_number) {
+                showNotification(
+                  `Plaka Tanındı: ${data.plate_number}`,
+                  mode === "entry" ? "Araç Girişi" : "Araç Çıkışı"
+                );
+              }
+            })
+            .catch((error) => {
+              console.error("Otomatik API hatası:", error);
+
+              if (debugMode.checked) {
+                logDebugInfo(`Otomatik API hatası: ${error.message}`, "api");
+              }
+            });
         } catch (err) {
-          console.error("Otomatik çekim sırasında hata:", err);
-
-          // Debug modunda hatayı logla
+          console.error("Otomatik görüntü yakalama hatası:", err);
           if (debugMode.checked) {
             logDebugInfo(
-              `Otomatik Çekim Hatası #${autoCount}: ${err.message}`,
+              `HATA: Otomatik görüntü yakalama hatası - ${err.message}`,
               "api"
             );
           }
+        }
+      }
 
-          showResults(
-            {
-              success: false,
-              message: `Otomatik çekim #${autoCount} sırasında hata: ${err.message}`,
-            },
-            false
-          );
+      // Bildirim gösterme fonksiyonu
+      function showNotification(title, body) {
+        if (!("Notification" in window)) {
+          console.log("Bu tarayıcı bildirim desteği sunmuyor");
+          return;
+        }
+
+        if (Notification.permission === "granted") {
+          const notification = new Notification(title, {
+            body: body,
+            icon: "/favicon.ico",
+          });
+        } else if (Notification.permission !== "denied") {
+          Notification.requestPermission().then(function (permission) {
+            if (permission === "granted") {
+              const notification = new Notification(title, {
+                body: body,
+                icon: "/favicon.ico",
+              });
+            }
+          });
         }
       }
 
@@ -1059,17 +1359,48 @@ ${JSON.stringify(data, null, 2)}`,
       startBtn.addEventListener("click", startCamera);
       captureBtn.addEventListener("click", captureImage);
       resetBtn.addEventListener("click", resetCapture);
-      entryBtn.addEventListener("click", processEntryImage);
-      exitBtn.addEventListener("click", processExitImage);
+      entryBtn.addEventListener("click", function () {
+        const imageData = canvas.toDataURL(
+          "image/jpeg",
+          parseFloat(imageQualitySelect.value)
+        );
+        processEntryImage(imageData);
+      });
+      exitBtn.addEventListener("click", function () {
+        const imageData = canvas.toDataURL(
+          "image/jpeg",
+          parseFloat(imageQualitySelect.value)
+        );
+        processExitImage(imageData);
+      });
       document
         .getElementById("refreshCamerasBtn")
         .addEventListener("click", listCameraDevices);
       startAutoBtn.addEventListener("click", startAutoCapture);
       stopAutoBtn.addEventListener("click", stopAutoCapture);
 
+      // Yeni görüntü çekme butonu
+      document
+        .getElementById("newCaptureBtn")
+        .addEventListener("click", function () {
+          // Sonuç panelini gizle
+          resultContainer.style.display = "none";
+
+          // Kamerayı yeniden başlat
+          startCamera();
+
+          // Butonları sıfırla
+          captureBtn.disabled = false;
+          resetBtn.disabled = true;
+          entryBtn.disabled = true;
+          exitBtn.disabled = true;
+        });
+
       // Sayfa yüklendiğinde
       window.addEventListener("load", function () {
         console.log("API URL:", API_URL);
+        // Debug modunu varsayılan olarak aktif et
+        debugPanel.classList.add("active");
         // Sayfa yüklendiğinde kamera cihazlarını listele
         listCameraDevices();
         resetCapture();
@@ -1079,21 +1410,19 @@ ${JSON.stringify(data, null, 2)}`,
         backToPanel.addEventListener("click", function (e) {
           e.preventDefault();
 
-          // LocalStorage'dan token ve userId kontrolü
+          // localStorage'dan token ve userId kontrolü
           const token = localStorage.getItem("token");
           const userId = localStorage.getItem("userId");
 
+          if (debugMode.checked) {
+            console.log("Token kontrolü:", token ? "Bulundu" : "Bulunamadı");
+            console.log("UserID kontrolü:", userId ? "Bulundu" : "Bulunamadı");
+          }
+
+          // Eğer token ve userId varsa ana sayfaya, yoksa login sayfasına yönlendir
           if (token && userId) {
-            // Token ve userId varsa ana sayfaya yönlendir
-            console.log(
-              "Token ve userId bulundu, ana sayfaya yönlendiriliyor."
-            );
             window.location.href = "/";
           } else {
-            // Token ve userId yoksa login sayfasına yönlendir
-            console.log(
-              "Token ve userId bulunamadı, login sayfasına yönlendiriliyor."
-            );
             window.location.href = "/login";
           }
         });

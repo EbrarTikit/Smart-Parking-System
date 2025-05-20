@@ -92,5 +92,35 @@ export const updateParkingLayout = (parkingId, layoutData) => {
 
 export const clearParkingLayout = (parkingId) => {
   return axios.put(`${PARKING_SERVICE_URL}/${parkingId}/clear-layout`);
+};
 
+// Sensör API çağrıları
+export const addSensor = (sensorData) => {
+  return axios.post(`${PARKING_SERVICE_URL}/iot/sensors/add`, sensorData);
+};
+
+export const deleteSensor = (id) => {
+  return axios.delete(`${PARKING_SERVICE_URL}/iot/sensors/delete/${id}`);
+};
+
+export const getSensor = (id) => {
+  return axios.get(`${PARKING_SERVICE_URL}/iot/sensors/get/${id}`);
+};
+
+export const getAllSensors = () => {
+  return axios.get(`${PARKING_SERVICE_URL}/iot/sensors/get/all`);
+};
+
+// Sensör durumu güncelleme
+export const updateSensorStatus = (sensorData) => {
+  return axios.post(`${PARKING_SERVICE_URL}/iot/update/spot`, sensorData);
+};
+
+// Yeni fonksiyon ekleyin
+export const updateSpotSensor = (parkingId, row, column, sensorId) => {
+  return axios.put(`${PARKING_SERVICE_URL}/parkings/${parkingId}/spots/sensor`, {
+    row: row,
+    column: column,
+    sensorId: sensorId
+  });
 };

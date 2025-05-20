@@ -6,7 +6,7 @@ import {
   InputLabel, Select, MenuItem, Dialog, DialogTitle, DialogContent,
   DialogActions, TextField, Tooltip
 } from '@mui/material';
-import { getParkingById, updateParkingLayout, clearParkingLayout } from '../../services/apiService';
+import { getParkingById, updateParkingLayout, clearParkingLayout, getAllSensors, addSensor, updateSpotSensor } from '../../services/apiService';
 import PageHeader from '../common/PageHeader';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import SaveIcon from '@mui/icons-material/Save';
@@ -16,6 +16,7 @@ import StraightIcon from '@mui/icons-material/Straight';
 import ApartmentIcon from '@mui/icons-material/Apartment';
 import DeleteIcon from '@mui/icons-material/Delete';
 import DoDisturbIcon from '@mui/icons-material/DoDisturb';
+import Autocomplete from '@mui/material/Autocomplete';
 
 const ParkingLayout = () => {
   const { id } = useParams();
@@ -30,10 +31,20 @@ const ParkingLayout = () => {
   const [selectedTool, setSelectedTool] = useState('spot');
   const [selectedCell, setSelectedCell] = useState(null);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [dialogData, setDialogData] = useState({ 
-    identifier: '', 
-    sensorId: '',
-    type: 'spot' 
+  const [newSensorDialogOpen, setNewSensorDialogOpen] = useState(false);
+  const [dialogData, setDialogData] = useState({
+    type: 'spot',
+    identifier: '',
+    sensorId: ''
+  });
+  const [sensors, setSensors] = useState([]);
+  const [sensorLoading, setSensorLoading] = useState(false);
+  const [showSensorDialog, setShowSensorDialog] = useState(false);
+  const [newSensorData, setNewSensorData] = useState({
+    parkingId: '',
+    controllerId: '',
+    echoPin: '',
+    trigPin: ''
   });
 
   // Hücre tipleri için renk ve simgeler
@@ -47,6 +58,22 @@ const ParkingLayout = () => {
   useEffect(() => {
     fetchParkingDetails();
   }, [id]);
+
+  useEffect(() => {
+    const fetchSensors = async () => {
+      try {
+        const response = await getAllSensors();
+        setSensors(response.data);
+      } catch (error) {
+        console.error('Sensörler yüklenirken hata:', error);
+        setError('Sensörler yüklenirken bir hata oluştu');
+      }
+    };
+
+    if (dialogOpen) {
+      fetchSensors();
+    }
+  }, [dialogOpen]);
 
   const fetchParkingDetails = async () => {
     setLoading(true);
@@ -160,43 +187,68 @@ const ParkingLayout = () => {
     setSelectedCell(null);
   };
 
-  const handleDialogSave = () => {
+  const handleDialogSave = async () => {
     if (!selectedCell) return;
     
     const { row, col } = selectedCell;
     const newMatrix = [...matrix];
     
-    // Seçilen araca göre hücreyi güncelle
-    switch (dialogData.type) {
-      case 'spot':
-        newMatrix[row][col] = {
-          type: 'spot',
-          identifier: dialogData.identifier,
-          sensorId: dialogData.sensorId,
-          id: selectedCell.current.type === 'spot' ? selectedCell.current.id : null,
-          occupied: false
-        };
-        break;
-      case 'road':
-        newMatrix[row][col] = {
-          type: 'road',
-          identifier: dialogData.identifier,
-          id: selectedCell.current.type === 'road' ? selectedCell.current.id : null
-        };
-        break;
-      case 'building':
-        newMatrix[row][col] = {
-          type: 'building',
-          id: selectedCell.current.type === 'building' ? selectedCell.current.id : null
-        };
-        break;
-      default:
-        break;
+    try {
+      // Seçilen araca göre hücreyi güncelle
+      switch (dialogData.type) {
+        case 'spot':
+          const spotData = {
+            type: 'spot',
+            identifier: dialogData.identifier,
+            sensorId: dialogData.sensorId,
+            id: selectedCell.current.type === 'spot' ? selectedCell.current.id : null,
+            occupied: false
+          };
+          
+          // Eğer mevcut bir spot ise ve sensör ID'si değiştiyse, veritabanını güncelle
+          if (selectedCell.current.type === 'spot' && 
+              selectedCell.current.id && 
+              selectedCell.current.sensorId !== dialogData.sensorId) {
+            try {
+              const response = await updateSpotSensor(id, row, col, dialogData.sensorId);
+              if (response.data) {
+                setSuccess('Sensör başarıyla güncellendi');
+                // Güncellenmiş spot verilerini kullan
+                spotData.id = response.data.id;
+                spotData.sensorId = response.data.sensorId;
+              }
+            } catch (error) {
+              console.error('Sensör güncelleme hatası:', error);
+              const errorMessage = error.response?.data?.message || error.message;
+              setError(`Sensör güncellenirken bir hata oluştu: ${errorMessage}`);
+              return; // Hata durumunda işlemi durdur
+            }
+          }
+          
+          newMatrix[row][col] = spotData;
+          break;
+          
+        case 'road':
+          newMatrix[row][col] = {
+            type: 'road',
+            identifier: dialogData.identifier
+          };
+          break;
+          
+        case 'building':
+          newMatrix[row][col] = {
+            type: 'building'
+          };
+          break;
+      }
+      
+      setMatrix(newMatrix);
+      setDialogOpen(false);
+      setSelectedCell(null);
+    } catch (error) {
+      console.error('Dialog kaydetme hatası:', error);
+      setError('İşlem sırasında bir hata oluştu: ' + error.message);
     }
-    
-    setMatrix(newMatrix);
-    setDialogOpen(false);
-    setSelectedCell(null);
   };
 
   const handleSaveLayout = async () => {
@@ -209,23 +261,23 @@ const ParkingLayout = () => {
       row.forEach((cell, colIndex) => {
         if (cell.type === 'spot') {
           parkingSpots.push({
-            id: null, // ID'leri null olarak ayarlıyoruz, yeni kayıt oluşması için
+            id: cell.id || null, // Mevcut ID'yi koru
             row: rowIndex,
             column: colIndex,
             spotIdentifier: cell.identifier || `R${rowIndex}C${colIndex}`,
-            sensorId: cell.sensorId || null, // Sensor ID'yi ekliyoruz
+            sensorId: cell.sensorId || null,
             occupied: cell.occupied || false
           });
         } else if (cell.type === 'road') {
           roads.push({
-            id: null, // ID'leri null olarak ayarlıyoruz, yeni kayıt oluşması için
+            id: cell.id || null,
             roadRow: rowIndex,
             roadColumn: colIndex,
             roadIdentifier: cell.identifier || 'road'
           });
         } else if (cell.type === 'building') {
           buildings.push({
-            id: null, // ID'leri null olarak ayarlıyoruz, yeni kayıt oluşması için
+            id: cell.id || null,
             buildingRow: rowIndex,
             buildingColumn: colIndex
           });
@@ -568,48 +620,108 @@ const ParkingLayout = () => {
       </Box>
       
       {/* Dialog - Park Yeri/Yol Ekleme */}
-      <Dialog open={dialogOpen} onClose={handleDialogClose}>
+      <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)}>
         <DialogTitle>
-          {dialogData.type === 'spot' ? 'Park Yeri' : 
-           dialogData.type === 'road' ? 'Yol' : 'Bina'} Ekle/Düzenle
+          {selectedCell?.current?.type === 'spot' ? 'Park Yeri Düzenle' : 'Yeni Park Yeri Ekle'}
         </DialogTitle>
         <DialogContent>
-          {dialogData.type !== 'building' && (
-            <TextField
-              autoFocus
-              margin="dense"
-              label={dialogData.type === 'spot' ? 'Park Yeri Tanımlayıcısı (A1, B2, vb.)' : 'Yol Tanımlayıcısı'}
-              fullWidth
-              variant="outlined"
-              value={dialogData.identifier}
-              onChange={(e) => setDialogData({ ...dialogData, identifier: e.target.value })}
-              sx={{ mt: 2 }}
-            />
-          )}
-          
-          {/* Park yerleri için Sensor ID alanı */}
+          <TextField
+            autoFocus
+            margin="dense"
+            label="Tanımlayıcı"
+            fullWidth
+            value={dialogData.identifier}
+            onChange={(e) => setDialogData({ ...dialogData, identifier: e.target.value })}
+          />
           {dialogData.type === 'spot' && (
-            <TextField
-              margin="dense"
-              label="Sensör ID"
-              fullWidth
-              variant="outlined"
-              value={dialogData.sensorId || ''}
-              onChange={(e) => setDialogData({ ...dialogData, sensorId: e.target.value })}
-              sx={{ mt: 2 }}
-              helperText="Eğer bu park yerine bir sensör atandıysa, burada belirtin."
-            />
-          )}
-          
-          {dialogData.type === 'building' && (
-            <Typography variant="body2" sx={{ mt: 2 }}>
-              Bina eklemek için onaylayın. Binalar için özel bir tanımlayıcı gerekmez.
-            </Typography>
+            <>
+              <Autocomplete
+                options={sensors}
+                getOptionLabel={(option) => `${option.id} (${option.parkingId})`}
+                value={sensors.find(s => s.id === dialogData.sensorId) || null}
+                onChange={(event, newValue) => {
+                  setDialogData({ ...dialogData, sensorId: newValue?.id || '' });
+                }}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    margin="dense"
+                    label="Sensör"
+                    fullWidth
+                  />
+                )}
+              />
+              <Button
+                color="primary"
+                onClick={() => setNewSensorDialogOpen(true)}
+                style={{ marginTop: '8px' }}
+              >
+                Yeni Sensör Ekle
+              </Button>
+            </>
           )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleDialogClose}>İptal</Button>
-          <Button onClick={handleDialogSave} variant="contained">Ekle</Button>
+          <Button onClick={() => setDialogOpen(false)}>İptal</Button>
+          <Button onClick={handleDialogSave} color="primary">
+            Kaydet
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Yeni Sensör Ekleme Dialog'u */}
+      <Dialog open={newSensorDialogOpen} onClose={() => setNewSensorDialogOpen(false)}>
+        <DialogTitle>Yeni Sensör Ekle</DialogTitle>
+        <DialogContent>
+          <TextField
+            margin="dense"
+            label="Parking ID"
+            fullWidth
+            value={newSensorData.parkingId}
+            onChange={(e) => setNewSensorData({ ...newSensorData, parkingId: e.target.value })}
+          />
+          <TextField
+            margin="dense"
+            label="Controller ID"
+            fullWidth
+            value={newSensorData.controllerId}
+            onChange={(e) => setNewSensorData({ ...newSensorData, controllerId: e.target.value })}
+          />
+          <TextField
+            margin="dense"
+            label="Echo Pin"
+            fullWidth
+            type="number"
+            value={newSensorData.echoPin}
+            onChange={(e) => setNewSensorData({ ...newSensorData, echoPin: e.target.value })}
+          />
+          <TextField
+            margin="dense"
+            label="Trig Pin"
+            fullWidth
+            type="number"
+            value={newSensorData.trigPin}
+            onChange={(e) => setNewSensorData({ ...newSensorData, trigPin: e.target.value })}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setNewSensorDialogOpen(false)}>İptal</Button>
+          <Button 
+            onClick={async () => {
+              try {
+                const response = await addSensor(newSensorData);
+                setSensors([...sensors, response.data]);
+                setDialogData({ ...dialogData, sensorId: response.data.id });
+                setNewSensorDialogOpen(false);
+                setSuccess('Yeni sensör başarıyla eklendi');
+              } catch (error) {
+                setError('Sensör eklenirken bir hata oluştu: ' + error.message);
+              }
+            }} 
+            color="primary"
+          >
+            Ekle
+          </Button>
         </DialogActions>
       </Dialog>
     </Container>

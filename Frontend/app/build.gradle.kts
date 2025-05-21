@@ -65,6 +65,11 @@ dependencies {
     debugImplementation(libs.androidx.fragment.testing)
     androidTestImplementation(libs.dagger.hilt.android.testing)
     kaptAndroidTest(libs.hilt.compiler)
+    testImplementation("com.google.firebase:firebase-messaging-ktx:23.1.0")
+    testImplementation("com.google.firebase:firebase-common-ktx:20.3.0")
+    testImplementation("com.google.android.gms:play-services-tasks:18.0.2")
+    testImplementation("androidx.arch.core:core-testing:2.2.0")
+
 
     //Navigation Component
     implementation(libs.androidx.navigation.fragment.ktx)

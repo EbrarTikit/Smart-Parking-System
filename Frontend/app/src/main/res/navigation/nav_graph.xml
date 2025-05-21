@@ -88,10 +88,6 @@
             app:destination="@id/detailFragment" />
     </fragment>
     <fragment
-        android:id="@+id/navigation_booking"
-        android:name="com.example.smartparkingsystem.ui.booking.BookingFragment"
-        android:label="Booking" />
-    <fragment
         android:id="@+id/navigation_chatbot"
         android:name="com.example.smartparkingsystem.ui.chatbot.ChatbotFragment"
         android:label="Chatbot" />

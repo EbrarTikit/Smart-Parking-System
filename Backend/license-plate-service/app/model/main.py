@@ -43,7 +43,6 @@ def load_torch_model(model_path, device='cpu'):
 
 # Model ve util dosyalarını import et
 from . import util
-from app.model.sort.sort import *
 from .util import get_car, read_license_plate, write_csv
 
 # Debug klasörü oluştur
@@ -101,9 +100,6 @@ class MockResults:
 class MockBoxes:
     def __init__(self):
         self.data = np.zeros((0, 6))  # Boş sonuç veri yapısı
-
-# SORT takip sistemi
-mot_tracker = Sort()
 
 # Model dosyalarını yüklemeyi dene
 current_dir = os.path.dirname(os.path.abspath(__file__))

@@ -32,7 +32,8 @@ def process_image_for_plate_recognition(image: Union[str, np.ndarray, bytes], sa
         
         # Ana modül içeriklerini yükle
         try:
-            from .main import coco_model, license_plate_detector, mot_tracker, read_license_plate_enhanced, USE_REAL_MODEL
+            # SORT/mot_tracker kaldırıldı
+            from .main import coco_model, license_plate_detector, read_license_plate_enhanced, USE_REAL_MODEL
             logger.info("Model modülleri başarıyla yüklendi")
         except ImportError as e:
             logger.error(f"Model modüllerini içe aktarırken hata: {str(e)}")
@@ -110,10 +111,16 @@ def process_image_for_plate_recognition(image: Union[str, np.ndarray, bytes], sa
             
             logger.info(f"Tespit edilen araç sayısı: {len(detections_)}")
             
-            # Araç takibi yap
+            # SORT tracker yok - boş bir dizi oluştur
+            track_ids = np.array([])
             if len(detections_) > 0:
-                track_ids = mot_tracker.update(np.asarray(detections_))
-                logger.info(f"Takip edilen araç sayısı: {len(track_ids)}")
+                # Her tespit için bir ID atayarak basit track_ids oluştur
+                track_ids = np.zeros((len(detections_), 5))
+                for i, det in enumerate(detections_):
+                    x1, y1, x2, y2, score = det
+                    track_ids[i] = [x1, y1, x2, y2, i+1]  # i+1 ile ID ata
+                
+                logger.info(f"Basit araç takibi: {len(track_ids)} araç")
                 
                 # Takip edilen araçları görselleştir
                 if save_debug and debug_frame is not None:
@@ -123,7 +130,6 @@ def process_image_for_plate_recognition(image: Union[str, np.ndarray, bytes], sa
                         cv2.putText(debug_frame, f"Car {int(car_id)}", (int(x1), int(y1)-10), 
                                    cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
             else:
-                track_ids = np.array([])
                 logger.info("Takip edilecek araç yok")
             
             # Plaka tespiti yap

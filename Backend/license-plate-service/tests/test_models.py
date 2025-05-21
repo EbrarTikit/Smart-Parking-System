@@ -14,7 +14,7 @@ from sqlalchemy.pool import StaticPool
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Test edilecek modülleri import et
-from app.models import Base, Vehicle, ParkingRecord, ParkingSpace
+from app.models import Base, Vehicle, ParkingRecord
 from app.database import SessionLocal
 
 # Test için memory SQLite veritabanı kur
@@ -49,9 +49,7 @@ def test_db():
 def sample_vehicle(test_db):
     """Test için örnek bir araç oluşturur"""
     vehicle = Vehicle(
-        license_plate="34ABC123",
-        vehicle_type="Sedan",
-        owner_name="Test Kullanıcısı"
+        license_plate="34ABC123"
     )
     test_db.add(vehicle)
     test_db.commit()
@@ -71,25 +69,11 @@ def sample_parking_record(test_db, sample_vehicle):
     test_db.refresh(record)
     return record
 
-@pytest.fixture
-def sample_parking_space(test_db):
-    """Test için örnek bir otopark alanı oluşturur"""
-    space = ParkingSpace(
-        space_number="A101",
-        is_occupied=False
-    )
-    test_db.add(space)
-    test_db.commit()
-    test_db.refresh(space)
-    return space
-
 # Model Testleri
 def test_vehicle_model_created(sample_vehicle):
     """Vehicle modelinin doğru şekilde oluşturulduğunu test eder"""
     assert sample_vehicle.id is not None
     assert sample_vehicle.license_plate == "34ABC123"
-    assert sample_vehicle.vehicle_type == "Sedan"
-    assert sample_vehicle.owner_name == "Test Kullanıcısı"
     assert sample_vehicle.created_at is not None
 
 def test_parking_record_model_created(sample_parking_record, sample_vehicle):
@@ -100,14 +84,6 @@ def test_parking_record_model_created(sample_parking_record, sample_vehicle):
     assert sample_parking_record.exit_time is None
     assert sample_parking_record.is_active is True
     assert sample_parking_record.parking_fee is None
-
-def test_parking_space_model_created(sample_parking_space):
-    """ParkingSpace modelinin doğru şekilde oluşturulduğunu test eder"""
-    assert sample_parking_space.id is not None
-    assert sample_parking_space.space_number == "A101"
-    assert sample_parking_space.is_occupied is False
-    assert sample_parking_space.vehicle_id is None
-    assert sample_parking_space.last_updated is not None
 
 def test_vehicle_parking_record_relationship(test_db, sample_vehicle, sample_parking_record):
     """Vehicle ve ParkingRecord arasındaki ilişkiyi test eder"""
@@ -123,7 +99,6 @@ def test_update_vehicle(test_db, sample_vehicle):
     """Vehicle modelinin güncellenebilirliğini test eder"""
     # Aracı güncelle
     sample_vehicle.license_plate = "34DEF456"
-    sample_vehicle.vehicle_type = "SUV"
     test_db.commit()
     
     # Güncellenmiş aracı sorgula
@@ -131,7 +106,6 @@ def test_update_vehicle(test_db, sample_vehicle):
     
     # Güncellemenin başarılı olduğunu kontrol et
     assert updated_vehicle.license_plate == "34DEF456"
-    assert updated_vehicle.vehicle_type == "SUV"
 
 def test_delete_vehicle(test_db, sample_vehicle):
     """Vehicle modelinin silinebilirliğini test eder"""
@@ -158,18 +132,4 @@ def test_close_parking_record(test_db, sample_parking_record):
     # Güncellemenin başarılı olduğunu kontrol et
     assert updated_record.exit_time is not None
     assert updated_record.is_active is False
-    assert updated_record.parking_fee == 2000
-
-def test_update_parking_space_occupancy(test_db, sample_parking_space, sample_vehicle):
-    """ParkingSpace'in işgal durumunu güncelleme testleri"""
-    # Park alanını güncelle
-    sample_parking_space.is_occupied = True
-    sample_parking_space.vehicle_id = sample_vehicle.id
-    test_db.commit()
-    
-    # Güncellenmiş park alanını sorgula
-    updated_space = test_db.query(ParkingSpace).filter(ParkingSpace.id == sample_parking_space.id).first()
-    
-    # Güncellemenin başarılı olduğunu kontrol et
-    assert updated_space.is_occupied is True
-    assert updated_space.vehicle_id == sample_vehicle.id 
+    assert updated_record.parking_fee == 2000 

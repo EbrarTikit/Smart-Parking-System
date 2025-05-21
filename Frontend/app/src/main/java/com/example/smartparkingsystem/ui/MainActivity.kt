@@ -1,6 +1,8 @@
 package com.example.smartparkingsystem.ui
 
+import android.content.Context
 import android.os.Bundle
+import android.provider.Settings
 import android.util.Log
 import android.view.View
 import androidx.activity.enableEdgeToEdge
@@ -13,13 +15,30 @@ import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.setupWithNavController
 import androidx.navigation.navOptions
 import com.example.smartparkingsystem.R
+import com.example.smartparkingsystem.data.repository.NotificationRepository
 import com.example.smartparkingsystem.databinding.ActivityMainBinding
+import com.example.smartparkingsystem.utils.SessionManager
+import com.google.firebase.messaging.FirebaseMessaging
 import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private lateinit var navController: NavController
+
+    @Inject
+    lateinit var sessionManager: SessionManager
+
+    @Inject
+    lateinit var notificationRepository: NotificationRepository
+
+    companion object {
+        private const val TAG = "MainActivity"
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -34,7 +53,62 @@ class MainActivity : AppCompatActivity() {
             insets
         }
 
+        // FCM token'ı al
+        FirebaseMessaging.getInstance().token
+            .addOnCompleteListener { task ->
+                if (!task.isSuccessful) {
+                    Log.w(TAG, "Fetching FCM registration token failed", task.exception)
+                    return@addOnCompleteListener
+                }
+
+                // Token'ı al
+                val token = task.result
+                Log.d(TAG, "FCM Token: $token")
+
+                // Token'ı backend'e gönder
+                sendRegistrationToServer(token)
+            }
+
+        // Topic aboneliği
+        FirebaseMessaging.getInstance().subscribeToTopic("parking_24")
+            .addOnCompleteListener { task ->
+                if (task.isSuccessful) {
+                    Log.d(TAG, "Subscribed to topic: parking_24")
+                } else {
+                    Log.e(TAG, "Failed to subscribe to topic", task.exception)
+                }
+            }
+
+        checkUserLoginStatus()
         setupNavigation()
+    }
+
+    private fun sendRegistrationToServer(token: String) {
+        val userId = sessionManager.getUserId()
+        if (userId > 0) {
+            val deviceId = Settings.Secure.getString(
+                applicationContext.contentResolver,
+                Settings.Secure.ANDROID_ID
+            )
+            
+            CoroutineScope(Dispatchers.IO).launch {
+                try {
+                    val result = notificationRepository.registerFcmToken(userId.toInt(), token, deviceId)
+                    result.fold(
+                        onSuccess = {
+                            Log.d(TAG, "FCM token registered successfully")
+                        },
+                        onFailure = { error ->
+                            Log.e(TAG, "Failed to register FCM token", error)
+                        }
+                    )
+                } catch (e: Exception) {
+                    Log.e(TAG, "Exception while registering FCM token", e)
+                }
+            }
+        } else {
+            Log.e(TAG, "Cannot register FCM token: Invalid userId ($userId)")
+        }
     }
 
     private fun setupNavigation() {
@@ -105,6 +179,18 @@ class MainActivity : AppCompatActivity() {
                     .remove(fragment)
                     .commitNow()
             }
+        }
+    }
+
+    private fun checkUserLoginStatus() {
+        val userId = sessionManager.getUserId()
+        val isLoggedIn = sessionManager.isLoggedIn()
+        Log.d("MainActivity", "Application started with userId: $userId, isLoggedIn: $isLoggedIn")
+
+        if (userId <= 0 || !isLoggedIn) {
+            Log.d("MainActivity", "No valid userId found in SessionManager")
+        } else {
+            Log.d("MainActivity", "User is logged in with userId: $userId")
         }
     }
 

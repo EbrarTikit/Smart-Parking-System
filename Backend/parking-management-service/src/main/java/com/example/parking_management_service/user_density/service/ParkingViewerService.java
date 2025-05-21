@@ -1,6 +1,8 @@
 package com.example.parking_management_service.user_density.service;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -21,16 +23,23 @@ import org.slf4j.LoggerFactory;
 public class ParkingViewerService {
     
     private static final Logger logger = LoggerFactory.getLogger(ParkingViewerService.class);
+    private static final ZoneId ZONE_ID = ZoneId.of("Europe/Istanbul");
 
     @Autowired
     private ParkingViewerRepository parkingViewerRepository;
 
     @Autowired
     private ParkingRepository parkingRepository;
+    
+    @Autowired
+    private NotificationSenderService notificationSenderService;
 
     // Track when a user views a parking
     public ViewerCountDTO trackUserViewing(Long userId, Long parkingId) {
-        LocalDateTime now = LocalDateTime.now();
+        // Use ZonedDateTime to ensure correct timezone
+        ZonedDateTime zonedNow = ZonedDateTime.now(ZONE_ID);
+        LocalDateTime now = zonedNow.toLocalDateTime();
+        
         // Add 45 minutes (average between 30-60 minutes)
         LocalDateTime expiryTime = now.plusMinutes(45);
 
@@ -57,7 +66,10 @@ public class ParkingViewerService {
 
     // Get the current viewer count for a parking
     public ViewerCountDTO getViewerCount(Long parkingId) {
-        LocalDateTime now = LocalDateTime.now();
+        // Use ZonedDateTime to ensure correct timezone
+        ZonedDateTime zonedNow = ZonedDateTime.now(ZONE_ID);
+        LocalDateTime now = zonedNow.toLocalDateTime();
+        
         Long viewerCount = parkingViewerRepository.countActiveViewersByParkingId(parkingId, now);
         return new ViewerCountDTO(parkingId, viewerCount);
     }
@@ -65,14 +77,20 @@ public class ParkingViewerService {
     // Clean up expired viewers
     @Scheduled(fixedRate = 600000) // Run every 10 minutes
     public void cleanupExpiredViewers() {
-        LocalDateTime now = LocalDateTime.now();
+        // Use ZonedDateTime to ensure correct timezone
+        ZonedDateTime zonedNow = ZonedDateTime.now(ZONE_ID);
+        LocalDateTime now = zonedNow.toLocalDateTime();
+        
         List<ParkingViewer> expiredViewers = parkingViewerRepository.findByExpiryTimeLessThan(now);
         parkingViewerRepository.deleteAll(expiredViewers);
     }
 
     // Get list of users who should be notified when parking becomes full
     public List<ParkingViewer> getUsersToNotifyForFullParking(Long parkingId) {
-        LocalDateTime now = LocalDateTime.now();
+        // Use ZonedDateTime to ensure correct timezone
+        ZonedDateTime zonedNow = ZonedDateTime.now(ZONE_ID);
+        LocalDateTime now = zonedNow.toLocalDateTime();
+        
         return parkingViewerRepository.findActiveNonNotifiedViewersByParkingId(parkingId, now);
     }
     
@@ -100,29 +118,23 @@ public class ParkingViewerService {
         return false;
     }
     
-    // This method will be called by notification service when implemented
+    // This method now uses the notification sender service
     @Scheduled(fixedRate = 60000) // Run every minute
     public void checkParkingStatusForNotifications() {
+        logger.info("Starting scheduled notification check");
         List<Parking> parkings = parkingRepository.findAll();
+        logger.info("Found {} parkings to check", parkings.size());
         
         for (Parking parking : parkings) {
+            logger.info("Checking parking: {} (ID: {})", parking.getName(), parking.getId());
             boolean isFull = isParkingFull(parking.getId());
+            logger.info("Parking {} is full: {}", parking.getId(), isFull);
             
             if (isFull) {
-                List<ParkingViewer> viewers = getUsersToNotifyForFullParking(parking.getId());
-                
-                // Log the users who would be notified (for now)
-                if (!viewers.isEmpty()) {
-                    logger.info("Parking {} is full. Would notify {} users.", 
-                        parking.getName(), viewers.size());
-                        
-                    // When notification service is implemented, it will handle this
-                    // For now, we'll just mark them as notified
-                    for (ParkingViewer viewer : viewers) {
-                        markUserAsNotified(viewer.getId());
-                    }
-                }
+                logger.info("Sending notifications for parking {}", parking.getId());
+                notificationSenderService.sendParkingFullNotification(parking.getId());
             }
         }
+        logger.info("Completed scheduled notification check");
     }
 }

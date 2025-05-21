@@ -1,0 +1,347 @@
+/* Genel Stiller */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  line-height: 1.6;
+  color: #333;
+  background-color: #f0f2f5;
+  min-height: 100vh;
+}
+
+.app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background-color: #f0f2f5;
+}
+
+.main-content {
+  flex: 1;
+  padding: 30px;
+  max-width: 1400px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.main-content.full-height {
+  padding: 0;
+  max-width: none;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: linear-gradient(120deg, #1a237e, #283593, #3949ab, #3f51b5);
+  background-size: 400% 400%;
+  animation: gradientBG 15s ease infinite;
+}
+
+@keyframes gradientBG {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.container {
+  background-color: #fff;
+  border-radius: 10px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  padding: 25px;
+  margin-bottom: 25px;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.container:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.12);
+}
+
+.footer {
+  background-color: #fff;
+  padding: 15px;
+  text-align: center;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+  border-top: 1px solid #eaeaea;
+  margin-top: 20px;
+}
+
+/* Loading Container */
+.loading-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  width: 100%;
+  font-size: 1.2rem;
+  color: #3f51b5;
+}
+
+.loading-container::after {
+  content: "";
+  display: inline-block;
+  width: 24px;
+  height: 24px;
+  margin-left: 10px;
+  border: 3px solid #3f51b5;
+  border-radius: 50%;
+  border-top-color: transparent;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Butonlar */
+.btn {
+  display: inline-block;
+  background-color: #3f51b5;
+  color: #fff;
+  padding: 10px 18px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 500;
+  transition: all 0.3s;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.btn:hover {
+  background-color: #303f9f;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.btn-primary {
+  background-color: #3f51b5;
+}
+
+.btn-primary:hover {
+  background-color: #303f9f;
+}
+
+.btn-success {
+  background-color: #4caf50;
+}
+
+.btn-success:hover {
+  background-color: #388e3c;
+}
+
+.btn-danger {
+  background-color: #f44336;
+}
+
+.btn-danger:hover {
+  background-color: #d32f2f;
+}
+
+/* Form Stilleri */
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+  color: #424242;
+  font-size: 15px;
+}
+
+.form-control {
+  width: 100%;
+  padding: 12px 15px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 16px;
+  transition: all 0.3s;
+  background-color: #fff;
+}
+
+.form-control:focus {
+  outline: none;
+  border-color: #3f51b5;
+  box-shadow: 0 0 0 3px rgba(63, 81, 181, 0.2);
+}
+
+/* Tablolar */
+.table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  margin-bottom: 20px;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.table th,
+.table td {
+  padding: 15px;
+  text-align: left;
+  border-bottom: 1px solid #eee;
+}
+
+.table th {
+  background-color: #f5f7fa;
+  font-weight: 600;
+  color: #424242;
+  text-transform: uppercase;
+  font-size: 13px;
+  letter-spacing: 0.5px;
+}
+
+.table tbody tr {
+  transition: background-color 0.3s;
+}
+
+.table tbody tr:hover {
+  background-color: #f5f7fa;
+}
+
+.table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* Bildirimler */
+.alert {
+  padding: 15px 20px;
+  margin-bottom: 20px;
+  border-radius: 8px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.alert::before {
+  margin-right: 15px;
+  font-size: 18px;
+}
+
+.alert-success {
+  background-color: #e8f5e9;
+  color: #2e7d32;
+  border-left: 4px solid #4caf50;
+}
+
+.alert-success::before {
+  content: "✓";
+}
+
+.alert-danger {
+  background-color: #ffebee;
+  color: #c62828;
+  border-left: 4px solid #f44336;
+}
+
+.alert-danger::before {
+  content: "!";
+}
+
+.alert-info {
+  background-color: #e3f2fd;
+  color: #1565c0;
+  border-left: 4px solid #2196f3;
+}
+
+.alert-info::before {
+  content: "ℹ";
+}
+
+.alert-warning {
+  background-color: #fff8e1;
+  color: #f57f17;
+  border-left: 4px solid #ffc107;
+}
+
+.alert-warning::before {
+  content: "⚠";
+}
+
+/* Araç Kartları */
+.vehicle-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 25px;
+  margin-top: 25px;
+}
+
+.vehicle-card {
+  background-color: #fff;
+  border-radius: 10px;
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+  transition: transform 0.3s, box-shadow 0.3s;
+  border: 1px solid #eaeaea;
+}
+
+.vehicle-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
+}
+
+.vehicle-card-header {
+  background: linear-gradient(135deg, #3f51b5, #303f9f);
+  color: #fff;
+  padding: 18px 20px;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.vehicle-card-body {
+  padding: 20px;
+}
+
+.vehicle-card-info {
+  margin-bottom: 12px;
+  padding: 10px;
+  background-color: #f5f7fa;
+  border-radius: 6px;
+}
+
+.vehicle-card-info span {
+  font-weight: 600;
+  color: #3f51b5;
+}
+
+/* Duyarlı Tasarım */
+@media (max-width: 1200px) {
+  .main-content {
+    padding: 25px;
+  }
+  
+  .vehicle-list {
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .main-content {
+    padding: 20px;
+  }
+  
+  .vehicle-list {
+    grid-template-columns: 1fr;
+  }
+  
+  .table {
+    display: block;
+    overflow-x: auto;
+  }
+  
+  .container {
+    padding: 20px;
+  }
+} 

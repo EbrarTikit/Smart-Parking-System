@@ -12,7 +12,7 @@ import jakarta.persistence.UniqueConstraint;
 
 @Entity
 @Table(name = "favorite_parkings", 
-// aynÄ± user aynÄ± otoparkÄ± tekrar ekleyemesin diye
+// aynı user aynı otoparkı tekrar ekleyemesin diye
        uniqueConstraints = @UniqueConstraint(columnNames = {"user_id", "parking_id"}))
 public class FavoriteParking {
     @Id

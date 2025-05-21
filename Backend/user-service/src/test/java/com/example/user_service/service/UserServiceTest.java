@@ -6,169 +6,207 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import static org.mockito.ArgumentMatchers.any;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.MockitoAnnotations;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import com.example.user_service.dto.NotificationPreferencesDto;
 import com.example.user_service.exception.UserNotFoundException;
-import com.example.user_service.exception.UsernameAlreadyExistsException;
 import com.example.user_service.model.User;
 import com.example.user_service.repository.UserRepository;
 
-@ExtendWith(MockitoExtension.class)
-public class UserServiceTest {
+class UserServiceTest {
 
     @Mock
     private UserRepository userRepository;
-
+    
     @Mock
     private PasswordEncoder passwordEncoder;
-
+    
     @InjectMocks
     private UserService userService;
-
+    
     private User testUser;
-
+    
     @BeforeEach
     void setUp() {
+        MockitoAnnotations.openMocks(this);
+        
         testUser = new User();
         testUser.setId(1L);
         testUser.setUsername("testuser");
         testUser.setEmail("test@example.com");
-        testUser.setPassword("password123");
+        testUser.setPassword("password");
+        testUser.setParkingFullNotification(true);
     }
-
+    
     @Test
     void findAllUsers_ShouldReturnAllUsers() {
-        // Given
-        List<User> expectedUsers = Arrays.asList(testUser);
-        when(userRepository.findAll()).thenReturn(expectedUsers);
-
-        // When
-        List<User> actualUsers = userService.findAllUsers();
-
-        // Then
-        assertEquals(expectedUsers, actualUsers);
-        verify(userRepository).findAll();
+        // Arrange
+        User user2 = new User();
+        user2.setId(2L);
+        user2.setUsername("testuser2");
+        
+        when(userRepository.findAll()).thenReturn(Arrays.asList(testUser, user2));
+        
+        // Act
+        List<User> result = userService.findAllUsers();
+        
+        // Assert
+        assertEquals(2, result.size());
+        assertEquals("testuser", result.get(0).getUsername());
+        assertEquals("testuser2", result.get(1).getUsername());
     }
-
+    
     @Test
-    void findUserById_WhenUserExists_ShouldReturnUser() {
-        // Given
+    void findUserById_WithValidId_ShouldReturnUser() {
+        // Arrange
         when(userRepository.findById(1L)).thenReturn(Optional.of(testUser));
-
-        // When
+        
+        // Act
         Optional<User> result = userService.findUserById(1L);
-
-        // Then
+        
+        // Assert
         assertTrue(result.isPresent());
-        assertEquals(testUser, result.get());
-        verify(userRepository).findById(1L);
+        assertEquals("testuser", result.get().getUsername());
     }
-
+    
     @Test
-    void findUserById_WhenUserDoesNotExist_ShouldReturnEmptyOptional() {
-        // Given
-        when(userRepository.findById(2L)).thenReturn(Optional.empty());
-
-        // When
-        Optional<User> result = userService.findUserById(2L);
-
-        // Then
+    void findUserById_WithInvalidId_ShouldReturnEmpty() {
+        // Arrange
+        when(userRepository.findById(99L)).thenReturn(Optional.empty());
+        
+        // Act
+        Optional<User> result = userService.findUserById(99L);
+        
+        // Assert
         assertFalse(result.isPresent());
-        verify(userRepository).findById(2L);
     }
-
-    @Test
-    void findByUsername_WhenUserExists_ShouldReturnUser() {
-        // Given
-        when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(testUser));
-
-        // When
-        User result = userService.findByUsername("testuser");
-
-        // Then
-        assertEquals(testUser, result);
-        verify(userRepository).findByUsername("testuser");
-    }
-
-    @Test
-    void findByUsername_WhenUserDoesNotExist_ShouldThrowException() {
-        // Given
-        when(userRepository.findByUsername("nonexistent")).thenReturn(Optional.empty());
-
-        // When, Then
-        assertThrows(UserNotFoundException.class, () -> userService.findByUsername("nonexistent"));
-        verify(userRepository).findByUsername("nonexistent");
-    }
-
+    
     @Test
     void saveUser_ShouldReturnSavedUser() {
-        // Given
-        when(userRepository.save(testUser)).thenReturn(testUser);
-
-        // When
-        User result = userService.saveUser(testUser);
-
-        // Then
-        assertEquals(testUser, result);
-        verify(userRepository).save(testUser);
-    }
-
-    @Test
-    void deleteUser_ShouldDeleteUserById() {
-        // Given
-        doNothing().when(userRepository).deleteById(1L);
-
-        // When
-        userService.deleteUser(1L);
-
-        // Then
-        verify(userRepository).deleteById(1L);
-    }
-
-    @Test
-    void registerUser_WhenUsernameIsUnique_ShouldSaveAndReturnUser() {
-        // Given
-        when(userRepository.findByUsername("testuser")).thenReturn(Optional.empty());
-        when(passwordEncoder.encode("password123")).thenReturn("encodedPassword");
-        
-        User userToSave = new User();
-        userToSave.setUsername("testuser");
-        userToSave.setEmail("test@example.com");
-        userToSave.setPassword("encodedPassword");
-        
+        // Arrange
         when(userRepository.save(any(User.class))).thenReturn(testUser);
-
-        // When
-        User result = userService.registerUser(testUser);
-
-        // Then
-        assertEquals(testUser, result);
-        verify(userRepository).findByUsername("testuser");
-        verify(passwordEncoder).encode("password123");
-        verify(userRepository).save(any(User.class));
+        
+        // Act
+        User result = userService.saveUser(testUser);
+        
+        // Assert
+        assertEquals(testUser.getId(), result.getId());
+        assertEquals(testUser.getUsername(), result.getUsername());
     }
-
+    
     @Test
-    void registerUser_WhenUsernameAlreadyExists_ShouldThrowException() {
-        // Given
+    void deleteUser_ShouldCallRepositoryDelete() {
+        // Arrange
+        when(userRepository.findById(1L)).thenReturn(Optional.of(testUser));
+        doNothing().when(userRepository).deleteById(1L);
+        
+        // Act
+        userService.deleteUser(1L);
+        
+        // Assert
+        verify(userRepository, times(1)).deleteById(1L);
+    }
+    
+    @Test
+    void deleteUser_WithInvalidId_ShouldThrowException() {
+        // Arrange
+        when(userRepository.findById(99L)).thenReturn(Optional.empty());
+        
+        // Act & Assert
+        UserNotFoundException exception = assertThrows(UserNotFoundException.class, () -> {
+            userService.deleteUser(99L);
+        });
+        
+        assertEquals("User not found with id: 99", exception.getMessage());
+    }
+    
+    @Test
+    void findByUsername_WithValidUsername_ShouldReturnUser() {
+        // Arrange
         when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(testUser));
-
-        // When, Then
-        assertThrows(UsernameAlreadyExistsException.class, () -> userService.registerUser(testUser));
-        verify(userRepository).findByUsername("testuser");
-        verify(userRepository, never()).save(any(User.class));
+        
+        // Act
+        User result = userService.findByUsername("testuser");
+        
+        // Assert
+        assertNotNull(result);
+        assertEquals("testuser", result.getUsername());
+    }
+    
+    @Test
+    void findByUsername_WithInvalidUsername_ShouldThrowException() {
+        // Arrange
+        when(userRepository.findByUsername("nonexistent")).thenReturn(Optional.empty());
+        
+        // Act & Assert
+        assertThrows(UserNotFoundException.class, () -> {
+            userService.findByUsername("nonexistent");
+        });
+    }
+    
+    @Test
+    void existsByUsername_WithExistingUsername_ShouldReturnTrue() {
+        // Arrange
+        when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(testUser));
+        
+        // Act
+        boolean result = userService.existsByUsername("testuser");
+        
+        // Assert
+        assertTrue(result);
+    }
+    
+    @Test
+    void existsByUsername_WithNonExistingUsername_ShouldReturnFalse() {
+        // Arrange
+        when(userRepository.findByUsername("nonexistent")).thenReturn(Optional.empty());
+        
+        // Act
+        boolean result = userService.existsByUsername("nonexistent");
+        
+        // Assert
+        assertFalse(result);
+    }
+    
+    @Test
+    void getNotificationPreferences_ShouldReturnPreferences() {
+        // Arrange
+        when(userRepository.findById(1L)).thenReturn(Optional.of(testUser));
+        
+        // Act
+        NotificationPreferencesDto result = userService.getNotificationPreferences(1L);
+        
+        // Assert
+        assertTrue(result.isParkingFullNotification());
+    }
+    
+    @Test
+    void toggleNotificationPreferences_ShouldToggleAndReturnPreferences() {
+        // Arrange
+        when(userRepository.findById(1L)).thenReturn(Optional.of(testUser));
+        when(userRepository.save(any(User.class))).thenAnswer(i -> i.getArguments()[0]);
+        
+        // Act
+        NotificationPreferencesDto result = userService.toggleNotificationPreferences(1L);
+        
+        // Assert
+        assertFalse(result.isParkingFullNotification());
+        
+        // Toggle back
+        result = userService.toggleNotificationPreferences(1L);
+        assertTrue(result.isParkingFullNotification());
     }
 }

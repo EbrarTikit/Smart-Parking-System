@@ -12,6 +12,12 @@ object Constants {
     const val LAYOUT= "api/{parkingId}/layout"
     const val VIEWER_TRACK = "/api/parking-viewers/track"
     const val VIEWER_COUNT = "/api/parking-viewers/{parkingId}/count"
+    const val ADD_FAVORITE = "/api/users/{userId}/favorites/{parkingId}"
+    const val GET_FAVORITE = "/api/users/{userId}/favorites"
+    const val DELETE_FAVORITE = "/api/users/{userId}/favorites/{parkingId}"
+    const val NOTIFICATION_PREFERENCE = "/api/users/{userId}/notification-preferences"
+    const val NOTIFICATION_TOGGLE = "/api/users/{userId}/notification-preferences/toggle"
+    const val REGISTER_FCM = "/api/users/{userId}/fcm/register"
 
 
     //Session Manager

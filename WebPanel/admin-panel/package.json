@@ -1,0 +1,40 @@
+{
+  "name": "admin-panel",
+  "version": "0.1.0",
+  "private": true,
+  "dependencies": {
+    "@emotion/react": "^11.x.x",
+    "@emotion/styled": "^11.x.x",
+    "@mui/icons-material": "^5.x.x",
+    "@mui/material": "^5.x.x",
+    "axios": "^0.27.2",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.x.x",
+    "react-scripts": "^5.0.1",
+    "web-vitals": "^2.1.4"
+  },
+  "scripts": {
+    "start": "set BROWSER=none && react-scripts start --no-cache",
+    "build": "react-scripts build",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject"
+  },
+  "eslintConfig": {
+    "extends": [
+      "react-app"
+    ]
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  }
+}

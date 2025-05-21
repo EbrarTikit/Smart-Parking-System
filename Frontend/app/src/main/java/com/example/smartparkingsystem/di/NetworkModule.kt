@@ -2,6 +2,7 @@ package com.example.smartparkingsystem.di
 
 import com.example.smartparkingsystem.data.remote.ChatbotService
 import com.example.smartparkingsystem.data.remote.NavigationService
+import com.example.smartparkingsystem.data.remote.NotificationService
 import com.example.smartparkingsystem.data.remote.ParkingManagementService
 import com.example.smartparkingsystem.data.remote.UserService
 import com.example.smartparkingsystem.utils.StringConverterFactory
@@ -58,7 +59,7 @@ object NetworkModule {
     @Named("chatbotRetrofit")
     fun provideChatbotRetrofit(okHttpClient: OkHttpClient, gson: Gson): Retrofit {
         return Retrofit.Builder()
-            .baseUrl("http://10.0.2.2:8001")
+            .baseUrl("http://192.168.1.7:8001")
             .client(okHttpClient)
             .addConverterFactory(GsonConverterFactory.create(gson))
             .build()
@@ -74,7 +75,7 @@ object NetworkModule {
         stringConverterFactory: StringConverterFactory
     ): Retrofit {
         return Retrofit.Builder()
-            .baseUrl("http://10.0.2.2:8050")
+            .baseUrl("http://192.168.1.7:8050")
             .client(okHttpClient)
             .addConverterFactory(stringConverterFactory)
             .addConverterFactory(GsonConverterFactory.create(gson))
@@ -91,7 +92,7 @@ object NetworkModule {
         stringConverterFactory: StringConverterFactory
     ): Retrofit {
         return Retrofit.Builder()
-            .baseUrl("http://10.0.2.2:8080")
+            .baseUrl("http://192.168.1.7:8080")
             .client(okHttpClient)
             .addConverterFactory(stringConverterFactory)
             .addConverterFactory(GsonConverterFactory.create(gson))
@@ -108,7 +109,7 @@ object NetworkModule {
         stringConverterFactory: StringConverterFactory
     ): Retrofit {
         return Retrofit.Builder()
-            .baseUrl("http://10.0.2.2:8081")
+            .baseUrl("http://192.168.1.7:8081")
             .client(okHttpClient)
             .addConverterFactory(stringConverterFactory)
             .addConverterFactory(GsonConverterFactory.create(gson))
@@ -137,5 +138,11 @@ object NetworkModule {
     @Singleton
     fun provideParkingManagementService(@Named("parkingManagementRetrofit") retrofit: Retrofit): ParkingManagementService {
         return retrofit.create(ParkingManagementService::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideNotificationService(@Named("userRetrofit") retrofit: Retrofit): NotificationService {
+        return retrofit.create(NotificationService::class.java)
     }
 }

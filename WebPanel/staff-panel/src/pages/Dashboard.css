@@ -1,0 +1,385 @@
+.dashboard {
+  width: 100%;
+}
+
+.dashboard-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 25px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid #e0e0e0;
+  flex-wrap: wrap;
+}
+
+.dashboard-header h2 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 600;
+  color: #303f9f;
+  flex: 1;
+  margin-right: 20px;
+}
+
+/* Otopark seçici stilleri */
+.parking-selector-container {
+  display: flex;
+  align-items: center;
+  margin-right: 20px;
+  margin-bottom: 10px;
+}
+
+.parking-selector-container label {
+  margin-right: 10px;
+  font-weight: 600;
+  color: #333;
+  white-space: nowrap;
+}
+
+.custom-select {
+  position: relative;
+  display: inline-block;
+  width: 250px;
+}
+
+.custom-select select {
+  display: block;
+  width: 100%;
+  padding: 10px 15px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #333;
+  background-color: #fff;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.custom-select select:hover {
+  border-color: #aaa;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.custom-select select:focus {
+  outline: none;
+  border-color: #3f51b5;
+  box-shadow: 0 0 0 2px rgba(63, 81, 181, 0.2);
+}
+
+.custom-select::after {
+  content: "▼";
+  font-size: 10px;
+  color: #666;
+  position: absolute;
+  right: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.custom-select:hover::after {
+  color: #333;
+}
+
+.custom-select select option {
+  padding: 10px;
+  font-weight: 500;
+  background-color: #fff;
+  color: #333;
+}
+
+/* Dropdown kutusunu Görselleştirme */
+.custom-select select:focus option {
+  background-color: #f5f5f5;
+}
+
+.custom-select select option:hover,
+.custom-select select option:focus {
+  background-color: #e8eaf6;
+  color: #3f51b5;
+}
+
+/* Kameralı demo butonu */
+.camera-demo-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #3f51b5, #303f9f);
+  color: white;
+  text-decoration: none;
+  padding: 10px 20px;
+  border-radius: 5px;
+  font-weight: 500;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  white-space: nowrap;
+  margin-bottom: 10px;
+}
+
+.camera-demo-button:hover {
+  background: linear-gradient(135deg, #303f9f, #1a237e);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.camera-demo-button::before {
+  content: "📷";
+  margin-right: 8px;
+  font-size: 16px;
+}
+
+/* Bağlantı durumu */
+.connection-status {
+  display: flex;
+  align-items: center;
+  background-color: #f5f7fa;
+  padding: 10px 15px;
+  border-radius: 6px;
+  font-size: 14px;
+  color: #555;
+  margin-bottom: 20px;
+  border: 1px solid #e0e0e0;
+}
+
+.status-indicator {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  margin-right: 10px;
+  background-color: #f44336;
+  box-shadow: 0 0 5px rgba(244, 67, 54, 0.5);
+}
+
+.status-indicator.connected {
+  background-color: #4caf50;
+  box-shadow: 0 0 5px rgba(76, 175, 80, 0.5);
+}
+
+.status-indicator.disconnected {
+  background-color: #f44336;
+  box-shadow: 0 0 5px rgba(244, 67, 54, 0.5);
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 3fr 2fr;
+  gap: 25px;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #eaeaea;
+}
+
+.section-header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #303f9f;
+}
+
+.badge {
+  background-color: #3f51b5;
+  color: white;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.no-data {
+  padding: 30px;
+  text-align: center;
+  color: #757575;
+  font-style: italic;
+  background-color: #f9f9f9;
+  border-radius: 6px;
+  margin: 20px 0;
+}
+
+.loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 40px;
+  color: #3f51b5;
+  font-weight: 500;
+}
+
+.loading:after {
+  content: "";
+  width: 20px;
+  height: 20px;
+  margin-left: 15px;
+  border: 3px solid #3f51b5;
+  border-radius: 50%;
+  border-top-color: transparent;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes pulse {
+  0% { opacity: 0.6; }
+  50% { opacity: 1; }
+  100% { opacity: 0.6; }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.action-buttons {
+  margin-top: 20px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.btn-sm {
+  padding: 6px 12px;
+  font-size: 14px;
+  border-radius: 4px;
+}
+
+/* Aktivite listesi */
+.activity-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  max-height: 500px;
+  overflow-y: auto;
+  border: 1px solid #eaeaea;
+  border-radius: 6px;
+}
+
+.activity-item {
+  display: flex;
+  padding: 15px;
+  border-bottom: 1px solid #eaeaea;
+  transition: background-color 0.2s;
+}
+
+.activity-item:hover {
+  background-color: #f5f7fa;
+}
+
+.activity-item:last-child {
+  border-bottom: none;
+}
+
+.activity-item.entry {
+  border-left: 4px solid #4caf50;
+}
+
+.activity-item.exit {
+  border-left: 4px solid #f44336;
+}
+
+.activity-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 15px;
+  color: white;
+  flex-shrink: 0;
+}
+
+.activity-item.entry .activity-icon {
+  background-color: #4caf50;
+  content: "↓";
+}
+
+.activity-item.exit .activity-icon {
+  background-color: #f44336;
+  content: "↑";
+}
+
+.activity-content {
+  flex: 1;
+}
+
+.activity-message {
+  margin: 0 0 5px;
+  font-weight: 500;
+  color: #333;
+}
+
+.activity-time {
+  margin: 0;
+  font-size: 13px;
+  color: #757575;
+}
+
+.activity-details {
+  margin: 5px 0 0;
+  font-size: 14px;
+  color: #555;
+  background-color: #f5f7fa;
+  padding: 5px 10px;
+  border-radius: 4px;
+  display: inline-block;
+}
+
+/* Responsive düzenlemeler */
+@media (max-width: 1200px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  
+  .custom-select {
+    width: 220px;
+  }
+}
+
+@media (max-width: 992px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .dashboard-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .dashboard-header h2 {
+    margin-bottom: 15px;
+  }
+  
+  .parking-selector-container {
+    margin-bottom: 15px;
+    margin-right: 0;
+  }
+  
+  .custom-select {
+    width: 100%;
+  }
+  
+  .camera-demo-button {
+    align-self: flex-start;
+  }
+}
+
+@media (max-width: 768px) {
+  .dashboard-header {
+    padding-bottom: 10px;
+  }
+  
+  .section-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .activity-list {
+    max-height: 400px;
+  }
+} 

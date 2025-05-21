@@ -19,16 +19,23 @@ import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 import com.example.user_service.security.JwtAuthenticationFilter;
+import com.example.user_service.security.JwtUtil;
 
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        // JWT filtresi için bir Bean oluşturun (gerekirse)
-        JwtAuthenticationFilter jwtFilter = new JwtAuthenticationFilter();
-        
+    public JwtAuthenticationFilter jwtAuthenticationFilter(UserDetailsService userDetailsService, JwtUtil jwtUtil) {
+        JwtAuthenticationFilter filter = new JwtAuthenticationFilter();
+        filter.setUserDetailsService(userDetailsService);
+        filter.setJwtUtil(jwtUtil);
+        return filter;
+    }
+
+    @Bean
+    public SecurityFilterChain filterChain(HttpSecurity http, JwtAuthenticationFilter jwtAuthenticationFilter)
+            throws Exception {
         http.csrf(csrf -> csrf.disable())
             .exceptionHandling(exception -> exception.authenticationEntryPoint(unauthorizedHandler()))
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -41,24 +48,27 @@ public class SecurityConfig {
                     .requestMatchers(HttpMethod.DELETE, "/api/users/**").permitAll()
                     .requestMatchers("/api/users/*/notification-preferences").permitAll()
                     .requestMatchers("/api/users/*/notification-preferences/toggle").permitAll()
+                    .requestMatchers("/api/users/*/fcm/**").permitAll()
                     .anyRequest().authenticated()
             )
             // JWT filtresi eklemek yerine öncelikle genel endpoint erişimine izin verin
-            .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
+            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
             
         return http.build();
     }
 
     @Bean
-    public AuthenticationManager authenticationManager(UserDetailsService userDetailsService, PasswordEncoder passwordEncoder) throws Exception {
+    public AuthenticationManager authenticationManager(UserDetailsService userDetailsService,
+            PasswordEncoder passwordEncoder) throws Exception {
         return new org.springframework.security.authentication.ProviderManager(
-                List.of(new org.springframework.security.authentication.dao.DaoAuthenticationProvider() {{
-                    setUserDetailsService(userDetailsService);
-                    setPasswordEncoder(passwordEncoder);
-                }})
-        );
+                List.of(new org.springframework.security.authentication.dao.DaoAuthenticationProvider() {
+                    {
+                        setUserDetailsService(userDetailsService);
+                        setPasswordEncoder(passwordEncoder);
+                    }
+                }));
     }
-    
+
     @Bean
     public AuthenticationEntryPoint unauthorizedHandler() {
         return new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED);

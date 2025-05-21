@@ -9,13 +9,15 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.example.user_service.dto.JwtResponse;  
+import com.example.user_service.dto.JwtResponse;
 import com.example.user_service.dto.LoginRequest;
+import com.example.user_service.dto.MessageResponse;
 import com.example.user_service.dto.SignupRequest;
 import com.example.user_service.exception.InvalidCredentialsException;
 import com.example.user_service.model.User;
@@ -24,6 +26,7 @@ import com.example.user_service.service.CustomUserDetailsService;
 import com.example.user_service.service.UserService;
 
 
+@CrossOrigin(origins = { "http://localhost:3000", "http://localhost:80" })
 
 @RestController
 @RequestMapping("/api/auth")
@@ -67,8 +70,8 @@ public class AuthController {
             // Kullanıcı zaten var mı kontrol et
             if (userService.existsByUsername(signupRequest.getUsername())) {
                 return ResponseEntity
-                    .badRequest()
-                    .body("Error: Username is already taken!");
+                        .badRequest()
+                        .body(new MessageResponse("Error: Username is already taken!"));
             }
 
             // Yeni kullanıcı oluştur
@@ -76,15 +79,14 @@ public class AuthController {
             user.setUsername(signupRequest.getUsername());
             user.setEmail(signupRequest.getEmail());
             user.setPassword(signupRequest.getPassword());
-            
+
             User savedUser = userService.registerUser(user);
-            
-            return ResponseEntity.ok("User registered successfully with ID: " + savedUser.getId());
+
+            return ResponseEntity.ok(new MessageResponse("User registered successfully with ID: " + savedUser.getId()));
         } catch (Exception e) {
             return ResponseEntity
-                .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body("Error: " + e.getMessage());
+                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new MessageResponse("Error: " + e.getMessage()));
         }
     }
-    
 }

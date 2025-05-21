@@ -16,8 +16,8 @@
 
         <com.google.android.material.imageview.ShapeableImageView
             android:id="@+id/iv_parking_image"
-            android:layout_width="70dp"
-            android:layout_height="70dp"
+            android:layout_width="90dp"
+            android:layout_height="90dp"
             android:scaleType="centerCrop"
             android:src="@drawable/img"
             app:layout_constraintBottom_toBottomOf="parent"
@@ -32,6 +32,8 @@
             android:layout_marginStart="16dp"
             android:layout_marginEnd="16dp"
             android:fontFamily="sans-serif-medium"
+            android:maxLines="1"
+            android:ellipsize="end"
             android:textColor="@color/black"
             android:textSize="16sp"
             app:layout_constraintEnd_toStartOf="@+id/btn_favorite"
@@ -45,6 +47,8 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
             android:alpha="0.7"
+            android:maxLines="2"
+            android:ellipsize="end"
             android:textColor="@color/black"
             android:textSize="14sp"
             app:layout_constraintEnd_toEndOf="@+id/tv_parking_name"
@@ -60,6 +64,8 @@
             android:textColor="@color/primary"
             android:textSize="16sp"
             android:textStyle="bold"
+            android:layout_marginBottom="4dp"
+            app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintStart_toStartOf="@+id/tv_parking_location"
             app:layout_constraintTop_toBottomOf="@+id/tv_parking_location"
             tools:text="$10/h" />
@@ -70,10 +76,10 @@
             android:layout_height="40dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:contentDescription="Remove from favorites"
-            android:src="@drawable/ic_favorite_"
+            android:src="@drawable/favorite"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent"
-            app:tint="@color/black" />
+             />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 </com.google.android.material.card.MaterialCardView>

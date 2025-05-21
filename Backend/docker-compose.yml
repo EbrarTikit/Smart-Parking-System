@@ -8,6 +8,32 @@ services:
       - backend_network
     restart: always
 
+  # rabbit-mq:
+  #   image: rabbitmq:3-management
+  #   container_name: rabbit_mq
+  #   ports:
+  #     - "5672:5672"   # RabbitMQ mesajlaşma portu
+  #     - "15672:15672" # Yönetim arayüzü portu
+  #   environment:
+  #     - RABBITMQ_DEFAULT_USER=guest
+  #     - RABBITMQ_DEFAULT_PASS=guest  
+  #   networks:
+  #     - backend_network
+  #   restart: always
+
+  # redis-commander:
+  #   image: rediscommander/redis-commander:latest
+  #   container_name: redis_commander
+  #   environment:
+  #     - REDIS_HOSTS=local:redis_service:6379
+  #   ports:
+  #     - "8000:8000"
+  #   networks:
+  #     - backend_network
+  #   depends_on:
+  #     - redis
+  #   restart: always
+
   rabbit-mq:
     image: rabbitmq:3-management
     container_name: rabbit_mq
@@ -19,19 +45,6 @@ services:
       - RABBITMQ_DEFAULT_PASS=guest  
     networks:
       - backend_network
-    restart: always
-
-  redis-commander:
-    image: rediscommander/redis-commander:latest
-    container_name: redis_commander
-    environment:
-      - REDIS_HOSTS=local:redis_service:6379
-    ports:
-      - "8000:8000"
-    networks:
-      - backend_network
-    depends_on:
-      - redis
     restart: always
 
   chatbot-service:
@@ -51,78 +64,109 @@ services:
     networks:
       - backend_network
 
-  postgres:
-    image: postgres
-    container_name: postgres_db
-    environment:
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: license_plate_db
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    networks:
-      - backend_network
+  # postgres:
+  #   image: postgres
+  #   container_name: postgres_db
+  #   environment:
+  #     POSTGRES_USER: user
+  #     POSTGRES_PASSWORD: password
+  #     POSTGRES_DB: license_plate_db
+  #   ports:
+  #     - "5432:5432"
+  #   volumes:
+  #     - postgres_data:/var/lib/postgresql/data
+  #   networks:
+  #     - backend_network
 
-  pgadmin:
-    image: dpage/pgadmin4
-    container_name: pgadmin
-    environment:
-      PGADMIN_DEFAULT_EMAIL: admin@example.com
-      PGADMIN_DEFAULT_PASSWORD: admin
-      PGADMIN_LISTEN_PORT: 5050
+  # pgadmin:
+  #   image: dpage/pgadmin4
+  #   container_name: pgadmin
+  #   environment:
+  #     PGADMIN_DEFAULT_EMAIL: admin@example.com
+  #     PGADMIN_DEFAULT_PASSWORD: admin
+  #     PGADMIN_LISTEN_PORT: 5050
+  #   ports:
+  #     - "5050:5050"
+  #   depends_on:
+  #     - postgres
+  #   networks:
+  #     - backend_network
+  #   restart: always
+
+
+  # admin-panel:
+  #   build: ../WebPanel/admin-panel
+  #   ports:
+  #     - "3000:80"
+  #   depends_on:
+  #     - user-service
+  #     - parking-management-service
+
+ 
+  # license-plate-service:
+  #   build:
+  #     context: ./license-plate-service
+  #     dockerfile: Dockerfile
+  #     # Build argumentleri ekleyerek daha hızlı build
+  #     args:
+  #       - BUILDKIT_INLINE_CACHE=1
+  #       - PIP_NO_CACHE_DIR=1
+  #       - PIP_TIMEOUT=180
+  #   image: license-plate-service:latest
+  #   container_name: license_plate_service
+  #   ports:
+  #     - "8005:8000"
+  #   environment:
+  #     - OCR_LANGUAGES=tr,en
+  #     - MAX_UPLOAD_SIZE=10
+  #     - DATABASE_URL=postgresql://user:password@postgres/license_plate_db
+  #     - DEBUG=False
+  #     - FORCE_CUDA=0  # GPU kullanımını zorla devre dışı bırak
+  #     - PYTHONUNBUFFERED=1
+  #     - PARKING_MANAGEMENT_SERVICE_URL=http://parking-management-service:8081
+  #   volumes:
+  #     # Kod değişikliklerinin otomatik yansıması için yerel kod dizinini konteyner içine bağla
+  #     - ./license-plate-service/app:/app/app
+  #     - ./license-plate-service/.env:/app/.env
+  #     # Test dosyasını konteynere bağla
+  #     - ./license-plate-service/test_parking_rates.py:/app/test_parking_rates.py
+  #     # Debug görüntüleri için klasörler
+  #     - ./license-plate-service/debug_images:/app/debug_images
+  #     - ./license-plate-service/app/model/debug_plates:/app/app/model/debug_plates
+  #     # YOLO model dosyaları
+  #     - ./license-plate-service/app/model/yolov8n.pt:/app/app/model/yolov8n.pt
+  #     - ./license-plate-service/app/model/license_plate_detector.pt:/app/app/model/license_plate_detector.pt
+  #   depends_on:
+  #     - postgres
+  #   networks:
+  #     - backend_network
+  #   deploy:
+  #     resources:
+  #       limits:
+  #         memory: 2G  # CPU için yeterli bellek
+  #       reservations:
+  #         memory: 1G  # Minimum bellek garantisi
+
+  notification-service:
+    build: 
+      context: ./notification-service
+      dockerfile: dockerfile
+    container_name: notification_service
     ports:
-      - "5050:5050"
+      - "8083:8083"
+    environment:
+      - SPRING_RABBITMQ_HOST=rabbit-mq
+      - SPRING_RABBITMQ_PORT=5672
+      - SPRING_RABBITMQ_USERNAME=guest
+      - SPRING_RABBITMQ_PASSWORD=guest
+      - USER_SERVICE_URL=http://user-service:8050
     depends_on:
-      - postgres
-    networks:
-      - backend_network
+      - rabbit-mq
+      - user-service
     restart: always
-
-  license-plate-service:
-    build:
-      context: ./license-plate-service
-      dockerfile: Dockerfile
-      # Build argumentleri ekleyerek daha hızlı build
-      args:
-        - BUILDKIT_INLINE_CACHE=1
-        - PIP_NO_CACHE_DIR=1
-        - PIP_TIMEOUT=180
-    image: license-plate-service:latest
-    container_name: license_plate_service
-    ports:
-      - "8005:8000"
-    environment:
-      - OCR_LANGUAGES=tr,en
-      - MAX_UPLOAD_SIZE=10
-      - DATABASE_URL=postgresql://user:password@postgres/license_plate_db
-      - DEBUG=False
-      - FORCE_CUDA=0  # GPU kullanımını zorla devre dışı bırak
-      - PYTHONUNBUFFERED=1
-      - PARKING_MANAGEMENT_SERVICE_URL=http://parking-management-service:8081
-    volumes:
-      # Kod değişikliklerinin otomatik yansıması için yerel kod dizinini konteyner içine bağla
-      - ./license-plate-service/app:/app/app
-      - ./license-plate-service/.env:/app/.env
-      # Test dosyasını konteynere bağla
-      - ./license-plate-service/test_parking_rates.py:/app/test_parking_rates.py
-      # Debug görüntüleri için klasörler
-      - ./license-plate-service/debug_images:/app/debug_images
-      - ./license-plate-service/app/model/debug_plates:/app/app/model/debug_plates
-      # YOLO model dosyaları
-      - ./license-plate-service/app/model/yolov8n.pt:/app/app/model/yolov8n.pt
-      - ./license-plate-service/app/model/license_plate_detector.pt:/app/app/model/license_plate_detector.pt
-    depends_on:
-      - postgres
     networks:
       - backend_network
-    deploy:
-      resources:
-        limits:
-          memory: 2G  # CPU için yeterli bellek
-        reservations:
-          memory: 1G  # Minimum bellek garantisi
+
 
   user-service:
     build: 
@@ -131,6 +175,15 @@ services:
     container_name: user_service
     ports:
       - "8050:8050"
+    environment:
+      - SPRING_RABBITMQ_HOST=rabbit-mq
+      - SPRING_RABBITMQ_PORT=5672
+      - SPRING_RABBITMQ_USERNAME=guest
+      - SPRING_RABBITMQ_PASSWORD=guest
+
+      - PARKING_MANAGEMENT_SERVICE_URL=http://parking-management-service:8081
+    depends_on:
+      - rabbit-mq
     restart: always
     networks:
       - backend_network
@@ -143,9 +196,14 @@ services:
     ports:
       - "8081:8081"
     environment:
-      - REDIS_HOST=redis_service
+      - SPRING_RABBITMQ_HOST=rabbit-mq
+      - SPRING_RABBITMQ_PORT=5672
+      - SPRING_RABBITMQ_USERNAME=guest
+      - SPRING_RABBITMQ_PASSWORD=guest
+      # Neon DB bağlantısı application.properties'de tanımlı olduğu için burada ek ayara gerek yok
+      - SPRING_MAIN_ALLOW_CIRCULAR_REFERENCES=true
     depends_on:
-      - redis
+      - rabbit-mq
     restart: always
     networks:
       - backend_network
@@ -160,6 +218,48 @@ services:
     networks:
       - backend_network
     restart: always
+
+  # # Frontend uygulaması - Geliştirme modu (hot reloading)
+  # staff-panel-dev:
+  #   build:
+  #     context: ../WebPanel/staff-panel
+  #     dockerfile: Dockerfile
+  #     target: development  # Dockerfile'daki geliştirme aşamasını kullan
+  #   container_name: staff_panel_dev
+  #   ports:
+  #     - "3001:3000"  # React geliştirme sunucusu portu
+  #   volumes:
+  #     - ../WebPanel/staff-panel:/app  # Kod değişikliklerini anında yansıtmak için
+  #     - /app/node_modules  # Container'daki node_modules klasörünü koru
+  #   environment:
+  #     - NODE_ENV=development
+  #     # ÖNEMLİ: Docker dışında erişim için localhost:8005, Docker içindeyse service_name:port kullanılmalı
+  #     - REACT_APP_API_URL=http://localhost:8005     # Host makineden erişimde kullanılan port (8005)
+  #     - REACT_APP_WS_URL=ws://localhost:8005        # Host makineden WebSocket için kullanılan port (8005)
+  #     - CHOKIDAR_USEPOLLING=true  # Docker içinde dosya değişikliklerini algılamak için
+  #   depends_on:
+  #     - license-plate-service
+  #   networks:
+  #     - backend_network
+      
+  # # Frontend uygulaması - Üretim modu
+  # staff-panel:
+  #   build:
+  #     context: ../WebPanel/staff-panel
+  #     dockerfile: Dockerfile
+  #     target: production  # Dockerfile'daki üretim aşamasını kullan
+  #   container_name: staff_panel
+  #   ports:
+  #     - "80:80"  # Nginx portu
+  #   depends_on:
+  #     - license-plate-service
+  #   environment:
+  #     # Nginx yapılandırması için proxy_pass değerlerinin çalışması için
+  #     - API_HOST=license_plate_service
+  #     - API_PORT=8000
+  #   networks:
+  #     - backend_network
+  #   restart: always
 
 networks:
   backend_network:

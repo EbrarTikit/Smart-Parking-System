@@ -1,6 +1,6 @@
 package com.example.parking_management_service.parking_info.model;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonBackReference;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -25,9 +25,10 @@ public class Road {
     
     private int roadColumn;
     private int roadRow;
+    private String roadIdentifier;
 
     @ManyToOne
-    @JsonIgnore
+    @JsonBackReference
     private Parking parking;
 
 }

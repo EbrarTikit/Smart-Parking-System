@@ -51,4 +51,10 @@ public class ParkingViewerController {
         boolean isFull = parkingViewerService.isParkingFull(parkingId);
         return ResponseEntity.ok(isFull);
     }
+
+    @PostMapping("/check-notifications")
+    public ResponseEntity<String> checkNotifications() {
+        parkingViewerService.checkParkingStatusForNotifications();
+        return ResponseEntity.ok("Notification check triggered");
+    }
 }

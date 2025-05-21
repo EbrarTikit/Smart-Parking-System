@@ -17,6 +17,7 @@ object Constants {
     const val DELETE_FAVORITE = "/api/users/{userId}/favorites/{parkingId}"
     const val NOTIFICATION_PREFERENCE = "/api/users/{userId}/notification-preferences"
     const val NOTIFICATION_TOGGLE = "/api/users/{userId}/notification-preferences/toggle"
+    const val REGISTER_FCM = "/api/users/{userId}/fcm/register"
 
 
     //Session Manager

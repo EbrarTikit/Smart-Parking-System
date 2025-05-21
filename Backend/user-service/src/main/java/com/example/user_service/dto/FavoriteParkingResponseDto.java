@@ -6,7 +6,6 @@ public class FavoriteParkingResponseDto {
     private String location;
     private String imageUrl;
     private double rate;
-
     // Default constructor
     public FavoriteParkingResponseDto() {}
 
@@ -51,7 +50,8 @@ public class FavoriteParkingResponseDto {
     public void setImageUrl(String imageUrl) {
         this.imageUrl = imageUrl;
     }
-    
+
+     
     public double getRate() {
         return rate;
     }

@@ -28,6 +28,13 @@ torchvision==0.15.0+cpu --extra-index-url https://download.pytorch.org/whl/cpu
 ultralytics==8.0.114
 easyocr==1.7.0
 
+# Monitoring ve Logging
+prometheus-client==0.17.1
+python-json-logger==2.0.7
+opentelemetry-api==1.19.0
+opentelemetry-sdk==1.19.0
+opentelemetry-exporter-prometheus==1.19.0
+
 # Geliştirme & Test Araçları (isteğe bağlı)
 # pytest==7.3.1
 # black==23.3.0

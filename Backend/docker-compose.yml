@@ -47,22 +47,22 @@ services:
       - backend_network
     restart: always
 
-  chatbot-service:
-    build: 
-      context: ./chatbot-service
-      dockerfile: Dockerfile
-    container_name: chatbot_service
-    ports:
-      - "8001:8001"
-    env_file:
-      - ./chatbot-service/.env
-    environment:
-      - REDIS_HOST=redis_service
-    depends_on:
-      - redis
-    restart: always
-    networks:
-      - backend_network
+  # chatbot-service:
+  #   build: 
+  #     context: ./chatbot-service
+  #     dockerfile: Dockerfile
+  #   container_name: chatbot_service
+  #   ports:
+  #     - "8001:8001"
+  #   env_file:
+  #     - ./chatbot-service/.env
+  #   environment:
+  #     - REDIS_HOST=redis_service
+  #   depends_on:
+  #     - redis
+  #   restart: always
+  #   networks:
+  #     - backend_network
 
   # postgres:
   #   image: postgres

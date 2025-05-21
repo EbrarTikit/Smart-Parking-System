@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -20,7 +21,7 @@ public class NavigationControllerImpl implements INavigationController {
     
     @GetMapping(path = "/parking-location/{id}")
     @Override
-    public ParkingLocationDto getParkingLocationFromParkingService( Long id) {
+    public ParkingLocationDto getParkingLocationFromParkingService(@PathVariable Long id) {
         return carParkService.getParkingLocationFromParkingService(id);
     }
 

@@ -129,8 +129,7 @@ ENV PYTHONUNBUFFERED=1 \
 # Debug klasörleri oluştur
 RUN mkdir -p /app/debug_images /app/app/model/debug_plates /app/app/model
 
-# Sort klasörünü kopyala
-COPY app/model/sort /app/app/model/sort
+# Sort klasörü kopyalama işlemi kaldırıldı
 
 # Temel paketleri önce doğrudan yükle (wheel kullanmadan)
 RUN pip install --no-cache-dir \

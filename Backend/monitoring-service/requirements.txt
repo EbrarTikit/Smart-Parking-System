@@ -1,0 +1,26 @@
+# Web Framework
+fastapi==0.103.1
+uvicorn[standard]==0.23.2
+python-multipart==0.0.6
+pydantic==2.3.0
+
+# Elasticsearch
+elasticsearch==7.17.9
+elasticsearch-dsl==7.4.1
+
+# Prometheus
+prometheus-client==0.17.1
+prometheus-api-client==0.5.4
+
+# Utilities
+python-dateutil==2.8.2
+python-dotenv==1.0.0
+requests==2.31.0
+httpx==0.24.1
+aiohttp==3.8.5
+
+# Logging
+python-json-logger==2.0.7
+
+pandas==2.0.1
+matplotlib==3.7.1 

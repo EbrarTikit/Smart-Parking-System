@@ -2,6 +2,7 @@ package com.example.smartparkingsystem.di
 
 import com.example.smartparkingsystem.data.remote.ChatbotService
 import com.example.smartparkingsystem.data.remote.NavigationService
+import com.example.smartparkingsystem.data.remote.NotificationService
 import com.example.smartparkingsystem.data.remote.ParkingManagementService
 import com.example.smartparkingsystem.data.remote.UserService
 import com.example.smartparkingsystem.utils.StringConverterFactory
@@ -137,5 +138,11 @@ object NetworkModule {
     @Singleton
     fun provideParkingManagementService(@Named("parkingManagementRetrofit") retrofit: Retrofit): ParkingManagementService {
         return retrofit.create(ParkingManagementService::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideNotificationService(@Named("userRetrofit") retrofit: Retrofit): NotificationService {
+        return retrofit.create(NotificationService::class.java)
     }
 }

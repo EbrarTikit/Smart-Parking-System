@@ -121,6 +121,7 @@ class FavoritesFragment : Fragment() {
             capacity = 100,
             rows = 5,
             columns = 5,
+            description = "",
             parkingSpots = emptyList()
         )
 

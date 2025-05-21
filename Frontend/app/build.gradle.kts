@@ -5,7 +5,8 @@ plugins {
     alias(libs.plugins.navigation.safe.args.gradle.plugin)
     id("kotlin-kapt")
     id("kotlin-parcelize")
-    id("com.google.gms.google-services")}
+    id("com.google.gms.google-services")
+}
 
 android {
     namespace = "com.example.smartparkingsystem"
@@ -34,6 +35,14 @@ android {
             )
         }
     }
+
+    testOptions {
+        unitTests {
+            isIncludeAndroidResources = true
+            isReturnDefaultValues = true
+        }
+    }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11

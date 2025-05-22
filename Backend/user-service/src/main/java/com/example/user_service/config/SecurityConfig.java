@@ -17,6 +17,9 @@ import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import com.example.user_service.security.JwtAuthenticationFilter;
 import com.example.user_service.security.JwtUtil;
@@ -77,5 +80,27 @@ public class SecurityConfig {
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
+    }
+
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+        // İzin verilen kaynakları belirtin:
+        // - http://localhost:3000 (Lokal staff panel veya eski admin panel)
+        // - http://localhost:3002 (Docker'daki admin panel, host'tan erişim)
+        // - http://localhost:80 (Eğer nginx 80'de çalışırsa)
+        // - http://admin-panel (Docker iç ağı, servis adı)
+        // - Potansiyel Docker iç IP adresleri veya wildcard (test için)
+        configuration.setAllowedOrigins(List.of("http://localhost:3000", "http://localhost:3002", "http://localhost:80", "http://admin-panel")); // Buraya "http://admin-panel" ekledik
+        // Opsiyonel olarak, test ortamında her şeye izin vermek için:
+        // configuration.setAllowedOrigins(List.of("*")); // DİKKAT: Üretimde kullanılmamalı!
+
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedHeaders(List.of("*"));
+        configuration.setAllowCredentials(true); // Kimlik bilgileri (örneğin çerezler) ile istek yapılmasına izin ver
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration); // Tüm yollar için uygula
+        return source;
     }
 }

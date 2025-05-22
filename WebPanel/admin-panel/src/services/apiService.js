@@ -5,6 +5,14 @@ import axios from 'axios';
 const AUTH_SERVICE_URL = 'http://localhost:8050/api';
 const PARKING_SERVICE_URL = 'http://localhost:8081/api';
 
+// Axios instance oluştur
+const api = axios.create({
+    baseURL: AUTH_SERVICE_URL,
+    headers: {
+        'Content-Type': 'application/json'
+    }
+});
+
 // API istekleri için interceptor
 axios.interceptors.request.use(
   config => {
@@ -42,25 +50,33 @@ axios.interceptors.response.use(
 );
 
 // Auth API çağrıları
-export const signIn = (credentials) => {
-  return axios.post(`${AUTH_SERVICE_URL}/auth/signin`, credentials);
+export const signIn = async (credentials) => {
+    try {
+        const response = await api.post('/auth/signin', credentials);
+        return response.data;
+    } catch (error) {
+        console.error('Giriş hatası:', error);
+        throw error;
+    }
 };
 
-export const signUp = (userData) => {
-  return axios.post(`${AUTH_SERVICE_URL}/auth/signup`, userData);
+export const signUp = async (userData) => {
+    try {
+        const response = await api.post('/auth/signup', userData);
+        return response.data;
+    } catch (error) {
+        console.error('Kayıt hatası:', error);
+        throw error;
+    }
 };
 
 // Otopark API çağrıları
 export const addParking = (parkingData) => {
-  return axios.post(`${PARKING_SERVICE_URL}/admin/parkings`, parkingData, {
-    headers: {
-      'Content-Type': 'application/json'
-    }
-  });
+    return axios.post(`${PARKING_SERVICE_URL}/admin/parkings`, parkingData);
 };
 
 export const getParkings = () => {
-  return axios.get(`${PARKING_SERVICE_URL}/parkings`);
+    return axios.get(`${PARKING_SERVICE_URL}/parkings`);
 };
 
 export const getParkingById = (id) => {

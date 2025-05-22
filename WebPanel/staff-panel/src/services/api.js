@@ -1,8 +1,52 @@
-// API URL'leri
-const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:8005";
-const WS_BASE_URL = process.env.REACT_APP_WS_URL || "ws://localhost:8005";
-const USER_SERVICE_URL =
+// API ve WebSocket URL'leri
+export const API_BASE_URL =
+  process.env.REACT_APP_API_URL || "http://localhost:8005";
+export const USER_SERVICE_URL =
   process.env.REACT_APP_USER_SERVICE_URL || "http://localhost:8050";
+
+// WebSocket URL'si için protokol belirle
+const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+
+// WebSocket URL'si - düzeltilmiş ve sabitlenmiş
+export const WS_BASE_URL = (() => {
+  // Docker environment değişkeni varsa onu kullan
+  if (process.env.REACT_APP_WS_URL) {
+    console.log(
+      "Environment'dan WS URL kullanılıyor:",
+      process.env.REACT_APP_WS_URL
+    );
+    return process.env.REACT_APP_WS_URL;
+  }
+
+  // Geliştirme ortamında sabit URL kullan
+  if (process.env.NODE_ENV === "development") {
+    // React geliştirme sunucusu için sabit WebSocket URL'si
+    console.log("Geliştirme ortamı için sabit WebSocket URL'si kullanılıyor");
+    return "ws://localhost:8005";
+  }
+
+  // Üretim ortamında API_BASE_URL'den türet
+  if (API_BASE_URL.startsWith("http://")) {
+    return API_BASE_URL.replace("http://", "ws://");
+  }
+  if (API_BASE_URL.startsWith("https://")) {
+    return API_BASE_URL.replace("https://", "wss://");
+  }
+
+  // Son çare olarak hostname'den oluştur
+  return `${protocol}//${window.location.hostname}:8005`;
+})();
+
+console.log("WS_BASE_URL:", WS_BASE_URL);
+console.log("USER_SERVICE_URL:", USER_SERVICE_URL);
+
+// Debug bilgisi için
+console.log("Çalışma portu:", window.location.port);
+console.log("Hostname:", window.location.hostname);
+console.log("Protocol:", window.location.protocol);
+console.log("Host:", window.location.host);
+console.log("Environment:", process.env.NODE_ENV);
+console.log("REACT_APP_WS_URL:", process.env.REACT_APP_WS_URL);
 
 // API istek göndermek için ortak fonksiyon
 const fetchWithTimeout = async (url, options = {}, timeout = 8000) => {
@@ -440,45 +484,79 @@ export const api = {
   },
 };
 
-// WebSocket Bağlantısı
+// WebSocket bağlantısı oluştur
 export const createWebSocket = (type = "general", id = null) => {
-  let wsUrl = `${WS_BASE_URL}/ws`;
+  let wsUrl;
 
-  if (type === "admin") {
-    wsUrl = `${WS_BASE_URL}/ws/admin`;
-  } else if (type === "parking" && id) {
-    wsUrl = `${WS_BASE_URL}/ws/parking/${id}`;
-  } else if (type === "vehicle" && id) {
-    wsUrl = `${WS_BASE_URL}/ws/vehicle/${id}`;
+  // WebSocket URL'sini oluştur
+  switch (type) {
+    case "admin":
+      wsUrl = `${WS_BASE_URL}/ws/admin`;
+      break;
+    case "parking":
+      if (!id) throw new Error("Otopark WebSocket için ID gerekli");
+      wsUrl = `${WS_BASE_URL}/ws/parking/${id}`;
+      break;
+    case "vehicle":
+      if (!id) throw new Error("Araç WebSocket için plaka gerekli");
+      wsUrl = `${WS_BASE_URL}/ws/vehicle/${id}`;
+      break;
+    default:
+      wsUrl = `${WS_BASE_URL}/ws`;
   }
 
   console.log(`WebSocket bağlantısı oluşturuluyor: ${wsUrl}`);
+  console.log(`WebSocket bağlantı detayları: 
+    - URL: ${wsUrl}
+    - Tip: ${type}
+    - ID: ${id || "N/A"}
+    - Tarayıcı: ${navigator.userAgent}
+    - Protokol: ${protocol}
+    - Hostname: ${window.location.hostname}
+    - Port: ${window.location.port}
+  `);
 
   try {
-    const ws = new WebSocket(wsUrl);
+    // WebSocket bağlantısını oluştur
+    const socket = new WebSocket(wsUrl);
 
-    ws.onopen = () => {
-      console.log(`WebSocket bağlantısı başarıyla kuruldu: ${wsUrl}`);
+    // WebSocket bağlantı durumunu log'la
+    socket.onopen = (event) => {
+      console.log(`WebSocket bağlantısı başarılı: ${wsUrl}`);
+      console.log("WebSocket bağlantı detayları:", {
+        protocol: socket.protocol,
+        url: socket.url,
+        readyState: socket.readyState,
+        extensions: socket.extensions,
+        event: event,
+      });
     };
 
-    ws.onerror = (error) => {
-      console.error(`WebSocket hatası (${wsUrl}):`, error);
+    socket.onerror = (error) => {
+      console.error(`WebSocket bağlantı hatası: ${wsUrl}`, error);
+      console.error("WebSocket hata detayları:", {
+        error: error,
+        readyState: socket.readyState,
+        url: socket.url,
+      });
     };
 
-    ws.onclose = (event) => {
-      console.log(
-        `WebSocket bağlantısı kapandı (${wsUrl}): Kod: ${event.code}, Sebep: ${
-          event.reason || "Sebep belirtilmedi"
-        }`
-      );
+    socket.onclose = (event) => {
+      console.log(`WebSocket bağlantısı kapandı: ${wsUrl}`, {
+        code: event.code,
+        reason: event.reason,
+        wasClean: event.wasClean,
+      });
     };
 
-    return ws;
+    return socket;
   } catch (error) {
-    console.error(
-      `WebSocket bağlantısı oluşturulurken hata (${wsUrl}):`,
-      error
-    );
+    console.error(`WebSocket oluşturma hatası: ${wsUrl}`, error);
+    console.error("Hata detayları:", {
+      name: error.name,
+      message: error.message,
+      stack: error.stack,
+    });
     throw error;
   }
 };

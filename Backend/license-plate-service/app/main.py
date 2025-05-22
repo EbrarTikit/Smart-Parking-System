@@ -11,7 +11,7 @@ from typing import Optional, List, Dict, Any, Union
 
 # FastAPI 
 from fastapi import FastAPI, File, UploadFile, HTTPException, Depends, BackgroundTasks, Body, Query, WebSocket, WebSocketDisconnect
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
@@ -1079,3 +1079,11 @@ def get_recent_activities(
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Veritabanı hatası: {str(e)}")
+
+@app.get("/metrics")
+async def metrics():
+    """Prometheus metriklerini döndür"""
+    return {"message": "Metrics temporarily disabled"}
+
+# Plaka tanıma fonksiyonu
+original_process_image = process_image_for_plate_recognition

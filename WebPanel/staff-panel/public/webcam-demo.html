@@ -433,9 +433,19 @@
       // API URL
       const API_BASE_URL =
         window.location.protocol + "//" + window.location.host;
+      // Port 3000 için API URL ayarı
       const API_URL = API_BASE_URL.includes("3000")
-        ? "http://localhost:8005" // Geliştirme ortamı
-        : API_BASE_URL; // Üretim ortamı
+        ? "http://localhost:8005" // 3000 portunda çalışıyorsa (geliştirme ortamı)
+        : API_BASE_URL; // Diğer ortamlar
+
+      // WebSocket URL'si için özel ayar
+      const WS_URL = API_BASE_URL.includes("3000")
+        ? "ws://localhost:8005" // 3000 portunda çalışıyorsa (geliştirme ortamı)
+        : "ws://" + window.location.host; // Diğer ortamlar
+
+      // Debug bilgisi olarak API URL'yi göster
+      console.log("API URL:", API_URL);
+      console.log("WebSocket URL:", WS_URL);
 
       // Durum
       let isStreaming = false;
@@ -1135,20 +1145,38 @@ Base64 Uzunluğu: ${base64Length} karakter`;
         autoCount = 0;
 
         // Durum bildirimi göster
-        showResults(
-          {
-            message: `Otomatik ${
-              autoMode.value === "entry" ? "giriş" : "çıkış"
-            } çekimi başlatıldı. Her ${interval} saniyede bir çekim yapılacak.`,
-            status: "info",
-          },
-          true
-        );
+        resultContainer.style.display = "block";
+        resultContent.innerHTML = `
+          <div class="result-success">
+            <h3>Otomatik Çekim Başlatıldı</h3>
+            <div class="result-details">
+              <p><strong>İşlem Modu:</strong> ${
+                autoMode.value === "entry" ? "Araç Girişi" : "Araç Çıkışı"
+              }</p>
+              <p><strong>Çekim Aralığı:</strong> ${interval} saniye</p>
+              <p><strong>API URL:</strong> ${API_URL}/process-plate-${
+          autoMode.value
+        }</p>
+              <p><strong>Otopark:</strong> ${
+                parkingSelect.options[parkingSelect.selectedIndex].text
+              }</p>
+              <p><strong>Başlangıç Zamanı:</strong> ${new Date().toLocaleString()}</p>
+            </div>
+          </div>
+        `;
 
         // Log
         console.log(
           `Otomatik çekim başlatıldı: ${interval} saniye aralıkla ${autoMode.value} modu`
         );
+
+        if (debugMode.checked) {
+          logDebugInfo(
+            `Otomatik çekim başlatıldı: ${interval} saniye aralıkla ${autoMode.value} modu`,
+            "api"
+          );
+          logDebugInfo(`API URL: ${API_URL}`, "api");
+        }
 
         // İlk çekimi hemen yap
         setTimeout(autoCapture, 1000);
@@ -1170,17 +1198,34 @@ Base64 Uzunluğu: ${base64Length} karakter`;
         startAutoBtn.disabled = false;
         stopAutoBtn.disabled = true;
         captureBtn.disabled = false;
+        entryBtn.disabled = true;
+        exitBtn.disabled = true;
 
         // Durum bildirimi
-        showResults(
-          {
-            message: `Otomatik çekim durduruldu. Toplam ${autoCount} çekim yapıldı.`,
-            status: "info",
-          },
-          true
+        resultContainer.style.display = "block";
+        resultContent.innerHTML = `
+          <div class="result-success">
+            <h3>Otomatik Çekim Durduruldu</h3>
+            <div class="result-details">
+              <p><strong>Toplam Çekim Sayısı:</strong> ${autoCount}</p>
+              <p><strong>İşlem Modu:</strong> ${
+                autoMode.value === "entry" ? "Araç Girişi" : "Araç Çıkışı"
+              }</p>
+              <p><strong>Bitiş Zamanı:</strong> ${new Date().toLocaleString()}</p>
+            </div>
+          </div>
+        `;
+
+        console.log(
+          `Otomatik çekim durduruldu. Toplam ${autoCount} çekim yapıldı.`
         );
 
-        console.log("Otomatik çekim durduruldu");
+        if (debugMode.checked) {
+          logDebugInfo(
+            `Otomatik çekim durduruldu. Toplam ${autoCount} çekim yapıldı.`,
+            "api"
+          );
+        }
       }
 
       // Otomatik görüntü yakalama ve işleme
@@ -1196,15 +1241,14 @@ Base64 Uzunluğu: ${base64Length} karakter`;
             console.log(
               `Otomatik çekim - Canvas boyutları: ${canvas.width}x${canvas.height}`
             );
+            logDebugInfo(
+              `Otomatik çekim #${++autoCount} başlatıldı - ${new Date().toLocaleTimeString()}`,
+              "api"
+            );
           }
 
           // Görüntü kalitesini alın
           const imageQuality = parseFloat(imageQualitySelect.value);
-          if (debugMode.checked) {
-            console.log(
-              `Otomatik çekim - Seçilen görüntü kalitesi: ${imageQuality}`
-            );
-          }
 
           // Videodan görüntüyü canvas'a çiz
           ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
@@ -1221,14 +1265,6 @@ Base64 Uzunluğu: ${base64Length} karakter`;
             console.log(
               `Otomatik çekim - Yakalanan görüntü boyutu: ~${kbSize} KB (${base64Length} karakter)`
             );
-            logDebugInfo(
-              `Otomatik çekim #${++autoCount} başlatıldı - ${new Date().toLocaleTimeString()}`,
-              "api"
-            );
-          }
-
-          // Debug için görüntü ön izleme ve bilgileri güncelle
-          if (debugMode.checked) {
             debugImageData = capturedImage;
             debugImagePreview.src = capturedImage;
 
@@ -1256,13 +1292,14 @@ Base64 Uzunluğu: ${base64Length} karakter`;
           const formData = new FormData();
           formData.append("file", blob, "plate.jpg");
 
-          // API URL'sini oluştur
+          // API URL'sini oluştur ve kontrol et
           const apiUrl = `${API_URL}/process-plate-${mode}?parking_id=${parkingId}&debug=${
             debugMode.checked ? "true" : "false"
           }&save_debug=true`;
 
           if (debugMode.checked) {
             logDebugInfo(`Otomatik API İsteği: ${apiUrl}`, "api");
+            logDebugInfo(`API URL: ${API_URL}`, "api");
             logDebugInfo(
               `İşlem modu: ${mode === "entry" ? "Araç Girişi" : "Araç Çıkışı"}`,
               "api"
@@ -1271,6 +1308,10 @@ Base64 Uzunluğu: ${base64Length} karakter`;
 
           // API isteği zamanını ölç
           const startTime = new Date().getTime();
+
+          // Sonuç panelini göster ve yükleniyor mesajı
+          resultContainer.style.display = "block";
+          resultContent.innerHTML = `<div class="loading">Otomatik çekim #${autoCount} işleniyor...</div>`;
 
           // API isteği gönder
           fetch(apiUrl, {
@@ -1306,9 +1347,10 @@ Base64 Uzunluğu: ${base64Length} karakter`;
               displayResult(data, mode);
 
               // Başarılı sonuç durumunda bildirim göster
-              if (data.success && data.plate_number) {
+              if (data.success && (data.license_plate || data.plate_number)) {
+                const plateText = data.license_plate || data.plate_number;
                 showNotification(
-                  `Plaka Tanındı: ${data.plate_number}`,
+                  `Plaka Tanındı: ${plateText}`,
                   mode === "entry" ? "Araç Girişi" : "Araç Çıkışı"
                 );
               }
@@ -1316,12 +1358,32 @@ Base64 Uzunluğu: ${base64Length} karakter`;
             .catch((error) => {
               console.error("Otomatik API hatası:", error);
 
+              // Hata mesajını göster
+              resultContent.innerHTML = `<div class="result-error">
+                <h3>API Hatası</h3>
+                <div class="result-details">
+                  <p><strong>Hata:</strong> ${error.message}</p>
+                  <p><strong>API URL:</strong> ${apiUrl}</p>
+                  <p><strong>Zaman:</strong> ${new Date().toLocaleString()}</p>
+                </div>
+              </div>`;
+
               if (debugMode.checked) {
                 logDebugInfo(`Otomatik API hatası: ${error.message}`, "api");
               }
             });
         } catch (err) {
           console.error("Otomatik görüntü yakalama hatası:", err);
+
+          // Hata mesajını göster
+          resultContent.innerHTML = `<div class="result-error">
+            <h3>Görüntü Yakalama Hatası</h3>
+            <div class="result-details">
+              <p><strong>Hata:</strong> ${err.message}</p>
+              <p><strong>Zaman:</strong> ${new Date().toLocaleString()}</p>
+            </div>
+          </div>`;
+
           if (debugMode.checked) {
             logDebugInfo(
               `HATA: Otomatik görüntü yakalama hatası - ${err.message}`,

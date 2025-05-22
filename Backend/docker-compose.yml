@@ -64,19 +64,20 @@ services:
     networks:
       - backend_network
 
-  # postgres:
-  #   image: postgres
-  #   container_name: postgres_db
-  #   environment:
-  #     POSTGRES_USER: user
-  #     POSTGRES_PASSWORD: password
-  #     POSTGRES_DB: license_plate_db
-  #   ports:
-  #     - "5432:5432"
-  #   volumes:
-  #     - postgres_data:/var/lib/postgresql/data
-  #   networks:
-  #     - backend_network
+  postgres:
+    image: postgres
+    container_name: postgres_db
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: license_plate_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - backend_network
+    restart: always
 
   # pgadmin:
   #   image: dpage/pgadmin4
@@ -103,49 +104,50 @@ services:
   #     - parking-management-service
 
  
-  # license-plate-service:
-  #   build:
-  #     context: ./license-plate-service
-  #     dockerfile: Dockerfile
-  #     # Build argumentleri ekleyerek daha hızlı build
-  #     args:
-  #       - BUILDKIT_INLINE_CACHE=1
-  #       - PIP_NO_CACHE_DIR=1
-  #       - PIP_TIMEOUT=180
-  #   image: license-plate-service:latest
-  #   container_name: license_plate_service
-  #   ports:
-  #     - "8005:8000"
-  #   environment:
-  #     - OCR_LANGUAGES=tr,en
-  #     - MAX_UPLOAD_SIZE=10
-  #     - DATABASE_URL=postgresql://user:password@postgres/license_plate_db
-  #     - DEBUG=False
-  #     - FORCE_CUDA=0  # GPU kullanımını zorla devre dışı bırak
-  #     - PYTHONUNBUFFERED=1
-  #     - PARKING_MANAGEMENT_SERVICE_URL=http://parking-management-service:8081
-  #   volumes:
-  #     # Kod değişikliklerinin otomatik yansıması için yerel kod dizinini konteyner içine bağla
-  #     - ./license-plate-service/app:/app/app
-  #     - ./license-plate-service/.env:/app/.env
-  #     # Test dosyasını konteynere bağla
-  #     - ./license-plate-service/test_parking_rates.py:/app/test_parking_rates.py
-  #     # Debug görüntüleri için klasörler
-  #     - ./license-plate-service/debug_images:/app/debug_images
-  #     - ./license-plate-service/app/model/debug_plates:/app/app/model/debug_plates
-  #     # YOLO model dosyaları
-  #     - ./license-plate-service/app/model/yolov8n.pt:/app/app/model/yolov8n.pt
-  #     - ./license-plate-service/app/model/license_plate_detector.pt:/app/app/model/license_plate_detector.pt
-  #   depends_on:
-  #     - postgres
-  #   networks:
-  #     - backend_network
-  #   deploy:
-  #     resources:
-  #       limits:
-  #         memory: 2G  # CPU için yeterli bellek
-  #       reservations:
-  #         memory: 1G  # Minimum bellek garantisi
+  license-plate-service:
+    build:
+      context: ./license-plate-service
+      dockerfile: Dockerfile
+      # Build argumentleri ekleyerek daha hızlı build
+      args:
+        - BUILDKIT_INLINE_CACHE=1
+        - PIP_NO_CACHE_DIR=1
+        - PIP_TIMEOUT=180
+    image: license-plate-service:latest
+    container_name: license_plate_service
+    ports:
+      - "8005:8000"
+    environment:
+      - OCR_LANGUAGES=tr,en
+      - MAX_UPLOAD_SIZE=10
+      - DATABASE_URL=postgresql://user:password@postgres/license_plate_db
+      - DEBUG=False
+      - FORCE_CUDA=0  # GPU kullanımını zorla devre dışı bırak
+      - PYTHONUNBUFFERED=1
+      - PARKING_MANAGEMENT_SERVICE_URL=http://parking-management-service:8081
+    volumes:
+      # Kod değişikliklerinin otomatik yansıması için yerel kod dizinini konteyner içine bağla
+      - ./license-plate-service/app:/app/app
+      - ./license-plate-service/.env:/app/.env
+      # Test dosyasını konteynere bağla
+      - ./license-plate-service/test_parking_rates.py:/app/test_parking_rates.py
+      # Debug görüntüleri için klasörler
+      - ./license-plate-service/debug_images:/app/debug_images
+      - ./license-plate-service/app/model/debug_plates:/app/app/model/debug_plates
+      # YOLO model dosyaları
+      - ./license-plate-service/app/model/yolov8n.pt:/app/app/model/yolov8n.pt
+      - ./license-plate-service/app/model/license_plate_detector.pt:/app/app/model/license_plate_detector.pt
+    depends_on:
+      - postgres
+      - parking-management-service
+    networks:
+      - backend_network
+    deploy:
+      resources:
+        limits:
+          memory: 2G  # CPU için yeterli bellek
+        reservations:
+          memory: 1G  # Minimum bellek garantisi
 
   notification-service:
     build: 
@@ -219,28 +221,28 @@ services:
       - backend_network
     restart: always
 
-  # # Frontend uygulaması - Geliştirme modu (hot reloading)
-  # staff-panel-dev:
-  #   build:
-  #     context: ../WebPanel/staff-panel
-  #     dockerfile: Dockerfile
-  #     target: development  # Dockerfile'daki geliştirme aşamasını kullan
-  #   container_name: staff_panel_dev
-  #   ports:
-  #     - "3001:3000"  # React geliştirme sunucusu portu
-  #   volumes:
-  #     - ../WebPanel/staff-panel:/app  # Kod değişikliklerini anında yansıtmak için
-  #     - /app/node_modules  # Container'daki node_modules klasörünü koru
-  #   environment:
-  #     - NODE_ENV=development
-  #     # ÖNEMLİ: Docker dışında erişim için localhost:8005, Docker içindeyse service_name:port kullanılmalı
-  #     - REACT_APP_API_URL=http://localhost:8005     # Host makineden erişimde kullanılan port (8005)
-  #     - REACT_APP_WS_URL=ws://localhost:8005        # Host makineden WebSocket için kullanılan port (8005)
-  #     - CHOKIDAR_USEPOLLING=true  # Docker içinde dosya değişikliklerini algılamak için
-  #   depends_on:
-  #     - license-plate-service
-  #   networks:
-  #     - backend_network
+  # Frontend uygulaması - Geliştirme modu (hot reloading)
+  staff-panel-dev:
+    build:
+      context: ../WebPanel/staff-panel
+      dockerfile: Dockerfile
+      target: development  # Dockerfile'daki geliştirme aşamasını kullan
+    container_name: staff_panel_dev
+    ports:
+      - "3000:3000"  # React geliştirme sunucusu portu
+    volumes:
+      - ../WebPanel/staff-panel:/app  # Kod değişikliklerini anında yansıtmak için
+      - /app/node_modules  # Container'daki node_modules klasörünü koru
+    environment:
+      - NODE_ENV=development
+      # ÖNEMLİ: Docker dışında erişim için localhost:8005, Docker içindeyse service_name:port kullanılmalı
+      - REACT_APP_API_URL=http://localhost:8005     # Host makineden erişimde kullanılan port (8005)
+      - REACT_APP_WS_URL=ws://localhost:8005        # Host makineden WebSocket için kullanılan port (8005)
+      - CHOKIDAR_USEPOLLING=true  # Docker içinde dosya değişikliklerini algılamak için
+    depends_on:
+      - license-plate-service
+    networks:
+      - backend_network
       
   # # Frontend uygulaması - Üretim modu
   # staff-panel:

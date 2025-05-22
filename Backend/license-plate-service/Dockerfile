@@ -145,7 +145,10 @@ RUN pip install --no-cache-dir \
     filterpy==1.4.5 \
     Pillow>=9.0.0 \
     websockets==11.0.3 \
-    wsproto==1.2.0
+    wsproto==1.2.0 \
+    prometheus-client==0.17.1 \
+    python-json-logger==2.0.7 \
+    requests==2.28.2
 
 # Diğer tüm wheelleri kopyala
 COPY --from=builder-core /wheels /wheels/

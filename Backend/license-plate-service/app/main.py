@@ -11,7 +11,7 @@ from typing import Optional, List, Dict, Any, Union
 
 # FastAPI 
 from fastapi import FastAPI, File, UploadFile, HTTPException, Depends, BackgroundTasks, Body, Query, WebSocket, WebSocketDisconnect
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
@@ -1097,7 +1097,7 @@ def get_recent_activities(
 @app.get("/metrics")
 async def metrics():
     """Prometheus metriklerini döndür"""
-    return JSONResponse(
+    return Response(
         content=generate_latest(REGISTRY),
         media_type=CONTENT_TYPE_LATEST
     )

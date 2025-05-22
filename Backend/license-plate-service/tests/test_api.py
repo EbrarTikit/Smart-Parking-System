@@ -18,7 +18,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Test edilecek modülleri import et - Önce database ve Base'i import et
 from app.database import Base  # Asıl Base sınıfını import et
-from app.models import Vehicle, ParkingRecord, ParkingSpace  # Modelleri import et
+from app.models import Vehicle, ParkingRecord  # Modelleri import et
 from app.main import app, get_db
 
 # Test için mock API yanıtları
@@ -60,7 +60,7 @@ def test_db():
     engine = create_engine("sqlite:///:memory:", connect_args={"check_same_thread": False})
     
     # Modelleri import edildiğinden emin ol
-    from app.models import Vehicle, ParkingRecord, ParkingSpace
+    from app.models import Vehicle, ParkingRecord
     
     # Tabloları oluştur
     Base.metadata.create_all(bind=engine)
@@ -71,7 +71,7 @@ def test_db():
     
     # Test veritabanını doldur
     try:
-        test_vehicle = Vehicle(license_plate="34ABC123", vehicle_type="Sedan")
+        test_vehicle = Vehicle(license_plate="34ABC123")
         db.add(test_vehicle)
         db.commit()
         db.refresh(test_vehicle)

@@ -42,6 +42,11 @@ public class UserService {
     }
 
     public void deleteUser(Long id) {
+        // Önce kullanıcının var olup olmadığını kontrol et
+        User user = userRepository.findById(id)
+            .orElseThrow(() -> new UserNotFoundException("User not found with id: " + id));
+        
+        // Kullanıcı varsa sil
         userRepository.deleteById(id);
     }
 

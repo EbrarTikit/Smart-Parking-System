@@ -1,0 +1,57 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          # - alertmanager:9093
+
+rule_files:
+  # - "first_rules.yml"
+  # - "second_rules.yml"
+
+scrape_configs:
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  - job_name: "node_exporter"
+    static_configs:
+      - targets: ["node-exporter:9100"]
+
+  # Spring Boot uygulamaları için (Actuator endpoints)
+  - job_name: "spring_boot"
+    metrics_path: "/actuator/prometheus"
+    scrape_interval: 5s
+    static_configs:
+      - targets: ["user-service:8050"]
+        labels:
+          service: "user-service"
+      - targets: ["parking-management-service:8081"]
+        labels:
+          service: "parking-management-service"
+      - targets: ["notification-service:8083"]
+        labels:
+          service: "notification-service"
+
+  # Python uygulamaları için
+  - job_name: "python_services"
+    static_configs:
+      - targets: ["license-plate-service:8000"]
+        labels:
+          service: "license-plate-service"
+      - targets: ["chatbot-service:8001"]
+        labels:
+          service: "chatbot-service"
+
+  # Altyapı servisleri için
+  - job_name: "infrastructure"
+    static_configs:
+      - targets: ["redis:6379"]
+        labels:
+          service: "redis"
+      - targets: ["rabbit-mq:15692"]
+        labels:
+          service: "rabbitmq"

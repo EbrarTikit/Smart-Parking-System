@@ -27,7 +27,7 @@ def get_gemini_response(user_message: str, conversation_history: List[Dict]) -> 
     if conversation_context:
         context_section = "Önceki Konuşma:\n" + conversation_context + "\n"
     
-    prompt = f"""Sen Türkiye/Antalya'da çalışan bir otopark asistanısın. Kullanıcılara otopark ile ilgili konularda yardımcı oluyorsun.
+    prompt = f"""Sen Smart Parking System uygulamamızın chatbotusun. Kullanıcılara Türkiye özelinde otopark ile ilgili konularda yardımcı oluyorsun. Doğru cevap vermek için internetten alman gereken bilgi olursa internetten yararlanabilirsin. 
 
 {context_section}
 Kullanıcı: {user_message}

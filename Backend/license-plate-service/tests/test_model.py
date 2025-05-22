@@ -58,11 +58,11 @@ def mock_yolo_model():
 
 @pytest.fixture
 def mock_tracker():
-    """SORT tracker'ı mock'lar"""
+    """Basit araç takibi için mock"""
     mock_tracker = MagicMock()
     
-    # Mock bir takip sonucu oluştur
-    mock_tracker.update.return_value = np.array([
+    # Mock bir takip sonucu oluştur - artık SORT değil, basit bir array döndürüyoruz
+    mock_tracker.return_value = np.array([
         [100, 100, 200, 150, 1]  # x1, y1, x2, y2, takip id
     ])
     
@@ -91,7 +91,6 @@ def test_process_image_for_plate_recognition():
         # Model içeriğini mock'la, import yollarını belirtmeden doğrudan mock fonksiyonları kullan
         with patch('app.model.main.coco_model', create=True) as mock_coco_model, \
              patch('app.model.main.license_plate_detector', create=True) as mock_license_plate_detector, \
-             patch('app.model.main.mot_tracker', create=True) as mock_tracker, \
              patch('app.model.main.read_license_plate_enhanced', create=True) as mock_reader:
             
             # Mock'ları yapılandır
@@ -108,8 +107,6 @@ def test_process_image_for_plate_recognition():
             mock_plate_boxes.data.tolist.return_value = [[110, 110, 190, 140, 0.9, 0]]
             mock_plate_results.boxes = mock_plate_boxes
             mock_license_plate_detector.return_value = [mock_plate_results]
-            
-            mock_tracker.update.return_value = np.array([[100, 100, 200, 150, 1]])
             
             mock_reader.return_value = ("34ABC123", 0.95)
             

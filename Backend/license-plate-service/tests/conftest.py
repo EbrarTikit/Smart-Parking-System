@@ -16,8 +16,8 @@ from sqlalchemy.pool import StaticPool
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Test edilecek modülleri import et
-from app.models import Base, Vehicle, ParkingRecord, ParkingSpace
-from app.schemas import VehicleCreate, ParkingRecordCreate, ParkingSpaceCreate
+from app.models import Base, Vehicle, ParkingRecord
+from app.schemas import VehicleCreate, ParkingRecordCreate
 from app.database import SessionLocal
 
 # Test için hafızada SQLite veritabanı kur
@@ -52,9 +52,7 @@ def test_db():
 def test_vehicle(test_db):
     """Test için araç oluşturur"""
     vehicle = Vehicle(
-        license_plate="34ABC123",
-        vehicle_type="Sedan",
-        owner_name="Test Kullanıcısı"
+        license_plate="34ABC123"
     )
     test_db.add(vehicle)
     test_db.commit()
@@ -65,9 +63,7 @@ def test_vehicle(test_db):
 def test_vehicle_data():
     """Test için araç verisi"""
     return VehicleCreate(
-        license_plate="34ABC123",
-        vehicle_type="Sedan",
-        owner_name="Test Kullanıcısı"
+        license_plate="34ABC123"
     )
 
 # Test verileri - Otopark Kaydı
@@ -89,26 +85,6 @@ def test_parking_record_data(test_vehicle):
     """Test için otopark kaydı verisi"""
     return ParkingRecordCreate(
         vehicle_id=test_vehicle.id
-    )
-
-# Test verileri - Park Alanı
-@pytest.fixture
-def test_parking_space(test_db):
-    """Test için park alanı oluşturur"""
-    space = ParkingSpace(
-        space_number="A101",
-        is_occupied=False
-    )
-    test_db.add(space)
-    test_db.commit()
-    test_db.refresh(space)
-    return space
-
-@pytest.fixture
-def test_parking_space_data():
-    """Test için park alanı verisi"""
-    return ParkingSpaceCreate(
-        space_number="A101"
     )
 
 # Test görüntüsü

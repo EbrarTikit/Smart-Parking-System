@@ -53,6 +53,12 @@ class MainActivity : AppCompatActivity() {
             insets
         }
 
+        initializeFirebaseMessaging()
+        checkUserLoginStatus()
+        setupNavigation()
+    }
+
+    internal fun initializeFirebaseMessaging() {
         // FCM token'ı al
         FirebaseMessaging.getInstance().token
             .addOnCompleteListener { task ->
@@ -78,12 +84,9 @@ class MainActivity : AppCompatActivity() {
                     Log.e(TAG, "Failed to subscribe to topic", task.exception)
                 }
             }
-
-        checkUserLoginStatus()
-        setupNavigation()
     }
 
-    private fun sendRegistrationToServer(token: String) {
+    internal fun sendRegistrationToServer(token: String) {
         val userId = sessionManager.getUserId()
         if (userId > 0) {
             val deviceId = Settings.Secure.getString(
@@ -128,10 +131,6 @@ class MainActivity : AppCompatActivity() {
                 when (menuItem.itemId) {
                     R.id.navigation_home -> {
                         navController.navigate(R.id.navigation_home, null, navOptions)
-                        true
-                    }
-                    R.id.navigation_booking -> {
-                        navController.navigate(R.id.navigation_booking, null, navOptions)
                         true
                     }
                     R.id.navigation_chatbot -> {

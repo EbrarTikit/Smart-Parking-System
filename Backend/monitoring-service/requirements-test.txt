@@ -1,0 +1,14 @@
+# Minimum test gereksinimleri
+fastapi>=0.95.0
+uvicorn>=0.15.0
+python-dotenv>=0.19.0
+requests>=2.26.0
+pydantic>=1.10.8
+pytest>=7.3.1
+httpx>=0.24.1
+pytest-cov>=4.1.0
+pytest-mock>=3.10.0
+
+# Monitoring servisi için gerekli minimum bağımlılıklar
+elasticsearch>=7.17.0
+prometheus-client>=0.17.1 

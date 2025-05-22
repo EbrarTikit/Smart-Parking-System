@@ -5,7 +5,8 @@ plugins {
     alias(libs.plugins.navigation.safe.args.gradle.plugin)
     id("kotlin-kapt")
     id("kotlin-parcelize")
-    id("com.google.gms.google-services")}
+    id("com.google.gms.google-services")
+}
 
 android {
     namespace = "com.example.smartparkingsystem"
@@ -34,6 +35,14 @@ android {
             )
         }
     }
+
+    testOptions {
+        unitTests {
+            isIncludeAndroidResources = true
+            isReturnDefaultValues = true
+        }
+    }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
@@ -65,6 +74,11 @@ dependencies {
     debugImplementation(libs.androidx.fragment.testing)
     androidTestImplementation(libs.dagger.hilt.android.testing)
     kaptAndroidTest(libs.hilt.compiler)
+    testImplementation("com.google.firebase:firebase-messaging-ktx:23.1.0")
+    testImplementation("com.google.firebase:firebase-common-ktx:20.3.0")
+    testImplementation("com.google.android.gms:play-services-tasks:18.0.2")
+    testImplementation("androidx.arch.core:core-testing:2.2.0")
+
 
     //Navigation Component
     implementation(libs.androidx.navigation.fragment.ktx)

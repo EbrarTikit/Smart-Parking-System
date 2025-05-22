@@ -11,7 +11,7 @@ from typing import Optional, List, Dict, Any, Union
 
 # FastAPI 
 from fastapi import FastAPI, File, UploadFile, HTTPException, Depends, BackgroundTasks, Body, Query, WebSocket, WebSocketDisconnect
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
@@ -41,20 +41,27 @@ from app.config import DATABASE_URL, RABBITMQ_URL
 # WebSocket yönetimi
 from app.websocket import manager, RoomType
 
-# Log yapılandırması
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.StreamHandler(sys.stdout)
-    ]
-)
+# Monitoring ve metrikler
+from app.monitoring import PrometheusMiddleware, track_plate_recognition, track_vehicle_entry, track_vehicle_exit
+from prometheus_client import generate_latest, CONTENT_TYPE_LATEST, REGISTRY
+
+# Log yapılandırması - artık monitoring modülü tarafından yönetiliyor
+# logging.basicConfig(
+#     level=logging.INFO,
+#     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+#     handlers=[
+#         logging.StreamHandler(sys.stdout)
+#     ]
+# )
 logger = logging.getLogger(__name__)
 
 # Uygulama oluştur
 app = FastAPI(title="License Plate Recognition Service",
              description="Araç plakalarını tespit ve tanıma servisi",
              version="1.0.0")
+
+# Prometheus middleware'ini ekle
+app.add_middleware(PrometheusMiddleware)
 
 # CORS ayarları
 app.add_middleware(
@@ -334,6 +341,9 @@ def register_vehicle_entry(
         )
         new_record = create_parking_record(db, parking_record_data)
         
+        # Metrik güncelle
+        track_vehicle_entry()
+        
         response = VehicleEntryResponse(
             success=True,
             message=f"Araç girişi başarıyla kaydedildi: {entry.license_plate}",
@@ -432,6 +442,9 @@ def register_vehicle_exit(
         # Park kaydını kapat ve ücretlendirme yap (otopark ID'si ile)
         logger.info(f"Araç çıkışı için park kaydı kapatılıyor: {active_record.id}, Otopark ID: {exit_req.parking_id}")
         closed_record = close_parking_record(db, active_record.id, exit_req.parking_id)
+        
+        # Metrik güncelle
+        track_vehicle_exit()
         
         # Otopark süresini hesapla (saat olarak)
         duration = (closed_record.exit_time - closed_record.entry_time).total_seconds() / 3600
@@ -1079,3 +1092,17 @@ def get_recent_activities(
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Veritabanı hatası: {str(e)}")
+
+# Prometheus metrics endpoint
+@app.get("/metrics")
+async def metrics():
+    """Prometheus metriklerini döndür"""
+    return Response(
+        content=generate_latest(REGISTRY),
+        media_type=CONTENT_TYPE_LATEST
+    )
+
+# Plaka tanıma fonksiyonunu track_plate_recognition dekoratörü ile wrap et
+# Model modülünü değiştirmek yerine burada wrap ediyoruz
+original_process_image = process_image_for_plate_recognition
+process_image_for_plate_recognition = track_plate_recognition(original_process_image)

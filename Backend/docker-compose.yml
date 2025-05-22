@@ -227,9 +227,11 @@ services:
       # ÖNEMLİ: Docker dışında erişim için localhost:8005, Docker içindeyse service_name:port kullanılmalı
       - REACT_APP_API_URL=http://localhost:8005     # Host makineden erişimde kullanılan port (8005)
       - REACT_APP_WS_URL=ws://localhost:8005        # Host makineden WebSocket için kullanılan port (8005)
+      - REACT_APP_USER_SERVICE_URL=http://localhost:8050  # User service API URL
       - CHOKIDAR_USEPOLLING=true  # Docker içinde dosya değişikliklerini algılamak için
     depends_on:
       - license-plate-service
+      - user-service
     networks:
       - backend_network
       
@@ -241,7 +243,7 @@ services:
       target: production  # Dockerfile'daki üretim aşamasını kullan
     container_name: staff_panel
     ports:
-      - "80:80"  # Nginx portu
+      - "8080:80"  # Nginx portu
     depends_on:
       - license-plate-service
     environment:

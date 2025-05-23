@@ -20,6 +20,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.collectLatest
 import com.example.smartparkingsystem.utils.state.UiState
 import androidx.core.content.ContextCompat
+import androidx.appcompat.app.AppCompatDelegate
 
 @AndroidEntryPoint
 class ProfileFragment : Fragment() {
@@ -43,6 +44,14 @@ class ProfileFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         _binding = FragmentProfileBinding.bind(view)
 
+        // Dark mode tercihini yükle
+        val prefs = requireContext().getSharedPreferences("settings", 0)
+        val isDarkMode = prefs.getBoolean("dark_mode", false)
+        binding.switchDarkMode.isChecked = isDarkMode
+        AppCompatDelegate.setDefaultNightMode(
+            if (isDarkMode) AppCompatDelegate.MODE_NIGHT_YES else AppCompatDelegate.MODE_NIGHT_NO
+        )
+
         val userId = SessionManager(requireContext()).getUserId().toInt()
         if (userId > 0) {
             viewModel.getNotificationPreferences(userId)
@@ -53,6 +62,16 @@ class ProfileFragment : Fragment() {
                 viewModel.setNotificationPreferences(userId, isChecked)
             }
             updateSwitchColors(isChecked)
+        }
+
+        binding.switchDarkMode.setOnCheckedChangeListener { _, isChecked ->
+            // Tercihi kaydet
+            prefs.edit().putBoolean("dark_mode", isChecked).apply()
+            if (isChecked) {
+                AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
+            } else {
+                AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
+            }
         }
 
         lifecycleScope.launch {

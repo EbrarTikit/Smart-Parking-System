@@ -92,7 +92,7 @@
                         android:layout_weight="1"
                         android:text="Notifications"
                         android:textSize="16sp"
-                        android:textColor="#222222"
+                        android:textColor="@color/text_primary"
                         android:layout_marginStart="16dp" />
 
                     <com.google.android.material.switchmaterial.SwitchMaterial
@@ -191,7 +191,7 @@
                         android:layout_height="wrap_content"
                         android:text="@string/help_support"
                         android:textSize="16sp"
-                        android:textColor="#222222"
+                        android:textColor="@color/text_primary"
                         android:layout_marginStart="16dp" />
                 </LinearLayout>
             </LinearLayout>
@@ -203,10 +203,10 @@
             android:layout_height="48dp"
             android:text="Logout"
             android:textAllCaps="false"
-            android:textColor="#00C9A7"
-            android:backgroundTint="#E6FCF7"
+            android:textColor="@color/primary"
+            android:backgroundTint="@color/green_box"
             app:icon="@drawable/ic_logout"
-            app:iconTint="#00C9A7"
+            app:iconTint="@color/primary"
             app:cornerRadius="24dp"
             android:layout_marginTop="32dp"
             android:layout_marginBottom="16dp"

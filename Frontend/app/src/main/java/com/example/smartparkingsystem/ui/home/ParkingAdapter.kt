@@ -48,7 +48,7 @@ class ParkingAdapter(
                 parkingName.text = parking.name
                 priceText.text = "₺${parking.rate}/hr"
                 val availableSpotsCount = parking.capacity - parking.parkingSpots.count { it.occupied }
-                availableSpots.text = "$availableSpotsCount spots".uppercase() + " available"
+                availableSpots.text = "$availableSpotsCount spots".uppercase()
             }
 
             binding.root.setOnClickListener {

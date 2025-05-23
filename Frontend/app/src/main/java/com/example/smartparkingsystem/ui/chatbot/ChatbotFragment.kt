@@ -39,8 +39,12 @@ class ChatbotFragment : Fragment() {
         observeViewModel()
 
         if (hasUsedChatbot()) {
+            binding.layoutChatbotOpening.visibility = View.GONE
+            binding.layoutChatbot.visibility = View.VISIBLE
             viewModel.loadChatHistory()
         } else {
+            binding.layoutChatbotOpening.visibility = View.VISIBLE
+            binding.layoutChatbot.visibility = View.GONE
             showWelcomeMessage()
         }
     }
@@ -68,7 +72,7 @@ class ChatbotFragment : Fragment() {
         }
 
         binding.btnStartChat.setOnClickListener {
-            viewModel.sendMessage("Hello")
+            //viewModel.sendMessage("Hello")
 
             binding.layoutChatbotOpening.visibility = View.GONE
             binding.layoutChatbot.visibility = View.VISIBLE

@@ -18,6 +18,7 @@ import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.smartparkingsystem.R
+import com.example.smartparkingsystem.data.model.ParkingListResponse
 import com.example.smartparkingsystem.databinding.FragmentHomeBinding
 import com.example.smartparkingsystem.utils.SessionManager
 import com.example.smartparkingsystem.utils.state.UiState
@@ -28,9 +29,11 @@ import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.maps.model.LatLngBounds
 import com.google.android.gms.maps.model.MarkerOptions
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -190,7 +193,46 @@ class HomeFragment : Fragment(R.layout.fragment_home), OnMapReadyCallback {
             isCompassEnabled = true
             isMapToolbarEnabled = true
         }
-        
+
+        // Kamera hareketlerini dinle
+        googleMap.setOnCameraMoveListener {
+            // Harita hareket ederken loading göster
+            binding.progressBar.visibility = View.VISIBLE
+        }
+
+        googleMap.setOnCameraIdleListener {
+            try {
+                // Harita durduğunda görünen bölgeyi al
+                val visibleRegion = googleMap.projection.visibleRegion
+                
+                // Koordinatları doğru sırayla al
+                val southwest = LatLng(
+                    minOf(visibleRegion.farLeft.latitude, visibleRegion.nearRight.latitude),
+                    minOf(visibleRegion.farLeft.longitude, visibleRegion.nearRight.longitude)
+                )
+                
+                val northeast = LatLng(
+                    maxOf(visibleRegion.farLeft.latitude, visibleRegion.nearRight.latitude),
+                    maxOf(visibleRegion.farLeft.longitude, visibleRegion.nearRight.longitude)
+                )
+                
+                // Bounds'u oluştur
+                val bounds = LatLngBounds(southwest, northeast)
+                
+                // Görünen bölgedeki otoparkları filtrele
+                filterParkingsInBounds(bounds)
+            } catch (e: Exception) {
+                // Hata durumunda tüm otoparkları göster
+                val allParkings = viewModel.parkings.value
+                if (allParkings is UiState.Success) {
+                    parkingAdapter.submitList(allParkings.data)
+                    updateMapMarkers(allParkings.data)
+                }
+            } finally {
+                binding.progressBar.visibility = View.GONE
+            }
+        }
+
         googleMap.setOnMarkerClickListener { marker ->
             
             val markerLatLng = marker.position
@@ -224,6 +266,42 @@ class HomeFragment : Fragment(R.layout.fragment_home), OnMapReadyCallback {
         }
 
         moveToUserLocation()
+    }
+
+    private fun filterParkingsInBounds(bounds: LatLngBounds) {
+        viewLifecycleOwner.lifecycleScope.launch {
+            try {
+                val allParkings = viewModel.parkings.value
+                if (allParkings is UiState.Success) {
+                    val filteredParkings = allParkings.data.filter { parking ->
+                        val parkingLatLng = LatLng(parking.latitude, parking.longitude)
+                        bounds.contains(parkingLatLng)
+                    }
+
+                    parkingAdapter.submitList(filteredParkings)
+
+                    updateMapMarkers(filteredParkings)
+                }
+            } catch (e: Exception) {
+                Toast.makeText(requireContext(), "Error filtering parkings: ${e.message}", Toast.LENGTH_SHORT).show()
+            } finally {
+                binding.progressBar.visibility = View.GONE
+            }
+        }
+    }
+
+    private fun updateMapMarkers(parkings: List<ParkingListResponse>) {
+        // Mevcut markerları temizle
+        googleMap.clear()
+
+        // Yeni markerları ekle
+        parkings.forEach { parking ->
+            googleMap.addMarker(
+                MarkerOptions()
+                    .position(LatLng(parking.latitude, parking.longitude))
+                    .title(parking.name)
+            )
+        }
     }
 
     // İki nokta arasındaki mesafeyi hesapla

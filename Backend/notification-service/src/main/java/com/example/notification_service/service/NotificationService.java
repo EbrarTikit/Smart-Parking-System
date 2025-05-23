@@ -5,6 +5,7 @@ import com.example.notification_service.dto.NotificationPreferencesDto;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
@@ -16,8 +17,10 @@ public class NotificationService {
     private final FirebaseNotificationService firebaseNotificationService;
     
     @Autowired
-    public NotificationService(WebClient.Builder webClientBuilder, FirebaseNotificationService firebaseNotificationService) {
-        this.userServiceClient = webClientBuilder.baseUrl("http://user-service:8050").build();
+    public NotificationService(WebClient.Builder webClientBuilder, 
+                              FirebaseNotificationService firebaseNotificationService,
+                              @Value("${user.service.url}") String userServiceUrl) {
+        this.userServiceClient = webClientBuilder.baseUrl(userServiceUrl).build();
         this.firebaseNotificationService = firebaseNotificationService;
     }
     

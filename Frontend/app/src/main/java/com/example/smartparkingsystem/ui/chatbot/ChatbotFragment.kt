@@ -91,7 +91,7 @@ class ChatbotFragment : Fragment() {
         }
         
         viewModel.isLoading.observe(viewLifecycleOwner) { isLoading ->
-            binding.progressBar.visibility = if (isLoading) View.VISIBLE else View.GONE
+            //binding.progressBar.visibility = if (isLoading) View.VISIBLE else View.GONE
             binding.btnSend.isEnabled = !isLoading
             if (!isLoading) {
                 scrollToBottom()

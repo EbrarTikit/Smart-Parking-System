@@ -15,6 +15,7 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
+import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.smartparkingsystem.R
 import com.example.smartparkingsystem.databinding.FragmentHomeBinding
@@ -189,8 +190,51 @@ class HomeFragment : Fragment(R.layout.fragment_home), OnMapReadyCallback {
             isCompassEnabled = true
             isMapToolbarEnabled = true
         }
+        
+        googleMap.setOnMarkerClickListener { marker ->
+            
+            val markerLatLng = marker.position
+            
+            val layoutManager = binding.rvParkings.layoutManager as LinearLayoutManager
+            val adapter = binding.rvParkings.adapter as ParkingAdapter
+            
+            // Tıklanan marker'a en yakın otoparkı bul
+            var closestParkingIndex = -1
+            var minDistance = Double.MAX_VALUE
+            
+            adapter.getCurrentList().forEachIndexed { index, parking ->
+                val parkingLatLng = LatLng(parking.latitude, parking.longitude)
+                val distance = calculateDistance(markerLatLng, parkingLatLng)
+                
+                if (distance < minDistance) {
+                    minDistance = distance
+                    closestParkingIndex = index
+                }
+            }
+
+            if (closestParkingIndex != -1) {
+                val currentPosition = layoutManager.findFirstVisibleItemPosition()
+
+                val scrollDistance = closestParkingIndex - currentPosition
+                binding.rvParkings.smoothScrollToPosition(closestParkingIndex)
+                adapter.setSelectedPosition(closestParkingIndex)
+            }
+            
+            true
+        }
 
         moveToUserLocation()
+    }
+
+    // İki nokta arasındaki mesafeyi hesapla
+    private fun calculateDistance(point1: LatLng, point2: LatLng): Double {
+        val results = FloatArray(1)
+        android.location.Location.distanceBetween(
+            point1.latitude, point1.longitude,
+            point2.latitude, point2.longitude,
+            results
+        )
+        return results[0].toDouble()
     }
 
     private fun moveToUserLocation() {

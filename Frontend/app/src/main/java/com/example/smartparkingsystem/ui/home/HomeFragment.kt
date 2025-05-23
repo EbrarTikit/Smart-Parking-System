@@ -6,6 +6,8 @@ import android.content.pm.PackageManager
 import android.graphics.Rect
 import android.os.Build
 import android.os.Bundle
+import android.text.Editable
+import android.text.TextWatcher
 import android.view.View
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
@@ -17,6 +19,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import androidx.appcompat.widget.AppCompatEditText
 import com.example.smartparkingsystem.R
 import com.example.smartparkingsystem.data.model.ParkingListResponse
 import com.example.smartparkingsystem.databinding.FragmentHomeBinding
@@ -73,6 +76,15 @@ class HomeFragment : Fragment(R.layout.fragment_home), OnMapReadyCallback {
         observeUiState()
         viewModel.fetchParkings()
         checkNotificationPermissions()
+
+        // Arama barı için listener
+        binding.etSearchParking.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            override fun afterTextChanged(s: Editable?) {
+                filterBySearchQuery(s?.toString() ?: "")
+            }
+        })
     }
 
     private fun setupAdapter() {
@@ -398,6 +410,35 @@ class HomeFragment : Fragment(R.layout.fragment_home), OnMapReadyCallback {
         val userId = sessionManager.getUserId()
         if (userId > 0) {
             viewModel.updateNotificationPreferences(userId.toInt(), isEnabled)
+        }
+    }
+
+    private fun filterBySearchQuery(query: String) {
+        val allParkings = viewModel.parkings.value
+        if (allParkings is UiState.Success) {
+            val filtered = if (query.isBlank()) {
+                allParkings.data
+            } else {
+                allParkings.data.filter { it.name.contains(query, ignoreCase = true) }
+            }
+            parkingAdapter.submitList(filtered)
+            updateMapMarkers(filtered)
+
+            if (filtered.isNotEmpty()) {
+                if (filtered.size == 1) {
+                    val parking = filtered.first()
+                    val latLng = LatLng(parking.latitude, parking.longitude)
+                    googleMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, 17f))
+                } else {
+                    // Birden fazla otopark varsa hepsini kapsayacak şekilde haritayı ayarla
+                    val builder = LatLngBounds.Builder()
+                    filtered.forEach { parking ->
+                        builder.include(LatLng(parking.latitude, parking.longitude))
+                    }
+                    val bounds = builder.build()
+                    googleMap.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds, 120))
+                }
+            }
         }
     }
 

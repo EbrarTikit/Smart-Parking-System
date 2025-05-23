@@ -1,4 +1,19 @@
 services: 
+  navigation-service:
+    build: 
+      context: ./navigation-service
+      dockerfile: Dockerfile
+    container_name: navigation_service
+    ports:
+      - "8080:8080"
+    env_file:
+      - ./navigation-service/.env
+    volumes:
+      - ./navigation-service/src/main/resources/application.properties:/app/config/application.properties
+    networks:
+      - backend_network
+    restart: always
+
   # Temel servisler
   staff-panel-dev:
     build:
@@ -137,16 +152,27 @@ services:
       - backend_network
 
   admin-panel:
-    build: ../WebPanel/admin-panel
+    build: 
+      context: ../WebPanel/admin-panel
+      dockerfile: Dockerfile
+    container_name: admin_panel
     ports:
       - "3002:80"
+    environment:
+      - REACT_APP_AUTH_SERVICE_URL=http://user-service:8050/api
+      - REACT_APP_PARKING_SERVICE_URL=http://parking-management-service:8081/api
+      - REACT_APP_NAME=Smart Parking Admin Panel
+      - REACT_APP_VERSION=1.0.0
+      - REACT_APP_ENABLE_ANALYTICS=true
+      - REACT_APP_ENABLE_NOTIFICATIONS=true
     depends_on:
       - user-service
       - parking-management-service
     networks:
       - backend_network
-    environment:
-      - REACT_APP_API_URL=http://localhost:8050/api
+    restart: always
+    env_file:
+      - ../WebPanel/admin-panel/.env
 
 networks:
   backend_network:

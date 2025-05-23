@@ -1,9 +1,9 @@
 // services/apiService.js
 import axios from 'axios';
 
-// Servis URL'leri
-const AUTH_SERVICE_URL = 'http://localhost:8050/api';
-const PARKING_SERVICE_URL = 'http://localhost:8081/api';
+// Servis URL'leri - Environment değişkenlerinden al
+const AUTH_SERVICE_URL = process.env.REACT_APP_AUTH_SERVICE_URL || 'http://localhost:8050/api';
+const PARKING_SERVICE_URL = process.env.REACT_APP_PARKING_SERVICE_URL || 'http://localhost:8081/api';
 
 // Axios instance oluştur
 const api = axios.create({
@@ -53,7 +53,13 @@ axios.interceptors.response.use(
 export const signIn = async (credentials) => {
     try {
         const response = await api.post('/auth/signin', credentials);
-        return response.data;
+        const userData = {
+            id: response.data.id || '1',
+            username: response.data.username || credentials.username,
+            email: response.data.email || 'admin@example.com',
+            token: response.data.token
+        };
+        return { data: userData };
     } catch (error) {
         console.error('Giriş hatası:', error);
         throw error;
@@ -63,7 +69,7 @@ export const signIn = async (credentials) => {
 export const signUp = async (userData) => {
     try {
         const response = await api.post('/auth/signup', userData);
-        return response.data;
+        return response;
     } catch (error) {
         console.error('Kayıt hatası:', error);
         throw error;

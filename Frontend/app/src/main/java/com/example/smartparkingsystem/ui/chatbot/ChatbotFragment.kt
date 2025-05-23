@@ -50,8 +50,11 @@ class ChatbotFragment : Fragment() {
         binding.recyclerViewChat.apply {
             layoutManager = LinearLayoutManager(context).apply {
                 stackFromEnd = true
+                reverseLayout = false
             }
             adapter = chatAdapter
+            setHasFixedSize(true)
+            itemAnimator = null
         }
     }
 
@@ -90,6 +93,9 @@ class ChatbotFragment : Fragment() {
         viewModel.isLoading.observe(viewLifecycleOwner) { isLoading ->
             binding.progressBar.visibility = if (isLoading) View.VISIBLE else View.GONE
             binding.btnSend.isEnabled = !isLoading
+            if (!isLoading) {
+                scrollToBottom()
+            }
         }
         
         viewModel.error.observe(viewLifecycleOwner) { errorMessage ->

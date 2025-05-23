@@ -13,6 +13,8 @@ const useWebSocket = (type = "general", id = null) => {
   const MAX_RECONNECT_ATTEMPTS = 10; // Maksimum yeniden bağlanma denemesi
   const RECONNECT_INTERVAL = 2000; // Başlangıç bekleme süresi (ms)
   const pingIntervalRef = useRef(null);
+  const lastPongTimeRef = useRef(Date.now()); // Son pong zamanını takip etmek için
+  const MAX_PONG_DELAY = 45000; // Maksimum pong gecikmesi (ms) - 45 saniye
 
   // Bağlantının canlı olup olmadığını kontrol eden ping/pong
   const startPingInterval = useCallback(() => {
@@ -27,6 +29,17 @@ const useWebSocket = (type = "general", id = null) => {
         try {
           console.log("WebSocket ping gönderiliyor...");
           ws.current.send(JSON.stringify({ type: "ping" }));
+
+          // Son pong'dan bu yana geçen süreyi kontrol et
+          const timeSinceLastPong = Date.now() - lastPongTimeRef.current;
+          if (timeSinceLastPong > MAX_PONG_DELAY) {
+            console.warn(
+              `Son ${
+                MAX_PONG_DELAY / 1000
+              } saniyedir pong alınamadı, bağlantı yenileniyor...`
+            );
+            handleReconnect(); // Uzun süredir pong alınmadıysa yeniden bağlan
+          }
         } catch (err) {
           console.error("Ping gönderilirken hata:", err);
           handleReconnect(); // Ping hatasında yeniden bağlan
@@ -74,7 +87,15 @@ const useWebSocket = (type = "general", id = null) => {
         setError(null);
         reconnectCountRef.current = 0; // Başarılı bağlantı sonrası sıfırla
         setReconnectAttempts(0);
+        lastPongTimeRef.current = Date.now(); // Bağlantı kurulduğunda pong zamanını sıfırla
         startPingInterval(); // Ping interval'i başlat
+
+        // Bağlantı kurulduğunda durum sorgusu gönder
+        try {
+          ws.current.send(JSON.stringify({ type: "status" }));
+        } catch (err) {
+          console.error("Durum sorgusu gönderilirken hata:", err);
+        }
       };
 
       ws.current.onclose = (event) => {
@@ -118,6 +139,7 @@ const useWebSocket = (type = "general", id = null) => {
           // Ping yanıtını işleme (ping-pong kontrolü)
           if (data.type === "pong") {
             console.log("WebSocket pong alındı, bağlantı canlı.");
+            lastPongTimeRef.current = Date.now(); // Pong alındığında zamanı güncelle
             return; // Pong mesajlarını kaydetme
           }
 
@@ -224,6 +246,15 @@ const useWebSocket = (type = "general", id = null) => {
             ws.current ? ws.current.readyState : "null"
           }), mesaj gönderilemiyor`
         );
+
+        // Bağlantı kapalıysa yeniden bağlanmayı dene ve mesajı kuyruğa al
+        if (ws.current && ws.current.readyState === WebSocket.CLOSED) {
+          console.log(
+            "WebSocket bağlantısı kapalı, yeniden bağlanmayı deniyorum..."
+          );
+          handleReconnect();
+        }
+
         return false;
       }
 

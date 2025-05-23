@@ -8,6 +8,18 @@ services:
       - backend_network
     restart: always
 
+  rabbit-mq:
+    image: rabbitmq:3-management
+    container_name: rabbit_mq
+    ports:
+      - "5672:5672"   # RabbitMQ mesajlaşma portu
+      - "15672:15672" # Yönetim arayüzü portu
+    environment:
+      - RABBITMQ_DEFAULT_USER=guest
+      - RABBITMQ_DEFAULT_PASS=guest  
+    networks:
+      - backend_network
+    restart: always
 
   redis-commander:
     image: rediscommander/redis-commander:latest
@@ -20,19 +32,6 @@ services:
       - backend_network
     depends_on:
       - redis
-    restart: always
-
-  rabbit-mq:
-    image: rabbitmq:3-management
-    container_name: rabbit_mq
-    ports:
-      - "5672:5672"   # RabbitMQ mesajlaşma portu
-      - "15672:15672" # Yönetim arayüzü portu
-    environment:
-      - RABBITMQ_DEFAULT_USER=guest
-      - RABBITMQ_DEFAULT_PASS=guest  
-    networks:
-      - backend_network
     restart: always
 
   chatbot-service:
@@ -65,7 +64,6 @@ services:
       - postgres_data:/var/lib/postgresql/data
     networks:
       - backend_network
-    restart: always
 
   pgadmin:
     image: dpage/pgadmin4
@@ -85,13 +83,11 @@ services:
   admin-panel:
     build: ../WebPanel/admin-panel
     ports:
-      - "3000:80"
+      - "3002:80"
     depends_on:
       - user-service
-      - parking-management-service
     networks:
       - backend_network
-    restart: always
 
   license-plate-service:
     build:
@@ -128,7 +124,6 @@ services:
       - ./license-plate-service/app/model/license_plate_detector.pt:/app/app/model/license_plate_detector.pt
     depends_on:
       - postgres
-      - parking-management-service
     networks:
       - backend_network
     deploy:
@@ -218,7 +213,7 @@ services:
       target: development  # Dockerfile'daki geliştirme aşamasını kullan
     container_name: staff_panel_dev
     ports:
-      - "3001:3000"  # React geliştirme sunucusu portu
+      - "3000:3000"  # React geliştirme sunucusu portu
     volumes:
       - ../WebPanel/staff-panel:/app  # Kod değişikliklerini anında yansıtmak için
       - /app/node_modules  # Container'daki node_modules klasörünü koru
@@ -227,11 +222,9 @@ services:
       # ÖNEMLİ: Docker dışında erişim için localhost:8005, Docker içindeyse service_name:port kullanılmalı
       - REACT_APP_API_URL=http://localhost:8005     # Host makineden erişimde kullanılan port (8005)
       - REACT_APP_WS_URL=ws://localhost:8005        # Host makineden WebSocket için kullanılan port (8005)
-      - REACT_APP_USER_SERVICE_URL=http://localhost:8050  # User service API URL
       - CHOKIDAR_USEPOLLING=true  # Docker içinde dosya değişikliklerini algılamak için
     depends_on:
       - license-plate-service
-      - user-service
     networks:
       - backend_network
       

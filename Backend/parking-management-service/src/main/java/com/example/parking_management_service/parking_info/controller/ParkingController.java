@@ -35,7 +35,8 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 
-@CrossOrigin(origins = "http://localhost:3000")
+
+@CrossOrigin(origins = { "http://localhost:3000", "http://localhost:3002" })
 @RestController
 @RequestMapping("/api")
 public class ParkingController {

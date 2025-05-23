@@ -28,9 +28,17 @@ public class NavigationServiceImpl implements INavigationService{
     // Parking Management servisinden veri çeken yeni metod
     @Override
     public ParkingLocationDto getParkingLocationFromParkingService(Long id) {
+        if (id == null) {
+            throw new IllegalArgumentException("ID cannot be null");
+        }
+
         try {
             String url = parkingManagementServiceUrl + "/api/parkings/location/" + id;
-            return restTemplate.getForObject(url, ParkingLocationDto.class);
+            ParkingLocationDto result = restTemplate.getForObject(url, ParkingLocationDto.class);
+            if (result == null) {
+                throw new ResourceNotFoundException("Parking location not found with id: " + id);
+            }
+            return result;
         } catch (Exception e) {
             throw new ResourceNotFoundException("Parking location not found with id: " + id);
         }

@@ -348,6 +348,7 @@
       <div id="resultContainer" class="result-container" style="display: none">
         <h3>Plaka Tanıma Sonucu</h3>
         <div id="resultContent" class="result-content"></div>
+        <pre id="resultData" style="display: none"></pre>
         <div class="action-buttons" style="margin-top: 20px; text-align: right">
           <button id="newCaptureBtn" class="btn btn-primary">
             Yeni Görüntü Çek
@@ -436,6 +437,182 @@
       const API_URL = API_BASE_URL.includes("3000")
         ? "http://localhost:8005" // Geliştirme ortamı
         : API_BASE_URL; // Üretim ortamı
+
+      // WebSocket URL
+      const WS_BASE_URL = API_URL.replace("http://", "ws://").replace(
+        "https://",
+        "wss://"
+      );
+
+      // WebSocket bağlantısı
+      let ws = null;
+      let wsConnected = false;
+
+      // WebSocket bağlantısı kurma fonksiyonu
+      function connectWebSocket() {
+        if (ws) {
+          // Varolan bağlantıyı kapat
+          try {
+            ws.close();
+            console.log("Önceki WebSocket bağlantısı kapatıldı");
+          } catch (err) {
+            console.error(
+              "Önceki WebSocket bağlantısı kapatılırken hata:",
+              err
+            );
+          }
+        }
+
+        // Admin WebSocket bağlantısı kur
+        try {
+          console.log(
+            "WebSocket bağlantısı kuruluyor:",
+            `${WS_BASE_URL}/ws/admin`
+          );
+          ws = new WebSocket(`${WS_BASE_URL}/ws/admin`);
+
+          ws.onopen = function () {
+            console.log("WebSocket bağlantısı kuruldu");
+            wsConnected = true;
+
+            // Durum sorgusu gönder
+            try {
+              ws.send(JSON.stringify({ type: "status" }));
+              console.log("WebSocket durum sorgusu gönderildi");
+
+              if (debugMode.checked) {
+                logDebugInfo("WebSocket bağlantısı kuruldu", "api");
+                logDebugInfo("Durum sorgusu gönderildi", "api");
+              }
+            } catch (err) {
+              console.error("WebSocket durum sorgusu gönderilirken hata:", err);
+            }
+          };
+
+          ws.onmessage = function (event) {
+            try {
+              const message = JSON.parse(event.data);
+              console.log("WebSocket mesajı alındı:", message);
+
+              if (debugMode.checked) {
+                logDebugInfo(
+                  `WebSocket mesajı alındı: ${JSON.stringify(message)}`,
+                  "api"
+                );
+              }
+
+              // Pong mesajlarını işle
+              if (message.type === "pong") {
+                console.log("WebSocket pong alındı, bağlantı canlı");
+                if (debugMode.checked) {
+                  logDebugInfo("WebSocket pong alındı, bağlantı canlı", "api");
+                }
+              }
+            } catch (error) {
+              console.error("WebSocket mesajı işlenirken hata:", error);
+              if (debugMode.checked) {
+                logDebugInfo(
+                  `WebSocket mesajı işlenirken hata: ${error.message}`,
+                  "api"
+                );
+              }
+            }
+          };
+
+          ws.onerror = function (error) {
+            console.error("WebSocket hatası:", error);
+            wsConnected = false;
+
+            if (debugMode.checked) {
+              logDebugInfo(
+                `WebSocket hatası: ${error.message || "Bilinmeyen hata"}`,
+                "api"
+              );
+            }
+          };
+
+          ws.onclose = function (event) {
+            console.log(
+              "WebSocket bağlantısı kapandı:",
+              event.code,
+              event.reason
+            );
+            wsConnected = false;
+
+            if (debugMode.checked) {
+              logDebugInfo(
+                `WebSocket bağlantısı kapandı: Kod=${event.code}, Sebep=${
+                  event.reason || "Belirtilmedi"
+                }`,
+                "api"
+              );
+            }
+
+            // 5 saniye sonra yeniden bağlanmayı dene
+            setTimeout(connectWebSocket, 5000);
+          };
+
+          // Ping göndermeye başla - her 30 saniyede bir
+          startPingInterval();
+        } catch (err) {
+          console.error("WebSocket bağlantısı oluşturulurken hata:", err);
+          wsConnected = false;
+
+          if (debugMode.checked) {
+            logDebugInfo(
+              `WebSocket bağlantısı oluşturulurken hata: ${err.message}`,
+              "api"
+            );
+          }
+
+          // 5 saniye sonra yeniden bağlanmayı dene
+          setTimeout(connectWebSocket, 5000);
+        }
+      }
+
+      // WebSocket ping interval
+      let pingInterval = null;
+
+      // Ping gönderme interval'ını başlat
+      function startPingInterval() {
+        // Önceki interval'ı temizle
+        if (pingInterval) {
+          clearInterval(pingInterval);
+        }
+
+        // Her 30 saniyede bir ping gönder
+        pingInterval = setInterval(() => {
+          if (ws && ws.readyState === WebSocket.OPEN) {
+            try {
+              ws.send(JSON.stringify({ type: "ping" }));
+              console.log("WebSocket ping gönderildi");
+
+              if (debugMode.checked) {
+                logDebugInfo("WebSocket ping gönderildi", "api");
+              }
+            } catch (err) {
+              console.error("WebSocket ping gönderilirken hata:", err);
+
+              if (debugMode.checked) {
+                logDebugInfo(
+                  `WebSocket ping gönderilirken hata: ${err.message}`,
+                  "api"
+                );
+              }
+
+              // Hata durumunda bağlantıyı yenile
+              wsConnected = false;
+              setTimeout(connectWebSocket, 1000);
+            }
+          } else if (ws) {
+            console.warn(
+              "WebSocket bağlantısı açık değil, yeniden bağlanılıyor..."
+            );
+            wsConnected = false;
+            setTimeout(connectWebSocket, 1000);
+          }
+        }, 30000);
+      }
 
       // Durum
       let isStreaming = false;
@@ -566,49 +743,59 @@
 
       // Kamera başlatma fonksiyonu
       async function startCamera() {
-        try {
-          // Önce kamera cihazlarını listele
-          await listCameraDevices();
+        return new Promise(async (resolve, reject) => {
+          try {
+            // Önce kamera cihazlarını listele
+            await listCameraDevices();
 
-          // Seçilen kamera ID'sini al
-          const cameraSelect = document.getElementById("cameraSelect");
-          const selectedCameraId = cameraSelect ? cameraSelect.value : null;
+            // Seçilen kamera ID'sini al
+            const cameraSelect = document.getElementById("cameraSelect");
+            const selectedCameraId = cameraSelect ? cameraSelect.value : null;
 
-          const constraints = {
-            video: selectedCameraId
-              ? {
-                  deviceId: { exact: selectedCameraId },
-                  width: 640,
-                  height: 480,
-                }
-              : {
-                  width: 640,
-                  height: 480,
-                },
-          };
+            const constraints = {
+              video: selectedCameraId
+                ? {
+                    deviceId: { exact: selectedCameraId },
+                    width: 640,
+                    height: 480,
+                  }
+                : {
+                    width: 640,
+                    height: 480,
+                  },
+            };
 
-          console.log("Seçilen kamera ID:", selectedCameraId);
+            console.log("Seçilen kamera ID:", selectedCameraId);
 
-          // Kamera stream'ini al
-          const stream = await navigator.mediaDevices.getUserMedia(constraints);
-          video.srcObject = stream;
-          isStreaming = true;
+            // Kamera stream'ini al
+            const stream = await navigator.mediaDevices.getUserMedia(
+              constraints
+            );
+            video.srcObject = stream;
+            isStreaming = true;
 
-          // Düğme durumlarını güncelle
-          startBtn.disabled = true;
-          captureBtn.disabled = false;
-          startAutoBtn.disabled = false;
+            // Düğme durumlarını güncelle
+            startBtn.disabled = true;
+            captureBtn.disabled = false;
+            startAutoBtn.disabled = false;
 
-          // Sonuçları temizle
-          hideResults();
+            // Sonuçları temizle
+            hideResults();
 
-          console.log("Kamera başlatıldı");
-        } catch (err) {
-          console.error("Kamera başlatılırken hata oluştu:", err);
-          alert(
-            "Kamera erişimi sağlanamadı. Lütfen kamera izinlerini kontrol edin."
-          );
-        }
+            console.log("Kamera başlatıldı");
+
+            // Promise'i başarıyla tamamla
+            resolve();
+          } catch (err) {
+            console.error("Kamera başlatılırken hata oluştu:", err);
+            alert(
+              "Kamera erişimi sağlanamadı. Lütfen kamera izinlerini kontrol edin."
+            );
+
+            // Promise'i hatayla reddet
+            reject(err);
+          }
+        });
       }
 
       // Görüntü yakalama fonksiyonu
@@ -686,9 +873,8 @@ Base64 Uzunluğu: ${base64Length} karakter`;
           if (debugMode.checked) {
             logDebugInfo(
               `HATA: Görüntü yakalama hatası - ${err.message}`,
-              "image"
+              "api"
             );
-            logDebugInfo(`Görüntü yakalama hatası: ${err.message}`, "api");
           }
           return null;
         }
@@ -848,6 +1034,42 @@ Base64 Uzunluğu: ${base64Length} karakter`;
 
               // Sonucu göster
               displayResult(data, "entry");
+
+              // WebSocket üzerinden güncelleme bildirimi gönder
+              if (data.success && wsConnected) {
+                try {
+                  // Park kaydı güncellemesi gönder
+                  ws.send(
+                    JSON.stringify({
+                      type: "parking_record_update",
+                      data: {
+                        id: data.parking_record_id,
+                        vehicle_id: data.vehicle ? data.vehicle.id : null,
+                        license_plate: data.license_plate,
+                        action: "entry",
+                        entry_time: data.entry_time,
+                        parking_id: parseInt(parkingId),
+                        message: `Araç girişi: ${data.license_plate}`,
+                      },
+                    })
+                  );
+
+                  if (debugMode.checked) {
+                    logDebugInfo(
+                      `WebSocket üzerinden park kaydı güncellemesi gönderildi: ${data.license_plate}`,
+                      "api"
+                    );
+                  }
+                } catch (error) {
+                  console.error("WebSocket mesajı gönderilirken hata:", error);
+                  if (debugMode.checked) {
+                    logDebugInfo(
+                      `WebSocket mesajı gönderilirken hata: ${error.message}`,
+                      "api"
+                    );
+                  }
+                }
+              }
             })
             .catch((error) => {
               loading.style.display = "none";
@@ -947,6 +1169,45 @@ Base64 Uzunluğu: ${base64Length} karakter`;
 
               // Sonucu göster
               displayResult(data, "exit");
+
+              // WebSocket üzerinden güncelleme bildirimi gönder
+              if (data.success && wsConnected) {
+                try {
+                  // Park kaydı güncellemesi gönder
+                  ws.send(
+                    JSON.stringify({
+                      type: "parking_record_update",
+                      data: {
+                        id: data.parking_record_id,
+                        vehicle_id: data.vehicle_id,
+                        license_plate: data.license_plate,
+                        action: "exit",
+                        entry_time: data.entry_time,
+                        exit_time: data.exit_time,
+                        duration_hours: data.duration_hours,
+                        parking_fee: data.parking_fee,
+                        parking_id: parseInt(parkingId),
+                        message: `Araç çıkışı: ${data.license_plate}`,
+                      },
+                    })
+                  );
+
+                  if (debugMode.checked) {
+                    logDebugInfo(
+                      `WebSocket üzerinden park kaydı güncellemesi gönderildi: ${data.license_plate}`,
+                      "api"
+                    );
+                  }
+                } catch (error) {
+                  console.error("WebSocket mesajı gönderilirken hata:", error);
+                  if (debugMode.checked) {
+                    logDebugInfo(
+                      `WebSocket mesajı gönderilirken hata: ${error.message}`,
+                      "api"
+                    );
+                  }
+                }
+              }
             })
             .catch((error) => {
               loading.style.display = "none";
@@ -1089,7 +1350,21 @@ Base64 Uzunluğu: ${base64Length} karakter`;
         resultContent.className = isSuccess
           ? "result-content result-success"
           : "result-content result-error";
-        resultData.textContent = JSON.stringify(data, null, 2);
+
+        // resultData null kontrolü ekle
+        if (resultData) {
+          resultData.textContent = JSON.stringify(data, null, 2);
+        } else {
+          console.warn("resultData elementi bulunamadı");
+
+          // Alternatif olarak sonucu resultContent içine ekleyelim
+          const message = data.message || JSON.stringify(data);
+          resultContent.innerHTML = `<div class="${
+            isSuccess ? "result-success" : "result-error"
+          }">
+            <p>${message}</p>
+          </div>`;
+        }
       }
 
       // Sonuçları gizleme fonksiyonu
@@ -1123,6 +1398,30 @@ Base64 Uzunluğu: ${base64Length} karakter`;
           return;
         }
 
+        // WebSocket bağlantısını kontrol et ve gerekirse yeniden bağlan
+        if (!wsConnected || !ws || ws.readyState !== WebSocket.OPEN) {
+          console.warn(
+            "WebSocket bağlantısı kurulu değil veya açık değil, yeniden bağlanılıyor..."
+          );
+
+          if (debugMode.checked) {
+            logDebugInfo("WebSocket bağlantısı yeniden kuruluyor...", "api");
+          }
+
+          connectWebSocket();
+
+          // WebSocket bağlantısı için kısa bir bekleme süresi
+          setTimeout(() => {
+            initializeAutoCapture(interval);
+          }, 1000);
+        } else {
+          // WebSocket bağlı ise doğrudan başlat
+          initializeAutoCapture(interval);
+        }
+      }
+
+      // Otomatik çekim başlatma yardımcı fonksiyonu
+      function initializeAutoCapture(interval) {
         // Düğme durumlarını güncelle
         startAutoBtn.disabled = true;
         stopAutoBtn.disabled = false;
@@ -1139,7 +1438,7 @@ Base64 Uzunluğu: ${base64Length} karakter`;
           {
             message: `Otomatik ${
               autoMode.value === "entry" ? "giriş" : "çıkış"
-            } çekimi başlatıldı. Her ${interval} saniyede bir çekim yapılacak.`,
+            } çekimi başlatıldı. Her ${interval} saniyede bir çekim yapılacak. Plaka tespit edilene kadar devam edecek.`,
             status: "info",
           },
           true
@@ -1149,6 +1448,13 @@ Base64 Uzunluğu: ${base64Length} karakter`;
         console.log(
           `Otomatik çekim başlatıldı: ${interval} saniye aralıkla ${autoMode.value} modu`
         );
+
+        if (debugMode.checked) {
+          logDebugInfo(
+            `Otomatik çekim başlatıldı: ${interval} saniye aralıkla ${autoMode.value} modu. Plaka tespit edilene kadar devam edecek.`,
+            "api"
+          );
+        }
 
         // İlk çekimi hemen yap
         setTimeout(autoCapture, 1000);
@@ -1181,6 +1487,10 @@ Base64 Uzunluğu: ${base64Length} karakter`;
         );
 
         console.log("Otomatik çekim durduruldu");
+
+        if (debugMode.checked) {
+          logDebugInfo("Otomatik çekim manuel olarak durduruldu", "api");
+        }
       }
 
       // Otomatik görüntü yakalama ve işleme
@@ -1267,12 +1577,16 @@ Base64 Uzunluğu: ${base64Length} karakter`;
               `İşlem modu: ${mode === "entry" ? "Araç Girişi" : "Araç Çıkışı"}`,
               "api"
             );
+            console.log("API URL:", apiUrl);
+            console.log("Form verisi:", formData);
+            console.log("Blob boyutu:", blob.size, "bytes");
           }
 
           // API isteği zamanını ölç
           const startTime = new Date().getTime();
 
           // API isteği gönder
+          console.log(`API isteği gönderiliyor: ${apiUrl}`);
           fetch(apiUrl, {
             method: "POST",
             body: formData,
@@ -1281,6 +1595,9 @@ Base64 Uzunluğu: ${base64Length} karakter`;
               const endTime = new Date().getTime();
               const duration = endTime - startTime;
 
+              console.log(
+                `API yanıt durumu: ${response.status}, süre: ${duration}ms`
+              );
               if (debugMode.checked) {
                 logDebugInfo(`Otomatik API yanıt süresi: ${duration}ms`, "api");
                 logDebugInfo(
@@ -1302,15 +1619,119 @@ Base64 Uzunluğu: ${base64Length} karakter`;
                 );
               }
 
+              // API yanıtını detaylı olarak konsola yazdır
+              console.log("API yanıtı detayları:", {
+                success: data.success,
+                plate_number: data.plate_number,
+                license_plate: data.license_plate,
+                parking_record_id: data.parking_record_id,
+                vehicle_id: data.vehicle
+                  ? data.vehicle.id
+                  : data.vehicle_id || null,
+                confidence: data.confidence,
+              });
+
               // Sonucu göster
               displayResult(data, mode);
 
-              // Başarılı sonuç durumunda bildirim göster
-              if (data.success && data.plate_number) {
+              // Başarılı sonuç durumunda bildirim göster ve otomatik çekimi durdur
+              // Plaka tanıma başarılı olma koşulunu genişletelim
+              const plateDetected =
+                data.success === true ||
+                (data.plate_number && data.plate_number.length > 0) ||
+                (data.license_plate && data.license_plate.length > 0);
+
+              if (plateDetected) {
+                const detectedPlate =
+                  data.plate_number || data.license_plate || "";
+
                 showNotification(
-                  `Plaka Tanındı: ${data.plate_number}`,
+                  `Plaka Tanındı: ${detectedPlate}`,
                   mode === "entry" ? "Araç Girişi" : "Araç Çıkışı"
                 );
+
+                console.log("Plaka başarıyla tanındı:", detectedPlate);
+                console.log(
+                  "WebSocket durumu:",
+                  wsConnected ? "Bağlı" : "Bağlı değil"
+                );
+
+                if (wsConnected && ws) {
+                  console.log("WebSocket readyState:", ws.readyState);
+                }
+
+                // Plaka başarıyla tanındığında otomatik çekimi durdur
+                if (autoCapturing) {
+                  // Zamanlayıcıyı temizle
+                  clearInterval(autoCapturingInterval);
+                  autoCapturingInterval = null;
+
+                  if (debugMode.checked) {
+                    logDebugInfo(
+                      `Plaka başarıyla tanındı (${detectedPlate}), otomatik çekim durduruldu`,
+                      "api"
+                    );
+                  }
+
+                  // Düğme durumlarını güncelle ama autoCapturing durumunu değiştirme
+                  // Böylece işlem tamamlandıktan sonra yeniden başlatılabilir
+                  stopAutoBtn.disabled = true;
+
+                  // WebSocket üzerinden güncelleme bildirimi gönder
+                  if (wsConnected) {
+                    try {
+                      // WebSocket bağlantısını kontrol et
+                      if (ws.readyState !== WebSocket.OPEN) {
+                        console.warn(
+                          "WebSocket bağlantısı açık değil, yeniden bağlanılıyor..."
+                        );
+                        connectWebSocket();
+                        // Kısa bir bekleme süresi ekle
+                        setTimeout(() => {
+                          // Doğrudan WebSocket mesajlarını gönderelim
+                          sendDirectWebSocketUpdates(data, mode, parkingId);
+
+                          // İşlem tamamlandıktan sonra otomatik çekimi yeniden başlat
+                          setTimeout(restartAutoCapture, 3000);
+                        }, 1000);
+                      } else {
+                        // WebSocket bağlantısı açıksa doğrudan mesaj gönder
+                        sendDirectWebSocketUpdates(data, mode, parkingId);
+
+                        // İşlem tamamlandıktan sonra otomatik çekimi yeniden başlat
+                        setTimeout(restartAutoCapture, 3000);
+                      }
+                    } catch (error) {
+                      console.error(
+                        "WebSocket mesajı gönderilirken hata:",
+                        error
+                      );
+                      if (debugMode.checked) {
+                        logDebugInfo(
+                          `WebSocket mesajı gönderilirken hata: ${error.message}`,
+                          "api"
+                        );
+                      }
+                      // Hata durumunda WebSocket bağlantısını yeniden kur ve otomatik çekimi yeniden başlat
+                      connectWebSocket();
+                      setTimeout(restartAutoCapture, 3000);
+                    }
+                  } else {
+                    console.warn(
+                      "WebSocket bağlantısı kurulu değil, güncelleme gönderilemedi"
+                    );
+                    if (debugMode.checked) {
+                      logDebugInfo(
+                        "WebSocket bağlantısı kurulu değil, yeniden bağlanılıyor...",
+                        "api"
+                      );
+                    }
+                    // WebSocket bağlantısını yeniden kur
+                    connectWebSocket();
+                    // İşlem tamamlandıktan sonra otomatik çekimi yeniden başlat
+                    setTimeout(restartAutoCapture, 3000);
+                  }
+                }
               }
             })
             .catch((error) => {
@@ -1325,6 +1746,156 @@ Base64 Uzunluğu: ${base64Length} karakter`;
           if (debugMode.checked) {
             logDebugInfo(
               `HATA: Otomatik görüntü yakalama hatası - ${err.message}`,
+              "api"
+            );
+          }
+        }
+      }
+
+      // Otomatik çekimi yeniden başlatma fonksiyonu
+      function restartAutoCapture() {
+        console.log("Otomatik çekim yeniden başlatılıyor...");
+
+        if (!isStreaming) {
+          console.log("Kamera kapalı, önce kamera başlatılıyor...");
+
+          // Kamera kapalıysa, önce kamerayı başlat
+          startCamera()
+            .then(() => {
+              console.log(
+                "Kamera başarıyla başlatıldı, otomatik çekim başlatılıyor..."
+              );
+              // Kamera başlatıldıktan sonra otomatik çekimi başlat
+              initializeAutoCapture(parseInt(captureInterval.value) || 20);
+            })
+            .catch((err) => {
+              console.error("Kamera yeniden başlatılırken hata:", err);
+              if (debugMode.checked) {
+                logDebugInfo(
+                  `Kamera yeniden başlatılırken hata: ${err.message}`,
+                  "api"
+                );
+              }
+            });
+        } else {
+          console.log(
+            "Kamera zaten açık, doğrudan otomatik çekim başlatılıyor..."
+          );
+          // Kamera zaten açıksa doğrudan otomatik çekimi başlat
+          initializeAutoCapture(parseInt(captureInterval.value) || 20);
+        }
+
+        if (debugMode.checked) {
+          logDebugInfo("Otomatik çekim yeniden başlatıldı", "api");
+        }
+      }
+
+      // Doğrudan WebSocket güncellemeleri gönderen yeni fonksiyon
+      function sendDirectWebSocketUpdates(data, mode, parkingId) {
+        if (!wsConnected || !ws || ws.readyState !== WebSocket.OPEN) {
+          console.error(
+            "WebSocket bağlantısı açık değil, mesaj gönderilemiyor"
+          );
+          return;
+        }
+
+        // Veri kontrolü
+        const license_plate = data.plate_number || data.license_plate || "";
+        const parking_record_id = data.parking_record_id || 0;
+        const vehicle_id = data.vehicle
+          ? data.vehicle.id
+          : data.vehicle_id || 0;
+
+        console.log("Doğrudan WebSocket üzerinden gönderilecek veriler:", {
+          license_plate,
+          parking_record_id,
+          vehicle_id,
+          mode,
+          parkingId,
+        });
+
+        try {
+          // 1. Önce parking_record_update mesajı gönder
+          const updateMessage = {
+            type: "parking_record_update",
+            data: {
+              id: parking_record_id,
+              vehicle_id: vehicle_id,
+              license_plate: license_plate,
+              action: mode === "entry" ? "entry" : "exit",
+              entry_time: data.entry_time,
+              exit_time: data.exit_time,
+              duration_hours: data.duration_hours,
+              parking_fee: data.parking_fee,
+              parking_id: parseInt(parkingId),
+              message: `${
+                mode === "entry" ? "Araç girişi" : "Araç çıkışı"
+              }: ${license_plate}`,
+            },
+          };
+
+          console.log(
+            "1. WebSocket parking_record_update mesajı gönderiliyor:",
+            JSON.stringify(updateMessage)
+          );
+          ws.send(JSON.stringify(updateMessage));
+          console.log("1. WebSocket mesajı başarıyla gönderildi");
+
+          // 2. Sonra status mesajı gönder
+          const statusMessage = { type: "status" };
+          console.log(
+            "2. WebSocket status mesajı gönderiliyor:",
+            JSON.stringify(statusMessage)
+          );
+          ws.send(JSON.stringify(statusMessage));
+          console.log("2. WebSocket mesajı başarıyla gönderildi");
+
+          // 3. Son olarak dashboard_update mesajı gönder
+          const dashboardUpdateMessage = {
+            type: "dashboard_update",
+            data: {
+              parking_id: parseInt(parkingId),
+              timestamp: new Date().toISOString(),
+              message: `${
+                mode === "entry" ? "Araç girişi" : "Araç çıkışı"
+              }: ${license_plate}`,
+              license_plate: license_plate,
+              action: mode === "entry" ? "entry" : "exit",
+            },
+          };
+
+          console.log(
+            "3. WebSocket dashboard_update mesajı gönderiliyor:",
+            JSON.stringify(dashboardUpdateMessage)
+          );
+          ws.send(JSON.stringify(dashboardUpdateMessage));
+          console.log("3. WebSocket mesajı başarıyla gönderildi");
+
+          // 4. Ekstra olarak refresh mesajı gönder
+          const refreshMessage = {
+            type: "refresh",
+            data: {
+              parking_id: parseInt(parkingId),
+            },
+          };
+          console.log(
+            "4. WebSocket refresh mesajı gönderiliyor:",
+            JSON.stringify(refreshMessage)
+          );
+          ws.send(JSON.stringify(refreshMessage));
+          console.log("4. WebSocket mesajı başarıyla gönderildi");
+
+          if (debugMode.checked) {
+            logDebugInfo(
+              `WebSocket üzerinden tüm güncelleme mesajları başarıyla gönderildi: ${license_plate}`,
+              "api"
+            );
+          }
+        } catch (error) {
+          console.error("WebSocket mesajları gönderilirken hata:", error);
+          if (debugMode.checked) {
+            logDebugInfo(
+              `WebSocket mesajları gönderilirken hata: ${error.message}`,
               "api"
             );
           }
@@ -1404,6 +1975,9 @@ Base64 Uzunluğu: ${base64Length} karakter`;
         // Sayfa yüklendiğinde kamera cihazlarını listele
         listCameraDevices();
         resetCapture();
+
+        // WebSocket bağlantısını başlat
+        connectWebSocket();
 
         // Staff Panel'e Dön linkine tıklandığında localStorage kontrolü
         const backToPanel = document.getElementById("backToPanel");

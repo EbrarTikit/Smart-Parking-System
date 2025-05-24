@@ -7,6 +7,7 @@ import java.util.function.Function;
 
 import javax.crypto.SecretKey;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
@@ -17,35 +18,37 @@ import io.jsonwebtoken.security.Keys;
 
 @Component
 public class JwtUtil {
-    // private SecretKey secretKey = Keys.secretKeyFor(SignatureAlgorithm.HS256);
-    // Güvenli anahtar oluşturur
-
-    private static final String SECRET_KEY = "BuCokGucluVeUzunBirSecretKeyOlmali!!123456789"; // Uzun ve güçlü bir
-                                                                                              // secret key
-    private static final SecretKey secretKey = Keys.hmacShaKeyFor(SECRET_KEY.getBytes(StandardCharsets.UTF_8));
+    
+    @Value("${jwt.secret}")
+    private String secretKeyString;
+    
+    @Value("${jwt.expiration}")
+    private long jwtExpiration;
+    
+    private SecretKey getSecretKey() {
+        return Keys.hmacShaKeyFor(secretKeyString.getBytes(StandardCharsets.UTF_8));
+    }
 
     public String generateToken(String username) {
-        System.out.println("✅ JWT Secret Key: " + Base64.getEncoder().encodeToString(secretKey.getEncoded()));
+        System.out.println("✅ JWT Secret Key: " + Base64.getEncoder().encodeToString(getSecretKey().getEncoded()));
 
         return Jwts.builder()
                 .setSubject(username)
                 .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 10)) // 10 saat
-                .signWith(secretKey, SignatureAlgorithm.HS256)
+                .setExpiration(new Date(System.currentTimeMillis() + jwtExpiration))
+                .signWith(getSecretKey(), SignatureAlgorithm.HS256)
                 .compact();
-
     }
 
     public boolean validateToken(String token, UserDetails userDetails) {
-        System.out.println("✅ JWT Secret Key: " + Base64.getEncoder().encodeToString(secretKey.getEncoded()));
+        System.out.println("✅ JWT Secret Key: " + Base64.getEncoder().encodeToString(getSecretKey().getEncoded()));
         final String username = extractUsername(token);
         return (username.equals(userDetails.getUsername()) && !isTokenExpired(token));
-
     }
 
     public String extractUsername(String token) {
         return Jwts.parserBuilder()
-                .setSigningKey(secretKey)
+                .setSigningKey(getSecretKey())
                 .build()
                 .parseClaimsJws(token)
                 .getBody()
@@ -63,7 +66,7 @@ public class JwtUtil {
 
     private Claims extractAllClaims(String token) {
         return Jwts.parserBuilder()
-                .setSigningKey(secretKey)
+                .setSigningKey(getSecretKey())
                 .build()
                 .parseClaimsJws(token)
                 .getBody();
@@ -71,7 +74,7 @@ public class JwtUtil {
 
     private boolean isTokenExpired(String token) {
         final Date expiration = Jwts.parserBuilder()
-                .setSigningKey(secretKey)
+                .setSigningKey(getSecretKey())
                 .build()
                 .parseClaimsJws(token)
                 .getBody()

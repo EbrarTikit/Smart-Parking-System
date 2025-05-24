@@ -187,33 +187,46 @@ def root():
 @app.on_event("startup")
 def startup_event():
     logger.info("License Plate Recognition Service başlatılıyor...")
-    
+
     # Klasörleri oluştur
     os.makedirs("./debug_plates", exist_ok=True)
-    
+
     # Veritabanı tablolarını oluştur
     try:
         # Bağlantı kontrolü
         if engine is not None:
             inspector = inspect(engine)
             
-            # PlateRecord tablosunu oluştur
-            if not inspector.has_table("plate_records"):
-                Base.metadata.create_all(bind=engine)
+            # Önce Vehicle ve ParkingRecord modellerini içe aktar
+            from app.models import Vehicle, ParkingRecord
+            
+            # Tüm tabloları oluştur
+            Base.metadata.create_all(bind=engine)
+            
+            # Tablo durumunu kontrol et ve log'a yaz
+            if inspector.has_table("plate_records"):
+                logger.info("PlateRecord tablosu mevcut")
+            else:
                 logger.info("PlateRecord tablosu oluşturuldu")
-            
-            # Araç ve park kayıtları tablolarını oluştur
-            if not inspector.has_table("vehicles") or not inspector.has_table("parking_records"):
-                from app.models import Vehicle, ParkingRecord
-                Base.metadata.create_all(bind=engine)
-                logger.info("Araç ve park kayıtları tabloları oluşturuldu")
-            
+                
+            if inspector.has_table("vehicles"):
+                logger.info("Vehicles tablosu mevcut")
+            else:
+                logger.info("Vehicles tablosu oluşturuldu")
+                
+            if inspector.has_table("parking_records"):
+                logger.info("Parking Records tablosu mevcut")
+            else:
+                logger.info("Parking Records tablosu oluşturuldu")
+
             logger.info("Veritabanı tabloları hazır")
         else:
             logger.warning("Veritabanı bağlantısı olmadığı için tablolar oluşturulamadı")
     except Exception as e:
         logger.error(f"Veritabanı tabloları oluşturulurken hata: {str(e)}")
-    
+        import traceback
+        traceback.print_exc()
+
     logger.info(f"Model durumu: {'Kullanılabilir' if MODEL_AVAILABLE else 'Kullanılamıyor'}")
     logger.info(f"Veritabanı durumu: {'Bağlı' if engine is not None else 'Bağlı değil'}")
     logger.info("Servis başlatıldı!")
@@ -687,8 +700,17 @@ async def websocket_endpoint(websocket: WebSocket):
     Genel WebSocket bağlantı noktası. 
     Admin paneli veya diğer istemciler için genel bir WebSocket kanalı sağlar.
     """
+    client_ip = websocket.client.host
+    client_port = websocket.client.port
+    logger.info(f"Yeni WebSocket bağlantı isteği: {client_ip}:{client_port}")
+    
     # Bağlantıyı kabul et
-    await websocket.accept()
+    try:
+        await websocket.accept()
+        logger.info(f"WebSocket bağlantısı kabul edildi: {client_ip}:{client_port}")
+    except Exception as e:
+        logger.error(f"WebSocket bağlantısı kabul edilirken hata: {str(e)}")
+        return
     
     # Benzersiz bir client_id oluştur
     client_id = str(uuid.uuid4())
@@ -705,44 +727,59 @@ async def websocket_endpoint(websocket: WebSocket):
             "timestamp": datetime.datetime.now().isoformat()
         }))
         
+        logger.info(f"WebSocket hoşgeldin mesajı gönderildi: client_id={client_id}")
+        
         # İstemciden gelen mesajları dinle
         while True:
-            data = await websocket.receive_text()
             try:
-                message = json.loads(data)
-                message_type = message.get("type", "unknown")
+                data = await websocket.receive_text()
+                logger.debug(f"WebSocket mesajı alındı: client_id={client_id}, veri uzunluğu={len(data)}")
                 
-                # İstemciden gelen mesaj türüne göre işlem yap
-                if message_type == "ping":
-                    await websocket.send_text(json.dumps({
-                        "type": "pong",
-                        "timestamp": datetime.datetime.now().isoformat()
-                    }))
-                elif message_type == "status":
-                    await websocket.send_text(json.dumps({
-                        "type": "status",
-                        "data": manager.get_connection_status(),
-                        "timestamp": datetime.datetime.now().isoformat()
-                    }))
-                else:
-                    logger.debug(f"Bilinmeyen mesaj türü: {message_type}, data: {data[:100]}")
+                try:
+                    message = json.loads(data)
+                    message_type = message.get("type", "unknown")
                     
-            except json.JSONDecodeError:
-                logger.warning(f"Geçersiz JSON formatı: {data[:100]}")
-                await websocket.send_text(json.dumps({
-                    "type": "error",
-                    "message": "Geçersiz JSON formatı",
-                    "timestamp": datetime.datetime.now().isoformat()
-                }))
+                    # İstemciden gelen mesaj türüne göre işlem yap
+                    if message_type == "ping":
+                        await websocket.send_text(json.dumps({
+                            "type": "pong",
+                            "timestamp": datetime.datetime.now().isoformat()
+                        }))
+                        logger.debug(f"Ping mesajı alındı, pong gönderildi: client_id={client_id}")
+                    elif message_type == "status":
+                        await websocket.send_text(json.dumps({
+                            "type": "status",
+                            "data": manager.get_connection_status(),
+                            "timestamp": datetime.datetime.now().isoformat()
+                        }))
+                        logger.debug(f"Durum sorgusu alındı, yanıt gönderildi: client_id={client_id}")
+                    else:
+                        logger.debug(f"Bilinmeyen mesaj türü: client_id={client_id}, type={message_type}, data: {data[:100]}")
+                        
+                except json.JSONDecodeError:
+                    logger.warning(f"Geçersiz JSON formatı: client_id={client_id}, data={data[:100]}")
+                    await websocket.send_text(json.dumps({
+                        "type": "error",
+                        "message": "Geçersiz JSON formatı",
+                        "timestamp": datetime.datetime.now().isoformat()
+                    }))
+            except WebSocketDisconnect:
+                logger.info(f"WebSocket bağlantısı istemci tarafından kapatıldı: client_id={client_id}")
+                break
+            except Exception as e:
+                logger.error(f"WebSocket mesaj alımı sırasında hata: client_id={client_id}, error={str(e)}")
+                break
                 
     except WebSocketDisconnect:
         # Bağlantı kapandığında
-        manager.remove_connection(client_id)
-        logger.info(f"Client bağlantısı kapandı: {client_id}")
+        logger.info(f"WebSocket bağlantısı kapandı: client_id={client_id}")
     except Exception as e:
         # Diğer hatalar
-        logger.error(f"WebSocket hatası: {str(e)}")
+        logger.error(f"WebSocket hatası: client_id={client_id}, error={str(e)}")
+    finally:
+        # Bağlantıyı kaldır
         manager.remove_connection(client_id)
+        logger.info(f"WebSocket bağlantısı temizlendi: client_id={client_id}")
 
 @app.websocket("/ws/admin")
 async def websocket_admin_endpoint(websocket: WebSocket):
@@ -750,8 +787,17 @@ async def websocket_admin_endpoint(websocket: WebSocket):
     Admin paneli için özel WebSocket bağlantı noktası.
     Yönetici arayüzü için tüm sistem güncellemelerini içerir.
     """
+    client_ip = websocket.client.host
+    client_port = websocket.client.port
+    logger.info(f"Yeni Admin WebSocket bağlantı isteği: {client_ip}:{client_port}")
+    
     # Bağlantıyı kabul et
-    await websocket.accept()
+    try:
+        await websocket.accept()
+        logger.info(f"Admin WebSocket bağlantısı kabul edildi: {client_ip}:{client_port}")
+    except Exception as e:
+        logger.error(f"Admin WebSocket bağlantısı kabul edilirken hata: {str(e)}")
+        return
     
     # Benzersiz bir client_id oluştur
     client_id = f"admin-{str(uuid.uuid4())}"
@@ -768,77 +814,113 @@ async def websocket_admin_endpoint(websocket: WebSocket):
             "timestamp": datetime.datetime.now().isoformat()
         }))
         
+        logger.info(f"Admin WebSocket hoşgeldin mesajı gönderildi: client_id={client_id}")
+        
         # İstemciden gelen mesajları dinle
         while True:
-            data = await websocket.receive_text()
             try:
-                message = json.loads(data)
-                message_type = message.get("type", "unknown")
+                data = await websocket.receive_text()
+                logger.debug(f"Admin WebSocket mesajı alındı: client_id={client_id}, veri uzunluğu={len(data)}")
                 
-                # Admin komutlarını işle
-                if message_type == "broadcast":
-                    # Tüm istemcilere mesaj gönder
-                    message_data = message.get("data", {})
-                    target_room = message.get("room", RoomType.ALL)
-                    room_id = message.get("room_id")
+                try:
+                    message = json.loads(data)
+                    message_type = message.get("type", "unknown")
                     
-                    await manager.broadcast({
-                        "type": "broadcast",
-                        "source": "admin",
-                        "data": message_data
-                    }, target_room, room_id)
-                    
-                    await websocket.send_text(json.dumps({
-                        "type": "broadcast_sent",
-                        "timestamp": datetime.datetime.now().isoformat()
-                    }))
-                    
-                elif message_type == "status":
-                    # Bağlantı durumunu gönder
-                    await websocket.send_text(json.dumps({
-                        "type": "status",
-                        "data": manager.get_connection_status(),
-                        "timestamp": datetime.datetime.now().isoformat()
-                    }))
-                
-                elif message_type == "parking_change":
-                    # Otopark değişikliği olayını işle
-                    parking_data = message.get("data", {})
-                    parking_id = parking_data.get("parking_id")
-                    
-                    if parking_id:
-                        logger.info(f"Admin tarafından otopark değişikliği: Otopark ID={parking_id}")
-                        
-                        # Otopark ile ilgili bilgileri döndür (ileride otopark API'den çekilebilir)
+                    # İstemciden gelen mesaj türüne göre işlem yap
+                    if message_type == "ping":
                         await websocket.send_text(json.dumps({
-                            "type": "parking_info",
-                            "data": {
-                                "parking_id": parking_id,
-                                "timestamp": datetime.datetime.now().isoformat()
-                            }
+                            "type": "pong",
+                            "timestamp": datetime.datetime.now().isoformat()
                         }))
-                    else:
-                        logger.warning(f"Geçersiz otopark ID'si parking_change mesajında: {message}")
-                
-                else:
-                    logger.debug(f"Bilinmeyen admin mesajı: {message_type}")
+                        logger.debug(f"Admin ping mesajı alındı, pong gönderildi: client_id={client_id}")
+                    elif message_type == "broadcast":
+                        # Tüm istemcilere mesaj gönder
+                        message_data = message.get("data", {})
+                        target_room = message.get("room", RoomType.ALL)
+                        room_id = message.get("room_id")
+                        
+                        success = await manager.broadcast({
+                            "type": "broadcast",
+                            "source": "admin",
+                            "data": message_data
+                        }, target_room, room_id)
+                        
+                        logger.info(f"Admin broadcast mesajı: client_id={client_id}, room={target_room}, room_id={room_id}, success={success}")
+                        
+                        await websocket.send_text(json.dumps({
+                            "type": "broadcast_sent",
+                            "success": success,
+                            "timestamp": datetime.datetime.now().isoformat()
+                        }))
+                        
+                    elif message_type == "status":
+                        # Bağlantı durumunu gönder
+                        status_data = manager.get_connection_status()
+                        await websocket.send_text(json.dumps({
+                            "type": "status",
+                            "data": status_data,
+                            "timestamp": datetime.datetime.now().isoformat()
+                        }))
+                        logger.debug(f"Admin durum sorgusu: client_id={client_id}, connections={status_data['total_connections']}")
                     
-            except json.JSONDecodeError:
-                logger.warning(f"Geçersiz JSON formatı: {data[:100]}")
-                await websocket.send_text(json.dumps({
-                    "type": "error",
-                    "message": "Geçersiz JSON formatı",
-                    "timestamp": datetime.datetime.now().isoformat()
-                }))
+                    elif message_type == "parking_record_update":
+                        # Otopark değişikliği olayını işle
+                        parking_data = message.get("data", {})
+                        parking_id = parking_data.get("parking_id")
+                        
+                        if parking_id:
+                            logger.info(f"Admin tarafından otopark değişikliği: Otopark ID={parking_id}, client_id={client_id}")
+                            
+                            # Otopark ile ilgili bilgileri döndür (ileride otopark API'den çekilebilir)
+                            await websocket.send_text(json.dumps({
+                                "type": "parking_info",
+                                "data": {
+                                    "parking_id": parking_id,
+                                    "timestamp": datetime.datetime.now().isoformat()
+                                }
+                            }))
+                            
+                            # Tüm admin bağlantılarına bildir
+                            await manager.broadcast({
+                                "type": "parking_info",
+                                "data": {
+                                    "parking_id": parking_id,
+                                    "timestamp": datetime.datetime.now().isoformat(),
+                                    "source_client_id": client_id
+                                }
+                            }, RoomType.ADMIN, exclude=[client_id])
+                            
+                            logger.info(f"Otopark değişikliği bildirimi gönderildi: parking_id={parking_id}")
+                        else:
+                            logger.warning(f"Geçersiz otopark ID'si parking_record_update mesajında: client_id={client_id}, message={message}")
+                    
+                    else:
+                        logger.debug(f"Bilinmeyen admin mesajı: client_id={client_id}, type={message_type}")
+                        
+                except json.JSONDecodeError:
+                    logger.warning(f"Geçersiz JSON formatı: client_id={client_id}, data={data[:100]}")
+                    await websocket.send_text(json.dumps({
+                        "type": "error",
+                        "message": "Geçersiz JSON formatı",
+                        "timestamp": datetime.datetime.now().isoformat()
+                    }))
+            except WebSocketDisconnect:
+                logger.info(f"Admin WebSocket bağlantısı istemci tarafından kapatıldı: client_id={client_id}")
+                break
+            except Exception as e:
+                logger.error(f"Admin WebSocket mesaj alımı sırasında hata: client_id={client_id}, error={str(e)}")
+                break
                 
     except WebSocketDisconnect:
         # Bağlantı kapandığında
-        manager.remove_connection(client_id)
-        logger.info(f"Admin bağlantısı kapandı: {client_id}")
+        logger.info(f"Admin WebSocket bağlantısı kapandı: client_id={client_id}")
     except Exception as e:
         # Diğer hatalar
-        logger.error(f"Admin WebSocket hatası: {str(e)}")
+        logger.error(f"Admin WebSocket hatası: client_id={client_id}, error={str(e)}")
+    finally:
+        # Bağlantıyı kaldır
         manager.remove_connection(client_id)
+        logger.info(f"Admin WebSocket bağlantısı temizlendi: client_id={client_id}")
 
 @app.websocket("/ws/parking/{parking_id}")
 async def websocket_parking_endpoint(websocket: WebSocket, parking_id: int):
@@ -872,8 +954,14 @@ async def websocket_parking_endpoint(websocket: WebSocket, parking_id: int):
                 message = json.loads(data)
                 message_type = message.get("type", "unknown")
                 
-                # Otopark komutlarını işle
-                if message_type == "status":
+                # İstemciden gelen mesaj türüne göre işlem yap
+                if message_type == "ping":
+                    await websocket.send_text(json.dumps({
+                        "type": "pong",
+                        "timestamp": datetime.datetime.now().isoformat()
+                    }))
+                    logger.debug(f"Otopark ping mesajı alındı, pong gönderildi: client_id={client_id}, parking_id={parking_id}")
+                elif message_type == "status":
                     # Bağlantı durumunu gönder
                     await websocket.send_text(json.dumps({
                         "type": "status",
@@ -936,8 +1024,14 @@ async def websocket_vehicle_endpoint(websocket: WebSocket, license_plate: str):
                 message = json.loads(data)
                 message_type = message.get("type", "unknown")
                 
-                # Araç komutlarını işle
-                if message_type == "status":
+                # İstemciden gelen mesaj türüne göre işlem yap
+                if message_type == "ping":
+                    await websocket.send_text(json.dumps({
+                        "type": "pong",
+                        "timestamp": datetime.datetime.now().isoformat()
+                    }))
+                    logger.debug(f"Araç ping mesajı alındı, pong gönderildi: client_id={client_id}, license_plate={license_plate}")
+                elif message_type == "status":
                     # Bağlantı durumunu gönder
                     await websocket.send_text(json.dumps({
                         "type": "status",

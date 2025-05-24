@@ -10,14 +10,17 @@ COPY .mvn .mvn
 COPY pom.xml .
 COPY src ./src
 
+# Make the Maven wrapper executable
+RUN chmod +x ./mvnw
+
 # Package the application
-RUN ./mvnw package
+RUN ./mvnw package -DskipTests
 
 # Copy the jar file to the container
 COPY target/*.jar app.jar
 
 # Expose the port the app runs on
-EXPOSE 8050
+EXPOSE ${SERVER_PORT:-8050}
 
 # Run the jar file
 ENTRYPOINT ["java", "-jar", "app.jar"]

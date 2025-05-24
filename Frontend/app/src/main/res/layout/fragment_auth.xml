@@ -3,41 +3,45 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/white"
-    android:padding="40dp">
+    android:background="@color/background"
+    android:padding="32dp">
 
     <TextView
         android:id="@+id/welcomeText"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/welcome_to_greenspot"
-        android:textColor="@color/text_primary"
-        android:textSize="24sp"
+        android:text="Welcome to GreenSpot!"
+        android:textColor="@color/secondary"
+        android:textSize="28sp"
         android:textStyle="bold"
+        android:shadowColor="@color/primary"
+        android:shadowDx="0"
+        android:shadowDy="0"
+        android:shadowRadius="8"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
     <ImageView
         android:id="@+id/logoImage"
-        android:layout_width="200dp"
-        android:layout_height="200dp"
-        android:layout_marginTop="25dp"
+        android:layout_width="160dp"
+        android:layout_height="160dp"
+        android:layout_marginTop="32dp"
         android:src="@drawable/app_logo"
-        app:layout_constraintTop_toBottomOf="@+id/welcomeText"
+        app:layout_constraintTop_toBottomOf="@id/welcomeText"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        app:layout_constraintEnd_toEndOf="parent"
+        android:elevation="8dp" />
 
     <TextView
         android:id="@+id/subtitleText"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="30dp"
-        android:layout_marginBottom="30dp"
-        android:text="@string/let_s_find_best_parking_spots_for_you"
+        android:layout_marginTop="24dp"
+        android:text="Let's find best parking spots for you!"
         android:textColor="@color/text_secondary"
         android:textSize="16sp"
-        app:layout_constraintTop_toBottomOf="@+id/logoImage"
+        app:layout_constraintTop_toBottomOf="@id/logoImage"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
@@ -45,12 +49,16 @@
         android:id="@+id/signUpButton"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="32dp"
+        android:layout_marginTop="40dp"
         android:backgroundTint="@color/primary"
-        android:text="@string/sign_up"
+        android:text="SIGN UP"
         android:textColor="@color/white"
         android:textSize="20sp"
-        app:layout_constraintTop_toBottomOf="@+id/subtitleText" />
+        app:cornerRadius="32dp"
+        android:elevation="8dp"
+        app:iconGravity="textStart"
+        app:iconPadding="12dp"
+        app:layout_constraintTop_toBottomOf="@id/subtitleText" />
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/signInButton"
@@ -58,10 +66,14 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
         android:backgroundTint="@color/primary"
-        android:text="@string/sign_in"
+        android:text="SIGN IN"
         android:textColor="@color/white"
         android:textSize="20sp"
-        app:layout_constraintTop_toBottomOf="@+id/signUpButton" />
+        app:cornerRadius="32dp"
+        android:elevation="8dp"
+        app:iconGravity="textStart"
+        app:iconPadding="12dp"
+        app:layout_constraintTop_toBottomOf="@id/signUpButton" />
 
     <TextView
         android:id="@+id/termsText"
@@ -70,8 +82,9 @@
         android:text="By signing up, you agree to our Terms and Conditions"
         android:textColor="@color/text_secondary"
         android:textSize="12sp"
-        app:layout_constraintTop_toBottomOf="@+id/signInButton"
+        app:layout_constraintTop_toBottomOf="@id/signInButton"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="16dp" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

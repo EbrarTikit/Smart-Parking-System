@@ -5,10 +5,6 @@
         android:icon="@drawable/ic_home"
         android:title="Home" />
     <item
-        android:id="@+id/navigation_booking"
-        android:icon="@drawable/ic_booking"
-        android:title="Booking" />
-    <item
         android:id="@+id/navigation_chatbot"
         android:icon="@drawable/ic_chatbot"
         android:title="Chat" />

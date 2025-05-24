@@ -80,21 +80,6 @@ services:
       - backend_network
     restart: always
 
-  pgadmin:
-    image: dpage/pgadmin4
-    container_name: pgadmin
-    environment:
-      PGADMIN_DEFAULT_EMAIL: admin@example.com
-      PGADMIN_DEFAULT_PASSWORD: admin
-      PGADMIN_LISTEN_PORT: 5050
-    ports:
-      - "5050:5050"
-    depends_on:
-      - postgres
-    networks:
-      - backend_network
-    restart: always
-
   admin-panel:
     build: ../WebPanel/admin-panel
     ports:
@@ -128,9 +113,7 @@ services:
       # Kod değişikliklerinin otomatik yansıması için yerel kod dizinini konteyner içine bağla
       - ./license-plate-service/app:/app/app
       - ./license-plate-service/.env:/app/.env
-      # Test dosyasını konteynere bağla
-      - ./license-plate-service/test_parking_rates.py:/app/test_parking_rates.py
-      # Debug görüntüleri için klasörler
+          # Debug görüntüleri için klasörler
       - ./license-plate-service/debug_images:/app/debug_images
       - ./license-plate-service/app/model/debug_plates:/app/app/model/debug_plates
       # YOLO model dosyaları

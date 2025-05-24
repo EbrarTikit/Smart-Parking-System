@@ -8,6 +8,7 @@ import android.os.Build
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
+import android.util.Log
 import android.view.View
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
@@ -178,7 +179,8 @@ class HomeFragment : Fragment(R.layout.fragment_home), OnMapReadyCallback {
 
                     is UiState.Error -> {
                         binding.progressBar.visibility = View.GONE
-                        Toast.makeText(requireContext(), state.message, Toast.LENGTH_LONG).show()
+                        Log.e("HomeFragment", state.message)
+                        //Toast.makeText(requireContext(), state.message, Toast.LENGTH_LONG).show()
                     }
                 }
             }
@@ -295,7 +297,8 @@ class HomeFragment : Fragment(R.layout.fragment_home), OnMapReadyCallback {
                     updateMapMarkers(filteredParkings)
                 }
             } catch (e: Exception) {
-                Toast.makeText(requireContext(), "Error filtering parkings: ${e.message}", Toast.LENGTH_SHORT).show()
+                Log.e("HomeFragment", "Error filtering parkings: ${e.message}")
+                //Toast.makeText(requireContext(), "Error filtering parkings: ${e.message}", Toast.LENGTH_SHORT).show()
             } finally {
                 binding.progressBar.visibility = View.GONE
             }

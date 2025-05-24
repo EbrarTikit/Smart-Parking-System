@@ -137,7 +137,8 @@ class DetailFragment : Fragment(R.layout.fragment_detail) {
                         binding.chipPeople.text = "${state.data.viewerCount} people"
                     }
                     is UiState.Error -> {
-                        Toast.makeText(requireContext(), state.message, Toast.LENGTH_LONG).show()
+                        Log.e("DetailFragment", "Error fetching viewer count: ${state.message}")
+                        //Toast.makeText(requireContext(), state.message, Toast.LENGTH_LONG).show()
                     }
                 }
             }
@@ -160,7 +161,8 @@ class DetailFragment : Fragment(R.layout.fragment_detail) {
                     }
                     is UiState.Error -> {
                         binding.btnFavorite.isEnabled = true
-                        Toast.makeText(requireContext(), state.message, Toast.LENGTH_SHORT).show()
+                        Log.e("DetailFragment", "Error checking favorite status: ${state.message}")
+                        //Toast.makeText(requireContext(), state.message, Toast.LENGTH_SHORT).show()
                     }
                 }
             }
@@ -190,7 +192,7 @@ class DetailFragment : Fragment(R.layout.fragment_detail) {
                 Toast.LENGTH_LONG
             ).show()
         } else {
-            Toast.makeText(requireContext(), "Using userId: $userId", Toast.LENGTH_SHORT).show()
+            Log.d("DetailFragment", "Using userId: $userId")
         }
         return userId.toInt()
     }

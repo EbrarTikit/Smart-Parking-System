@@ -3,6 +3,7 @@ package com.example.smartparkingsystem.ui.chatbot
 import android.content.Context
 import android.content.SharedPreferences
 import android.os.Bundle
+import android.util.Log
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
@@ -104,7 +105,8 @@ class ChatbotFragment : Fragment() {
         
         viewModel.error.observe(viewLifecycleOwner) { errorMessage ->
             errorMessage?.let {
-                Toast.makeText(requireContext(), it, Toast.LENGTH_LONG).show()
+                Log.e("ChatbotFragment", it)
+                //Toast.makeText(requireContext(), it, Toast.LENGTH_LONG).show()
                 viewModel.clearError()
             }
         }

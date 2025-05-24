@@ -1,0 +1,4 @@
+{
+  "chatbot-service/tests/test_routes.py": true,
+  "license-plate-service/tests": true
+}

@@ -68,17 +68,9 @@
         android:label="fragment_location_access"
         tools:layout="@layout/fragment_location_access" >
         <action
-            android:id="@+id/action_locationAccessFragment_to_locationFragment"
-            app:destination="@id/locationFragment" />
-        <action
             android:id="@+id/action_locationAccessFragment_to_homeFragment"
             app:destination="@id/navigation_home" />
     </fragment>
-    <fragment
-        android:id="@+id/locationFragment"
-        android:name="com.example.smartparkingsystem.ui.location.LocationFragment"
-        android:label="fragment_location"
-        tools:layout="@layout/fragment_location" />
     <fragment
         android:id="@+id/navigation_home"
         android:name="com.example.smartparkingsystem.ui.home.HomeFragment"

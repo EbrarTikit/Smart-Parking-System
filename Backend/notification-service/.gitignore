@@ -33,8 +33,5 @@ build/
 .vscode/
 
 #firebase
-src/main/resources/firebase/  
-
-#env
-.env
+src/main/resources/firebase/serviceAccountKey.json  
 

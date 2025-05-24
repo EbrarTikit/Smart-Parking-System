@@ -29,58 +29,50 @@ const Dashboard = () => {
   const { isConnected, messages, lastMessage, error, sendMessage } =
     useWebSocket("admin");
 
+  // Veri yenileme fonksiyonu
+  const fetchData = useCallback(async () => {
+    try {
+      console.log(`Veriler yenileniyor (Otopark ID: ${parkingId})...`);
+
+      const [vehiclesData, activitiesData] = await Promise.all([
+        api.getActiveVehicles(parkingId),
+        api.getRecentActivities(parkingId),
+      ]);
+
+      if (Array.isArray(vehiclesData)) {
+        setActiveVehicles(vehiclesData);
+        console.log(`Aktif araçlar güncellendi (${vehiclesData.length} araç)`);
+      }
+
+      if (Array.isArray(activitiesData)) {
+        setRecentActivity(activitiesData);
+        console.log(
+          `Son aktiviteler güncellendi (${activitiesData.length} aktivite)`
+        );
+      }
+
+      console.log("Veriler başarıyla güncellendi");
+    } catch (error) {
+      console.error("Veri yenileme hatası:", error);
+    }
+  }, [parkingId]);
+
   // Başlangıçta aktif araç listesini ve son aktiviteleri yükleme
   useEffect(() => {
-    const fetchInitialData = async () => {
-      setIsLoading(true);
-      setLoadError(null);
+    setIsLoading(true);
+    setLoadError(null);
 
-      try {
-        console.log(
-          `Aktif araçlar ve son aktiviteler yükleniyor (Otopark ID: ${parkingId})...`
-        );
-
-        // API metotlarını kullanarak veri çek
-        const [vehiclesData, activitiesData] = await Promise.all([
-          api.getActiveVehicles(parkingId),
-          api.getRecentActivities(parkingId),
-        ]);
-
-        console.log(
-          `Aktif araçlar yüklendi (Otopark ID: ${parkingId}):`,
-          vehiclesData
-        );
-        console.log(
-          `Son aktiviteler yüklendi (Otopark ID: ${parkingId}):`,
-          activitiesData
-        );
-
-        // Veri kontrolü ve işleme
-        if (Array.isArray(vehiclesData)) {
-          setActiveVehicles(vehiclesData);
-        } else {
-          console.warn("Aktif araçlar verisi dizi değil:", vehiclesData);
-          setActiveVehicles([]);
-        }
-
-        if (Array.isArray(activitiesData)) {
-          setRecentActivity(activitiesData);
-        } else {
-          console.warn("Son aktiviteler verisi dizi değil:", activitiesData);
-          setRecentActivity([]);
-        }
-      } catch (error) {
+    fetchData()
+      .catch((error) => {
         console.error("Başlangıç verileri yüklenirken hata:", error);
         setLoadError(
           "Başlangıç verileri yüklenirken bir hata oluştu. WebSocket ile güncellemeleri bekliyoruz."
         );
-      } finally {
+      })
+      .finally(() => {
         setIsLoading(false);
-      }
-    };
-
-    fetchInitialData();
-  }, [parkingId]); // parkingId değiştiğinde veriyi yeniden yükle
+      });
+  }, [parkingId, fetchData]); // parkingId değiştiğinde veriyi yeniden yükle
 
   // WebSocket bağlantısı kurulduğunda durum sorgulama
   useEffect(() => {
@@ -113,66 +105,9 @@ const Dashboard = () => {
           const { data } = lastMessage;
           console.log("Park kaydı güncelleme:", data);
 
-          // Aktivite listesini güncelle
-          setRecentActivity((prev) => {
-            // Son aktivite verisinin formatını kontrol et
-            if (!data.id || !data.action) {
-              console.error("Geçersiz aktivite verisi:", data);
-              return prev;
-            }
-
-            // Aynı ID'li kayıt varsa güncelle, yoksa ekle
-            const exists = prev.findIndex((item) => item.id === data.id);
-            let newActivity = [...prev];
-
-            if (exists >= 0) {
-              newActivity[exists] = data;
-            } else {
-              newActivity = [data, ...prev];
-            }
-
-            // En fazla 20 aktivite göster
-            return newActivity.slice(0, 20);
-          });
-
-          // Araç durumunu güncelle
-          if (data.action === "entry") {
-            // Yeni araç girişi
-            setActiveVehicles((prev) => {
-              // Araç zaten listede var mı kontrol et
-              const existingIndex = prev.findIndex(
-                (v) => v.license_plate === data.license_plate
-              );
-
-              if (existingIndex >= 0) {
-                // Varsa güncelle
-                const updated = [...prev];
-                updated[existingIndex] = {
-                  id: data.vehicle_id,
-                  license_plate: data.license_plate,
-                  entry_time: data.entry_time,
-                  parking_record_id: data.id,
-                };
-                return updated;
-              } else {
-                // Yoksa ekle
-                return [
-                  {
-                    id: data.vehicle_id,
-                    license_plate: data.license_plate,
-                    entry_time: data.entry_time,
-                    parking_record_id: data.id,
-                  },
-                  ...prev,
-                ];
-              }
-            });
-          } else if (data.action === "exit") {
-            // Araç çıkışı
-            setActiveVehicles((prev) =>
-              prev.filter((v) => v.license_plate !== data.license_plate)
-            );
-          }
+          // Veriyi yenile - WebSocket mesajı yerine doğrudan API'den güncel veriyi çekelim
+          // Bu, olası veri tutarsızlıklarını önler
+          fetchData();
           break;
 
         case "vehicle_update":
@@ -185,10 +120,8 @@ const Dashboard = () => {
           const vehicleData = lastMessage.data;
           console.log("Araç güncelleme:", vehicleData);
 
-          // Aktif araçlar verisini güncelle
-          if (vehicleData.status === "already_parked") {
-            console.log("Zaten park edilmiş araç:", vehicleData.license_plate);
-          }
+          // Veriyi yenile
+          fetchData();
           break;
 
         case "welcome":
@@ -206,11 +139,31 @@ const Dashboard = () => {
           console.error("WebSocket hata mesajı:", lastMessage.message);
           break;
 
+        case "parking_info":
+          // Otopark bilgisi mesajı - Webcam demo'dan gelen bilgiler
+          console.log("Otopark bilgisi:", lastMessage.data);
+          if (lastMessage.data && lastMessage.data.parking_id) {
+            const newParkingId = parseInt(lastMessage.data.parking_id);
+            console.log(
+              `Otopark değişikliği tespit edildi: ${parkingId} -> ${newParkingId}`
+            );
+
+            // Eğer mevcut otopark ID'sinden farklıysa güncelle
+            if (newParkingId !== parkingId) {
+              setParkingId(newParkingId);
+            } else {
+              // Aynı otopark ID'si olsa bile verileri yenile
+              console.log("Aynı otopark için veri yenileniyor...");
+              fetchData();
+            }
+          }
+          break;
+
         default:
           console.log("Bilinmeyen mesaj tipi:", lastMessage.type);
       }
     }
-  }, [lastMessage]);
+  }, [lastMessage, parkingId, fetchData]);
 
   // Otopark ID'si değiştiğinde WebSocket bağlantısını ve verileri güncelle
   const handleParkingChange = (e) => {
@@ -230,8 +183,12 @@ const Dashboard = () => {
       );
       sendMessage(
         JSON.stringify({
-          type: "parking_change",
-          data: { parking_id: newParkingId },
+          type: "parking_record_update",
+          data: {
+            parking_id: newParkingId,
+            action: "change",
+            message: `Otopark değişikliği: ${newParkingId}`,
+          },
         })
       );
     }

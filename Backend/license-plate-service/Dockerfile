@@ -55,7 +55,9 @@ RUN pip wheel --no-cache-dir -w /wheels \
     python-multipart==0.0.6 \
     python-dotenv==1.0.0 \
     websockets==11.0.3 \
-    wsproto==1.2.0
+    wsproto==1.2.0 \
+    python-json-logger==3.3.0 \
+    prometheus-client==0.22.0
 
 # 6. PyTorch aşaması (en uzun süren)
 FROM base-builder AS builder-pytorch
@@ -145,7 +147,9 @@ RUN pip install --no-cache-dir \
     filterpy==1.4.5 \
     Pillow>=9.0.0 \
     websockets==11.0.3 \
-    wsproto==1.2.0
+    wsproto==1.2.0 \
+    python-json-logger==3.3.0 \
+    prometheus-client==0.22.0
 
 # Diğer tüm wheelleri kopyala
 COPY --from=builder-core /wheels /wheels/

@@ -65,20 +65,20 @@ services:
     networks:
       - backend_network
 
-  # pgadmin:
-  #   image: dpage/pgadmin4
-  #   container_name: pgadmin
-  #   environment:
-  #     PGADMIN_DEFAULT_EMAIL: admin@example.com
-  #     PGADMIN_DEFAULT_PASSWORD: admin
-  #     PGADMIN_LISTEN_PORT: 5050
-  #   ports:
-  #     - "5050:5050"
-  #   depends_on:
-  #     - postgres
-  #   networks:
-  #     - backend_network
-  #   restart: always
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@example.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_LISTEN_PORT: 5050
+    ports:
+      - "5050:5050"
+    depends_on:
+      - postgres
+    networks:
+      - backend_network
+    restart: always
 
   admin-panel:
     build: ../WebPanel/admin-panel
@@ -105,6 +105,7 @@ services:
       - ./license-plate-service/.env
     volumes:
       - ./license-plate-service/app:/app/app
+      - ./license-plate-service/.env:/app/.env
       - ./license-plate-service/debug_images:/app/debug_images
       - ./license-plate-service/app/model/debug_plates:/app/app/model/debug_plates
       - ./license-plate-service/app/model/yolov8n.pt:/app/app/model/yolov8n.pt
@@ -215,25 +216,6 @@ services:
     networks:
       - backend_network
       
-  # Frontend uygulaması - Üretim modu
-  staff-panel:
-    build:
-      context: ../WebPanel/staff-panel
-      dockerfile: Dockerfile
-      target: production
-    container_name: staff_panel
-    ports:
-      - "8080:80"
-    env_file:
-      - ../WebPanel/staff-panel/.env
-    environment:
-      - API_HOST=license_plate_service
-      - API_PORT=8000
-    depends_on:
-      - license-plate-service
-    networks:
-      - backend_network
-    restart: always
 
   # # Logging & Monitoring Servisleri
   # # Elasticsearch - Log ve metrik verilerini saklamak için

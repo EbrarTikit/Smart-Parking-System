@@ -1,0 +1,9 @@
+[
+  "chatbot-service/tests/test_gemini_api.py::test_gemini_api_key_configuration",
+  "chatbot-service/tests/test_gemini_api.py::test_get_gemini_response_connection_error",
+  "chatbot-service/tests/test_gemini_api.py::test_get_gemini_response_empty_history",
+  "chatbot-service/tests/test_gemini_api.py::test_get_gemini_response_http_error",
+  "chatbot-service/tests/test_gemini_api.py::test_get_gemini_response_long_conversation_history",
+  "chatbot-service/tests/test_gemini_api.py::test_get_gemini_response_missing_candidates",
+  "chatbot-service/tests/test_gemini_api.py::test_get_gemini_response_success"
+]

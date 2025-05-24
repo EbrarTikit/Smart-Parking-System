@@ -21,18 +21,18 @@ services:
       - backend_network
     restart: always
 
-  redis-commander:
-    image: rediscommander/redis-commander:latest
-    container_name: redis_commander
-    environment:
-      - REDIS_HOSTS=local:redis_service:6379
-    ports:
-      - "8000:8000"
-    networks:
-      - backend_network
-    depends_on:
-      - redis
-    restart: always
+  # redis-commander:
+  #   image: rediscommander/redis-commander:latest
+  #   container_name: redis_commander
+  #   environment:
+  #     - REDIS_HOSTS=local:redis_service:6379
+  #   ports:
+  #     - "8000:8000"
+  #   networks:
+  #     - backend_network
+  #   depends_on:
+  #     - redis
+  #   restart: always
 
   chatbot-service:
     build: 
@@ -86,13 +86,13 @@ services:
       - "3002:80"
     depends_on:
       - user-service
-      - parking-management-service
+    networks:
+      - backend_network
 
   license-plate-service:
     build:
       context: ./license-plate-service
       dockerfile: Dockerfile
-      # Build argumentleri ekleyerek daha hızlı build
       args:
         - BUILDKIT_INLINE_CACHE=1
         - PIP_NO_CACHE_DIR=1
@@ -101,22 +101,13 @@ services:
     container_name: license_plate_service
     ports:
       - "8005:8000"
-    environment:
-      - OCR_LANGUAGES=tr,en
-      - MAX_UPLOAD_SIZE=10
-      - DATABASE_URL=postgresql://user:password@postgres/license_plate_db
-      - DEBUG=False
-      - FORCE_CUDA=0  # GPU kullanımını zorla devre dışı bırak
-      - PYTHONUNBUFFERED=1
-      - PARKING_MANAGEMENT_SERVICE_URL=http://parking-management-service:8081
+    env_file:
+      - ./license-plate-service/.env
     volumes:
-      # Kod değişikliklerinin otomatik yansıması için yerel kod dizinini konteyner içine bağla
       - ./license-plate-service/app:/app/app
       - ./license-plate-service/.env:/app/.env
-          # Debug görüntüleri için klasörler
       - ./license-plate-service/debug_images:/app/debug_images
       - ./license-plate-service/app/model/debug_plates:/app/app/model/debug_plates
-      # YOLO model dosyaları
       - ./license-plate-service/app/model/yolov8n.pt:/app/app/model/yolov8n.pt
       - ./license-plate-service/app/model/license_plate_detector.pt:/app/app/model/license_plate_detector.pt
     depends_on:
@@ -126,29 +117,29 @@ services:
     deploy:
       resources:
         limits:
-          memory: 2G  # CPU için yeterli bellek
+          memory: 2G
         reservations:
-          memory: 1G  # Minimum bellek garantisi
+          memory: 1G
 
-  notification-service:
-    build: 
-      context: ./notification-service
-      dockerfile: dockerfile
-    container_name: notification_service
-    ports:
-      - "8083:8083"
-    environment:
-      - SPRING_RABBITMQ_HOST=rabbit-mq
-      - SPRING_RABBITMQ_PORT=5672
-      - SPRING_RABBITMQ_USERNAME=guest
-      - SPRING_RABBITMQ_PASSWORD=guest
-      - USER_SERVICE_URL=http://user-service:8050
-    depends_on:
-      - rabbit-mq
-      - user-service
-    restart: always
-    networks:
-      - backend_network
+  # notification-service:
+  #   build: 
+  #     context: ./notification-service
+  #     dockerfile: dockerfile
+  #   container_name: notification_service
+  #   ports:
+  #     - "8083:8083"
+  #   environment:
+  #     - SPRING_RABBITMQ_HOST=rabbit-mq
+  #     - SPRING_RABBITMQ_PORT=5672
+  #     - SPRING_RABBITMQ_USERNAME=guest
+  #     - SPRING_RABBITMQ_PASSWORD=guest
+  #     - USER_SERVICE_URL=http://user-service:8050
+  #   depends_on:
+  #     - rabbit-mq
+  #     - user-service
+  #   restart: always
+  #   networks:
+  #     - backend_network
 
   user-service:
     build: 
@@ -191,201 +182,183 @@ services:
     networks:
       - backend_network
 
-  navigation-service:
-    build: 
-      context: ./navigation-service
-      dockerfile: Dockerfile
-    container_name: navigation_service
-    ports:
-      - "8003:8080"
-    networks:
-      - backend_network
-    restart: always
+  # navigation-service:
+  #   build: 
+  #     context: ./navigation-service
+  #     dockerfile: Dockerfile
+  #   container_name: navigation_service
+  #   ports:
+  #     - "8003:8080"
+  #   networks:
+  #     - backend_network
+  #   restart: always
 
-  # Frontend uygulaması - Geliştirme modu (hot reloading)
+# Frontend uygulaması - Geliştirme modu (hot reloading)
   staff-panel-dev:
     build:
       context: ../WebPanel/staff-panel
       dockerfile: Dockerfile
-      target: development  # Dockerfile'daki geliştirme aşamasını kullan
+      target: development
     container_name: staff_panel_dev
     ports:
-      - "3000:3000"  # React geliştirme sunucusu portu
+      - "3000:3000"
     volumes:
-      - ../WebPanel/staff-panel:/app  # Kod değişikliklerini anında yansıtmak için
-      - /app/node_modules  # Container'daki node_modules klasörünü koru
+      - ../WebPanel/staff-panel:/app
+      - /app/node_modules
+    env_file:
+      - ../WebPanel/staff-panel/.env
     environment:
       - NODE_ENV=development
-      # ÖNEMLİ: Docker dışında erişim için localhost:8005, Docker içindeyse service_name:port kullanılmalı
-      - REACT_APP_API_URL=http://localhost:8005     # Host makineden erişimde kullanılan port (8005)
-      - REACT_APP_WS_URL=ws://localhost:8005        # Host makineden WebSocket için kullanılan port (8005)
-      - CHOKIDAR_USEPOLLING=true  # Docker içinde dosya değişikliklerini algılamak için
+      - CHOKIDAR_USEPOLLING=true
     depends_on:
       - license-plate-service
+      - user-service
     networks:
       - backend_network
       
-  # Frontend uygulaması - Üretim modu
-  staff-panel:
-    build:
-      context: ../WebPanel/staff-panel
-      dockerfile: Dockerfile
-      target: production  # Dockerfile'daki üretim aşamasını kullan
-    container_name: staff_panel
-    ports:
-      - "8080:80"  # Nginx portu
-    depends_on:
-      - license-plate-service
-    environment:
-      # Nginx yapılandırması için proxy_pass değerlerinin çalışması için
-      - API_HOST=license_plate_service
-      - API_PORT=8000
-    networks:
-      - backend_network
-    restart: always
 
-  # Logging & Monitoring Servisleri
-  # Elasticsearch - Log ve metrik verilerini saklamak için
-  elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:7.17.10
-    container_name: elasticsearch
-    environment:
-      - discovery.type=single-node
-      - ES_JAVA_OPTS=-Xms512m -Xmx512m
-      - xpack.security.enabled=false
-    ports:
-      - "9200:9200"
-    volumes:
-      - elasticsearch_data:/usr/share/elasticsearch/data
-    networks:
-      - backend_network
-    restart: always
+  # # Logging & Monitoring Servisleri
+  # # Elasticsearch - Log ve metrik verilerini saklamak için
+  # elasticsearch:
+  #   image: docker.elastic.co/elasticsearch/elasticsearch:7.17.10
+  #   container_name: elasticsearch
+  #   environment:
+  #     - discovery.type=single-node
+  #     - ES_JAVA_OPTS=-Xms512m -Xmx512m
+  #     - xpack.security.enabled=false
+  #   ports:
+  #     - "9200:9200"
+  #   volumes:
+  #     - elasticsearch_data:/usr/share/elasticsearch/data
+  #   networks:
+  #     - backend_network
+  #   restart: always
 
-  # Logstash - Log verilerini toplamak ve işlemek için
-  logstash:
-    image: docker.elastic.co/logstash/logstash:7.17.10
-    container_name: logstash
-    volumes:
-      - ./monitoring/logstash/pipeline:/usr/share/logstash/pipeline
-      - ./monitoring/logstash/config/logstash.yml:/usr/share/logstash/config/logstash.yml
-    ports:
-      - "5044:5044"
-      - "5000:5000/tcp"
-      - "5000:5000/udp"
-      - "9600:9600"
-    environment:
-      LS_JAVA_OPTS: "-Xmx256m -Xms256m"
-    depends_on:
-      - elasticsearch
-    networks:
-      - backend_network
-    restart: always
+  # # Logstash - Log verilerini toplamak ve işlemek için
+  # logstash:
+  #   image: docker.elastic.co/logstash/logstash:7.17.10
+  #   container_name: logstash
+  #   volumes:
+  #     - ./monitoring/logstash/pipeline:/usr/share/logstash/pipeline
+  #     - ./monitoring/logstash/config/logstash.yml:/usr/share/logstash/config/logstash.yml
+  #   ports:
+  #     - "5044:5044"
+  #     - "5000:5000/tcp"
+  #     - "5000:5000/udp"
+  #     - "9600:9600"
+  #   environment:
+  #     LS_JAVA_OPTS: "-Xmx256m -Xms256m"
+  #   depends_on:
+  #     - elasticsearch
+  #   networks:
+  #     - backend_network
+  #   restart: always
 
-  # Kibana - Log verilerini görselleştirmek için
-  kibana:
-    image: docker.elastic.co/kibana/kibana:7.17.10
-    container_name: kibana
-    ports:
-      - "5601:5601"
-    environment:
-      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
-    depends_on:
-      - elasticsearch
-    networks:
-      - backend_network
-    restart: always
+  # # Kibana - Log verilerini görselleştirmek için
+  # kibana:
+  #   image: docker.elastic.co/kibana/kibana:7.17.10
+  #   container_name: kibana
+  #   ports:
+  #     - "5601:5601"
+  #   environment:
+  #     - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+  #   depends_on:
+  #     - elasticsearch
+  #   networks:
+  #     - backend_network
+  #   restart: always
 
-  # Filebeat - Servis loglarını toplamak için
-  filebeat:
-    image: docker.elastic.co/beats/filebeat:7.17.10
-    container_name: filebeat
-    user: root
-    command: ["--strict.perms=false"]  # İzin kontrolünü devre dışı bırak
-    volumes:
-      - ./monitoring/filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
-      - /var/lib/docker/containers:/var/lib/docker/containers:ro
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-    depends_on:
-      - elasticsearch
-      - logstash
-    networks:
-      - backend_network
-    restart: always
+  # # Filebeat - Servis loglarını toplamak için
+  # filebeat:
+  #   image: docker.elastic.co/beats/filebeat:7.17.10
+  #   container_name: filebeat
+  #   user: root
+  #   command: ["--strict.perms=false"]  # İzin kontrolünü devre dışı bırak
+  #   volumes:
+  #     - ./monitoring/filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
+  #     - /var/lib/docker/containers:/var/lib/docker/containers:ro
+  #     - /var/run/docker.sock:/var/run/docker.sock:ro
+  #   depends_on:
+  #     - elasticsearch
+  #     - logstash
+  #   networks:
+  #     - backend_network
+  #   restart: always
 
-  # Prometheus - Metrik toplama için
-  prometheus:
-    image: prom/prometheus:v2.45.0
-    container_name: prometheus
-    volumes:
-      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
-      - prometheus_data:/prometheus
-    command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-      - '--storage.tsdb.path=/prometheus'
-      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
-      - '--web.console.templates=/usr/share/prometheus/consoles'
-    ports:
-      - "9090:9090"
-    networks:
-      - backend_network
-    restart: always
+  # # Prometheus - Metrik toplama için
+  # prometheus:
+  #   image: prom/prometheus:v2.45.0
+  #   container_name: prometheus
+  #   volumes:
+  #     - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+  #     - prometheus_data:/prometheus
+  #   command:
+  #     - '--config.file=/etc/prometheus/prometheus.yml'
+  #     - '--storage.tsdb.path=/prometheus'
+  #     - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+  #     - '--web.console.templates=/usr/share/prometheus/consoles'
+  #   ports:
+  #     - "9090:9090"
+  #   networks:
+  #     - backend_network
+  #   restart: always
 
-  # Grafana - Metrikleri görselleştirmek için
-  grafana:
-    image: grafana/grafana:10.0.3
-    container_name: grafana
-    volumes:
-      - grafana_data:/var/lib/grafana
-      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
-    environment:
-      - GF_SECURITY_ADMIN_USER=admin
-      - GF_SECURITY_ADMIN_PASSWORD=admin
-      - GF_USERS_ALLOW_SIGN_UP=false
-    ports:
-      - "3030:3000"
-    depends_on:
-      - prometheus
-    networks:
-      - backend_network
-    restart: always
+  # # Grafana - Metrikleri görselleştirmek için
+  # grafana:
+  #   image: grafana/grafana:10.0.3
+  #   container_name: grafana
+  #   volumes:
+  #     - grafana_data:/var/lib/grafana
+  #     - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
+  #   environment:
+  #     - GF_SECURITY_ADMIN_USER=admin
+  #     - GF_SECURITY_ADMIN_PASSWORD=admin
+  #     - GF_USERS_ALLOW_SIGN_UP=false
+  #   ports:
+  #     - "3030:3000"
+  #   depends_on:
+  #     - prometheus
+  #   networks:
+  #     - backend_network
+  #   restart: always
 
-  # Node Exporter - Host metriklerini toplamak için
-  node-exporter:
-    image: prom/node-exporter:v1.6.0
-    container_name: node-exporter
-    volumes:
-      - /proc:/host/proc:ro
-      - /sys:/host/sys:ro
-      - /:/rootfs:ro
-    command:
-      - '--path.procfs=/host/proc'
-      - '--path.sysfs=/host/sys'
-      - '--collector.filesystem.ignored-mount-points=^/(sys|proc|dev|host|etc)($$|/)'
-    ports:
-      - "9100:9100"
-    networks:
-      - backend_network
-    restart: always
+  # # Node Exporter - Host metriklerini toplamak için
+  # node-exporter:
+  #   image: prom/node-exporter:v1.6.0
+  #   container_name: node-exporter
+  #   volumes:
+  #     - /proc:/host/proc:ro
+  #     - /sys:/host/sys:ro
+  #     - /:/rootfs:ro
+  #   command:
+  #     - '--path.procfs=/host/proc'
+  #     - '--path.sysfs=/host/sys'
+  #     - '--collector.filesystem.ignored-mount-points=^/(sys|proc|dev|host|etc)($$|/)'
+  #   ports:
+  #     - "9100:9100"
+  #   networks:
+  #     - backend_network
+  #   restart: always
 
-  # Monitoring Service - Log ve metrik verilerini analiz etmek için
-  monitoring-service:
-    build:
-      context: ./monitoring-service
-      dockerfile: Dockerfile
-    container_name: monitoring_service
-    ports:
-      - "8010:8010"
-    environment:
-      - ELASTICSEARCH_HOST=elasticsearch
-      - ELASTICSEARCH_PORT=9200
-      - PROMETHEUS_HOST=prometheus
-      - PROMETHEUS_PORT=9090
-    depends_on:
-      - elasticsearch
-      - prometheus
-    networks:
-      - backend_network
-    restart: always
+  # # Monitoring Service - Log ve metrik verilerini analiz etmek için
+  # monitoring-service:
+  #   build:
+  #     context: ./monitoring-service
+  #     dockerfile: Dockerfile
+  #   container_name: monitoring_service
+  #   ports:
+  #     - "8010:8010"
+  #   environment:
+  #     - ELASTICSEARCH_HOST=elasticsearch
+  #     - ELASTICSEARCH_PORT=9200
+  #     - PROMETHEUS_HOST=prometheus
+  #     - PROMETHEUS_PORT=9090
+  #   depends_on:
+  #     - elasticsearch
+  #     - prometheus
+  #   networks:
+  #     - backend_network
+  #   restart: always
 
 networks:
   backend_network:

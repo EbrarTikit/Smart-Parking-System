@@ -131,7 +131,7 @@ class SignInFragment : Fragment() {
 
     private fun showLoading(isLoading: Boolean) {
         binding.apply {
-            progressBar.visibility = if (isLoading) View.VISIBLE else View.GONE
+           // progressBar.visibility = if (isLoading) View.VISIBLE else View.GONE
             loginButton.isEnabled = !isLoading
             emailEditText.isEnabled = !isLoading
             passwordEditText.isEnabled = !isLoading

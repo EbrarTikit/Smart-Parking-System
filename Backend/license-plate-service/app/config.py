@@ -4,6 +4,10 @@ Uygulama konfigürasyon ayarları
 
 import os
 from typing import Dict, List, Optional, Any
+from dotenv import load_dotenv
+
+# .env dosyasını yükle
+load_dotenv()
 
 # DATABASE_URL çevre değişkeni varsa doğrudan kullan, yoksa ayrı bileşenlerden oluştur
 if "DATABASE_URL" in os.environ:
@@ -13,9 +17,9 @@ else:
     # Veritabanı bağlantı bilgileri
     DB_HOST = os.getenv("DB_HOST", "postgres_db")
     DB_PORT = os.getenv("DB_PORT", "5432")
-    DB_NAME = os.getenv("DB_NAME", "license_plate_db")  # Doğru veritabanı adı
-    DB_USER = os.getenv("DB_USER", "user")  # Docker Compose'daki kullanıcı adı
-    DB_PASSWORD = os.getenv("DB_PASSWORD", "password")  # Docker Compose'daki şifre
+    DB_NAME = os.getenv("DB_NAME", "license_plate_db")
+    DB_USER = os.getenv("DB_USER", "user")
+    DB_PASSWORD = os.getenv("DB_PASSWORD", "password")
 
     # SQLAlchemy bağlantı URL'si
     DATABASE_URL = f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"

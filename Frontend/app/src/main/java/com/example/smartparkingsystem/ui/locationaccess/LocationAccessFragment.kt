@@ -49,10 +49,6 @@ class LocationAccessFragment : Fragment(R.layout.fragment_location_access) {
             requestLocationPermission()
         }
 
-        binding.enterLocationButton.setOnClickListener {
-            findNavController().navigate(R.id.action_locationAccessFragment_to_locationFragment)
-        }
-
     }
 
     private fun requestLocationPermission() {

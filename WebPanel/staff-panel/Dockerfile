@@ -1,17 +1,15 @@
-# Geliştirme aşaması - Hot reloading destekli (GELİŞTİRME)
-FROM node:18-alpine as development
-
+# Build stage
+FROM node:18-alpine as build
 WORKDIR /app
-
-# Bağımlılıkları kopyala ve yükle
-COPY package.json package-lock.json ./
+COPY package*.json ./
 RUN npm install
-
-# Kaynak kodları kopyala
 COPY . .
+RUN npm run build
 
-# Geliştirme portu
-EXPOSE 3000
-
-# Geliştirme sunucusunu başlat
-CMD ["npm", "start"] 
+# Production stage
+FROM nginx:alpine
+COPY --from=build /app/build /usr/share/nginx/html
+RUN rm -f /etc/nginx/conf.d/default.conf
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"] 

@@ -1,0 +1,184 @@
+version: '3.8'
+
+services:
+  # User Service
+  user-service:
+    build: 
+      context: ./Backend/user-service
+      dockerfile: Dockerfile
+    container_name: user_service
+    ports:
+      - "8050:8050"
+    env_file:
+      - .env
+    networks:
+      - smart_parking_network
+    restart: always
+
+  # Parking Management Service
+  parking-management-service:
+    build:
+      context: ./Backend/parking-management-service
+      dockerfile: Dockerfile
+    container_name: parking_management_service
+    ports:
+      - "8081:8081"
+    env_file:
+      - .env
+    depends_on:
+      - user-service
+    networks:
+      - smart_parking_network
+    restart: always
+
+  # License Plate Service
+  license-plate-service:
+    build:
+      context: ./Backend/license-plate-service
+      dockerfile: Dockerfile
+    container_name: license_plate_service
+    ports:
+      - "8082:8082"
+    env_file:
+      - .env
+    networks:
+      - smart_parking_network
+    restart: always
+
+  # Navigation Service
+  navigation-service:
+    build:
+      context: ./Backend/navigation-service
+      dockerfile: Dockerfile
+    container_name: navigation_service
+    ports:
+      - "8083:8083"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/navigation_service
+      - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER}
+      - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD}
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=update
+      - SPRING_JPA_SHOW_SQL=true
+      - SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT=org.hibernate.dialect.PostgreSQLDialect
+    env_file:
+      - .env
+    depends_on:
+      - postgres
+    networks:
+      - smart_parking_network
+    restart: always
+
+  # Monitoring Service
+  monitoring-service:
+    build:
+      context: ./Backend/monitoring-service
+      dockerfile: Dockerfile
+    container_name: monitoring_service
+    ports:
+      - "8084:8084"
+    env_file:
+      - .env
+    networks:
+      - smart_parking_network
+    restart: always
+
+  # Notification Service
+  notification-service:
+    build:
+      context: ./Backend/notification-service
+      dockerfile: Dockerfile
+    container_name: notification_service
+    ports:
+      - "8085:8085"
+    env_file:
+      - .env
+    networks:
+      - smart_parking_network
+    restart: always
+
+  # Chatbot Service
+  chatbot-service:
+    build:
+      context: ./Backend/chatbot-service
+      dockerfile: Dockerfile
+    container_name: chatbot_service
+    ports:
+      - "8086:8086"
+    env_file:
+      - .env
+    networks:
+      - smart_parking_network
+    restart: always
+
+  # Admin Panel
+  admin-panel:
+    build: 
+      context: ./WebPanel/admin-panel
+      dockerfile: Dockerfile
+    container_name: admin_panel
+    ports:
+      - "3002:80"
+    env_file:
+      - .env
+    depends_on:
+      - user-service
+      - parking-management-service
+    networks:
+      - smart_parking_network
+    restart: always
+
+  # Staff Panel
+  staff-panel:
+    build:
+      context: ./WebPanel/staff-panel
+      dockerfile: Dockerfile
+    container_name: staff_panel
+    ports:
+      - "3003:80"
+    env_file:
+      - .env
+    depends_on:
+      - user-service
+      - parking-management-service
+    networks:
+      - smart_parking_network
+    restart: always
+
+  # PostgreSQL
+  postgres:
+    image: postgres:latest
+    container_name: postgres
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - smart_parking_network
+    restart: always
+
+  # RabbitMQ
+  rabbit-mq:
+    image: rabbitmq:3-management
+    container_name: rabbit_mq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      - RABBITMQ_DEFAULT_USER=${RABBITMQ_USERNAME}
+      - RABBITMQ_DEFAULT_PASS=${RABBITMQ_PASSWORD}
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - smart_parking_network
+    restart: always
+
+networks:
+  smart_parking_network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  rabbitmq_data:

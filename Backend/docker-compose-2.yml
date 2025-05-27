@@ -12,6 +12,11 @@ services:
       - ./navigation-service/src/main/resources/application.properties:/app/config/application.properties
     networks:
       - backend_network
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/navigation_db
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=your_password
+      - SPRING_JPA_DATABASE_PLATFORM=org.hibernate.dialect.PostgreSQLDialect
     restart: always
 
   # Temel servisler
@@ -176,7 +181,6 @@ services:
 
 networks:
   backend_network:
-    driver: bridge
-    
+    driver: bridge    
 volumes:
   postgres_data:

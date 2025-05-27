@@ -39,7 +39,7 @@ const SignUp = () => {
     
     try {
       // User servisine signup isteği gönderiyoruz
-      const response = await axios.post('http://localhost:8050/api/auth/signup', {
+      const response = await axios.post(`${process.env.REACT_APP_AUTH_SERVICE_URL}/api/auth/signup`, {
         username: formData.username,
         email: formData.email,
         password: formData.password

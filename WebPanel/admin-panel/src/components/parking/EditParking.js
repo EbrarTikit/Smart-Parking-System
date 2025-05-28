@@ -24,7 +24,8 @@ const EditParking = () => {
     longitude: '',
     rows: '',
     columns: '',
-    imageUrl: ''
+    imageUrl: '',
+    description: ''
   });
   
   const [originalData, setOriginalData] = useState(null);
@@ -66,7 +67,8 @@ const EditParking = () => {
         longitude: response.data.longitude || '',
         rows: response.data.rows || '',
         columns: response.data.columns || '',
-        imageUrl: response.data.imageUrl || ''
+        imageUrl: response.data.imageUrl || '',
+        description: response.data.description || ''
       };
       
       setFormData(parkingData);
@@ -240,6 +242,18 @@ const EditParking = () => {
                 name="closingHours"
                 value={formData.closingHours}
                 onChange={handleChange}
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Açıklama"
+                name="description"
+                multiline
+                rows={4}
+                value={formData.description}
+                onChange={handleChange}
+                placeholder="Otopark hakkında detaylı bilgi giriniz..."
               />
             </Grid>
           </Grid>

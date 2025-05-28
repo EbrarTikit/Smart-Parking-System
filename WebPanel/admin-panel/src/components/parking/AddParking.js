@@ -17,7 +17,8 @@ const AddParking = () => {
     longitude: '',
     rows: '',
     columns: '',
-    imageUrl: ''
+    imageUrl: '',
+    description: ''
   });
   
   const [loading, setLoading] = useState(false);
@@ -73,7 +74,8 @@ const AddParking = () => {
         longitude: '',
         rows: '',
         columns: '',
-        imageUrl: ''
+        imageUrl: '',
+        description: ''
       });
       
       setTimeout(() => {
@@ -223,6 +225,18 @@ const AddParking = () => {
                   name="imageUrl"
                   value={formData.imageUrl}
                   onChange={handleChange}
+                />
+              </Grid>
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  label="Açıklama"
+                  name="description"
+                  multiline
+                  rows={4}
+                  value={formData.description}
+                  onChange={handleChange}
+                  placeholder="Otopark hakkında detaylı bilgi giriniz..."
                 />
               </Grid>
             </Grid>

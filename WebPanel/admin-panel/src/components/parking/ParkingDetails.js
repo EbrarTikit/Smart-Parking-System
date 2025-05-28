@@ -237,6 +237,15 @@ const ParkingDetails = () => {
             </Card>
           </Grid>
         </Grid>
+
+        <Divider sx={{ my: 2 }} />
+        
+        <Typography variant="h6" gutterBottom>
+          Açıklama
+        </Typography>
+        <Typography variant="body1" color="text.secondary" sx={{ whiteSpace: 'pre-wrap' }}>
+          {parking.description || 'Açıklama bulunmuyor.'}
+        </Typography>
       </Paper>
 
       {/* Harita */}

@@ -249,30 +249,33 @@ const ParkingList = () => {
                   alt={parking.name}
                 />
                 <CardContent sx={{ flexGrow: 1 }}>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                    <Typography gutterBottom variant="h5" component="div">
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
+                    <Typography gutterBottom variant="h6" component="div" sx={{ flexGrow: 1 }}>
                       {parking.name}
                     </Typography>
-                    <Chip 
-                      label={`ID: ${parking.id}`} 
-                      size="small" 
-                      color="primary" 
-                      variant="outlined" 
-                    />
+                    <Chip label={`ID: ${parking.id}`} color="primary" size="small" />
                   </Box>
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+
+                  {/* Description alanını buraya ekleyelim */}
+                  {parking.description && (
+                    <Typography variant="body2" color="text.secondary" sx={{ mb: 1, whiteSpace: 'pre-wrap' }}>
+                      {parking.description}
+                    </Typography>
+                  )}
+
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
                     <LocationOnIcon fontSize="small" color="action" sx={{ mr: 1 }} />
                     <Typography variant="body2" color="text.secondary">
                       {parking.location}
                     </Typography>
                   </Box>
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
                     <DirectionsCarIcon fontSize="small" color="action" sx={{ mr: 1 }} />
                     <Typography variant="body2" color="text.secondary">
                       Kapasite: {parking.capacity} araç
                     </Typography>
                   </Box>
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
                     <AccessTimeIcon fontSize="small" color="action" sx={{ mr: 1 }} />
                     <Typography variant="body2" color="text.secondary">
                       {parking.openingHours} - {parking.closingHours}

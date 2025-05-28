@@ -6,17 +6,17 @@ import "./VehicleEntry.css";
 const VehicleEntry = () => {
   const [searchParams] = useSearchParams();
   const [licensePlate, setLicensePlate] = useState("");
-  const [parkingId, setParkingId] = useState(17); // Varsayılan otopark ID'si (Merkez Otopark)
+  const [parkingId, setParkingId] = useState(32); // Default parking ID (Sabiha Gökçen Parking)
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
-  const [entryMode, setEntryMode] = useState("manual"); // manual veya image
+  const [entryMode, setEntryMode] = useState("manual"); // manual or image
 
   const navigate = useNavigate();
 
-  // URL parametrelerinden otopark ID'sini al
+  // Get parking ID from URL parameters
   useEffect(() => {
     const parkingFromUrl = searchParams.get("parking");
 
@@ -25,14 +25,14 @@ const VehicleEntry = () => {
     }
   }, [searchParams]);
 
-  // Image dosyası seçildiğinde önizleme oluşturma
+  // Create preview when image file is selected
   const handleImageChange = (e) => {
     const file = e.target.files[0];
 
     if (file) {
       setImageFile(file);
 
-      // Dosya önizlemesi oluştur
+      // Create file preview
       const reader = new FileReader();
       reader.onloadend = () => {
         setImagePreview(reader.result);
@@ -44,12 +44,12 @@ const VehicleEntry = () => {
     }
   };
 
-  // Manuel giriş için form gönderimi
+  // Form submission for manual entry
   const handleManualSubmit = async (e) => {
     e.preventDefault();
 
     if (!licensePlate.trim()) {
-      setError("Plaka bilgisi gereklidir");
+      setError("License plate is required");
       return;
     }
 
@@ -60,29 +60,29 @@ const VehicleEntry = () => {
       const result = await api.vehicleEntry(licensePlate.trim(), parkingId);
 
       if (result.success) {
-        setSuccess(`Araç girişi başarılı: ${licensePlate}`);
+        setSuccess(`Vehicle entry successful: ${licensePlate}`);
         setLicensePlate("");
 
-        // 2 saniye sonra ana sayfaya yönlendir
+        // Redirect to home page after 2 seconds
         setTimeout(() => {
           navigate("/");
         }, 2000);
       } else {
-        setError(result.message || "Araç girişi yapılamadı");
+        setError(result.message || "Vehicle entry failed");
       }
     } catch (err) {
-      setError("Sunucu hatası: " + (err.message || "Bilinmeyen hata"));
+      setError("Server error: " + (err.message || "Unknown error"));
     } finally {
       setLoading(false);
     }
   };
 
-  // Görüntü ile giriş için form gönderimi
+  // Form submission for image-based entry
   const handleImageSubmit = async (e) => {
     e.preventDefault();
 
     if (!imageFile) {
-      setError("Lütfen bir görüntü seçin");
+      setError("Please select an image");
       return;
     }
 
@@ -94,20 +94,20 @@ const VehicleEntry = () => {
 
       if (result.success) {
         setSuccess(
-          `Görüntüden plaka tespit edildi ve giriş yapıldı: ${result.vehicle.license_plate}`
+          `License plate detected from image and entry recorded: ${result.vehicle.license_plate}`
         );
         setImageFile(null);
         setImagePreview(null);
 
-        // 2 saniye sonra ana sayfaya yönlendir
+        // Redirect to home page after 2 seconds
         setTimeout(() => {
           navigate("/");
         }, 2000);
       } else {
-        setError(result.message || "Araç girişi yapılamadı");
+        setError(result.message || "Vehicle entry failed");
       }
     } catch (err) {
-      setError("Görüntü işleme hatası: " + (err.message || "Bilinmeyen hata"));
+      setError("Image processing error: " + (err.message || "Unknown error"));
     } finally {
       setLoading(false);
     }
@@ -115,20 +115,20 @@ const VehicleEntry = () => {
 
   return (
     <div className="container vehicle-entry">
-      <h2>Araç Girişi</h2>
+      <h2>Vehicle Entry</h2>
 
       <div className="entry-mode-select">
         <button
           className={`mode-btn ${entryMode === "manual" ? "active" : ""}`}
           onClick={() => setEntryMode("manual")}
         >
-          Manuel Giriş
+          Manual Entry
         </button>
         <button
           className={`mode-btn ${entryMode === "image" ? "active" : ""}`}
           onClick={() => setEntryMode("image")}
         >
-          Görüntü ile Giriş
+          Entry with Image
         </button>
       </div>
 
@@ -145,29 +145,31 @@ const VehicleEntry = () => {
       )}
 
       <div className="parking-selector">
-        <label htmlFor="parking-id">Otopark:</label>
+        <label htmlFor="parking-id">Parking:</label>
         <select
           id="parking-id"
           value={parkingId}
           onChange={(e) => setParkingId(parseInt(e.target.value))}
           disabled={loading}
         >
-          <option value="17">Merkez Otopark (ID: 17)</option>
-          <option value="23">Milas Otopark (ID: 23)</option>
+          <option value="35">Kaleici Parking (ID: 35)</option>
+          <option value="34">Otopark Antalya Parking (ID: 34)</option>
+          <option value="33">Şişli Park Parking (ID: 33)</option>
+          <option value="32">Sabiha Gökçen Parking (ID: 32)</option>
         </select>
       </div>
 
       {entryMode === "manual" ? (
         <form onSubmit={handleManualSubmit} className="entry-form">
           <div className="form-group">
-            <label htmlFor="license-plate">Plaka</label>
+            <label htmlFor="license-plate">License Plate</label>
             <input
               type="text"
               id="license-plate"
               className="form-control"
               value={licensePlate}
               onChange={(e) => setLicensePlate(e.target.value.toUpperCase())}
-              placeholder="Örn: 34ABC123"
+              placeholder="e.g. 34ABC123"
               disabled={loading}
             />
           </div>
@@ -178,7 +180,7 @@ const VehicleEntry = () => {
               className="btn btn-primary"
               disabled={loading}
             >
-              {loading ? "İşleniyor..." : "Araç Girişi Kaydet"}
+              {loading ? "Processing..." : "Record Vehicle Entry"}
             </button>
             <button
               type="button"
@@ -186,29 +188,29 @@ const VehicleEntry = () => {
               onClick={() => navigate("/")}
               disabled={loading}
             >
-              İptal
+              Cancel
             </button>
           </div>
         </form>
       ) : (
         <form onSubmit={handleImageSubmit} className="entry-form">
           <div className="form-group">
-            <label htmlFor="image-file">Plaka Görüntüsü</label>
+            <label htmlFor="image-file">License Plate Image</label>
             <input
               type="file"
               id="image-file"
               className="form-control"
-              accept="image/*"
               onChange={handleImageChange}
+              accept="image/*"
               disabled={loading}
             />
-
-            {imagePreview && (
-              <div className="image-preview">
-                <img src={imagePreview} alt="Plaka Önizleme" />
-              </div>
-            )}
           </div>
+
+          {imagePreview && (
+            <div className="image-preview">
+              <img src={imagePreview} alt="License plate preview" />
+            </div>
+          )}
 
           <div className="form-group">
             <button
@@ -216,9 +218,7 @@ const VehicleEntry = () => {
               className="btn btn-primary"
               disabled={loading || !imageFile}
             >
-              {loading
-                ? "Görüntü İşleniyor..."
-                : "Görüntüden Plaka Tanı ve Kaydet"}
+              {loading ? "Processing Image..." : "Process Image & Record Entry"}
             </button>
             <button
               type="button"
@@ -226,7 +226,7 @@ const VehicleEntry = () => {
               onClick={() => navigate("/")}
               disabled={loading}
             >
-              İptal
+              Cancel
             </button>
           </div>
         </form>

@@ -6,18 +6,18 @@ import "./VehicleExit.css";
 const VehicleExit = () => {
   const [searchParams] = useSearchParams();
   const [licensePlate, setLicensePlate] = useState("");
-  const [parkingId, setParkingId] = useState(23); // Varsayılan otopark ID'si
+  const [parkingId, setParkingId] = useState(32); // Default parking ID
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   const [exitResult, setExitResult] = useState(null);
-  const [exitMode, setExitMode] = useState("manual"); // manual veya image
+  const [exitMode, setExitMode] = useState("manual"); // manual or image
 
   const navigate = useNavigate();
 
-  // URL parametrelerinden plaka ve otopark ID'sini al
+  // Get license plate and parking ID from URL parameters
   useEffect(() => {
     const plateFromUrl = searchParams.get("plate");
     const parkingFromUrl = searchParams.get("parking");
@@ -31,14 +31,14 @@ const VehicleExit = () => {
     }
   }, [searchParams]);
 
-  // Image dosyası seçildiğinde önizleme oluşturma
+  // Create preview when image file is selected
   const handleImageChange = (e) => {
     const file = e.target.files[0];
 
     if (file) {
       setImageFile(file);
 
-      // Dosya önizlemesi oluştur
+      // Create file preview
       const reader = new FileReader();
       reader.onloadend = () => {
         setImagePreview(reader.result);
@@ -50,12 +50,12 @@ const VehicleExit = () => {
     }
   };
 
-  // Manuel çıkış için form gönderimi
+  // Form submission for manual exit
   const handleManualSubmit = async (e) => {
     e.preventDefault();
 
     if (!licensePlate.trim()) {
-      setError("Plaka bilgisi gereklidir");
+      setError("License plate is required");
       return;
     }
 
@@ -67,24 +67,24 @@ const VehicleExit = () => {
       const result = await api.vehicleExit(licensePlate.trim(), parkingId);
 
       if (result.success) {
-        setSuccess(`Araç çıkışı başarılı: ${licensePlate}`);
+        setSuccess(`Vehicle exit successful: ${licensePlate}`);
         setExitResult(result);
       } else {
-        setError(result.message || "Araç çıkışı yapılamadı");
+        setError(result.message || "Vehicle exit failed");
       }
     } catch (err) {
-      setError("Sunucu hatası: " + (err.message || "Bilinmeyen hata"));
+      setError("Server error: " + (err.message || "Unknown error"));
     } finally {
       setLoading(false);
     }
   };
 
-  // Görüntü ile çıkış için form gönderimi
+  // Form submission for image-based exit
   const handleImageSubmit = async (e) => {
     e.preventDefault();
 
     if (!imageFile) {
-      setError("Lütfen bir görüntü seçin");
+      setError("Please select an image");
       return;
     }
 
@@ -97,7 +97,7 @@ const VehicleExit = () => {
 
       if (result.success) {
         setSuccess(
-          `Görüntüden plaka tespit edildi ve çıkış yapıldı: ${
+          `License plate detected from image and exit recorded: ${
             result.license_plate || ""
           }`
         );
@@ -105,58 +105,58 @@ const VehicleExit = () => {
         setImageFile(null);
         setImagePreview(null);
       } else {
-        setError(result.message || "Araç çıkışı yapılamadı");
+        setError(result.message || "Vehicle exit failed");
       }
     } catch (err) {
-      setError("Görüntü işleme hatası: " + (err.message || "Bilinmeyen hata"));
+      setError("Image processing error: " + (err.message || "Unknown error"));
     } finally {
       setLoading(false);
     }
   };
 
-  // Ana sayfaya dön
+  // Return to home page
   const handleBackToHome = () => {
     navigate("/");
   };
 
-  // Ücret ve süre bilgilerini gösteren sonuç kartı
+  // Result card showing fee and duration information
   const ResultCard = ({ result }) => {
     if (!result) return null;
 
     return (
       <div className="result-card">
-        <h3>Otopark Çıkış Bilgileri</h3>
+        <h3>Parking Exit Information</h3>
 
         <div className="result-info">
           <p>
-            <span className="label">Plaka:</span>
+            <span className="label">License Plate:</span>
             <span className="value">{licensePlate}</span>
           </p>
 
           <p>
-            <span className="label">Giriş Zamanı:</span>
+            <span className="label">Entry Time:</span>
             <span className="value">
-              {new Date(result.entry_time).toLocaleString("tr-TR")}
+              {new Date(result.entry_time).toLocaleString("en-US")}
             </span>
           </p>
 
           <p>
-            <span className="label">Çıkış Zamanı:</span>
+            <span className="label">Exit Time:</span>
             <span className="value">
-              {new Date(result.exit_time).toLocaleString("tr-TR")}
+              {new Date(result.exit_time).toLocaleString("en-US")}
             </span>
           </p>
 
           <p>
-            <span className="label">Park Süresi:</span>
+            <span className="label">Parking Duration:</span>
             <span className="value">
-              {result.duration_hours.toFixed(2)} saat
+              {result.duration_hours.toFixed(2)} hours
             </span>
           </p>
 
           <p className="fee">
-            <span className="label">Ücret:</span>
-            <span className="value">{result.parking_fee.toFixed(2)} TL</span>
+            <span className="label">Fee:</span>
+            <span className="value">${result.parking_fee.toFixed(2)}</span>
           </p>
         </div>
 
@@ -165,7 +165,7 @@ const VehicleExit = () => {
           className="btn btn-primary"
           onClick={handleBackToHome}
         >
-          Ana Sayfaya Dön
+          Return to Dashboard
         </button>
       </div>
     );
@@ -173,9 +173,9 @@ const VehicleExit = () => {
 
   return (
     <div className="container vehicle-exit">
-      <h2>Araç Çıkışı</h2>
+      <h2>Vehicle Exit</h2>
 
-      {/* Sonuç kartını göster */}
+      {/* Show result card */}
       {exitResult ? (
         <ResultCard result={exitResult} />
       ) : (
@@ -185,13 +185,13 @@ const VehicleExit = () => {
               className={`mode-btn ${exitMode === "manual" ? "active" : ""}`}
               onClick={() => setExitMode("manual")}
             >
-              Manuel Çıkış
+              Manual Exit
             </button>
             <button
               className={`mode-btn ${exitMode === "image" ? "active" : ""}`}
               onClick={() => setExitMode("image")}
             >
-              Görüntü ile Çıkış
+              Exit with Image
             </button>
           </div>
 
@@ -208,22 +208,24 @@ const VehicleExit = () => {
           )}
 
           <div className="parking-selector">
-            <label htmlFor="parking-id">Otopark:</label>
+            <label htmlFor="parking-id">Parking:</label>
             <select
               id="parking-id"
               value={parkingId}
               onChange={(e) => setParkingId(parseInt(e.target.value))}
               disabled={loading}
             >
-              <option value="23">Milas Otopark (ID: 23)</option>
-              <option value="17">Merkez Otopark (ID: 17)</option>
+              <option value="35">Kaleici Parking (ID: 35)</option>
+              <option value="34">Otopark Antalya Parking (ID: 34)</option>
+              <option value="33">Şişli Park Parking (ID: 33)</option>
+              <option value="32">Sabiha Gökçen Parking (ID: 32)</option>
             </select>
           </div>
 
           {exitMode === "manual" ? (
             <form onSubmit={handleManualSubmit} className="exit-form">
               <div className="form-group">
-                <label htmlFor="license-plate">Plaka</label>
+                <label htmlFor="license-plate">License Plate</label>
                 <input
                   type="text"
                   id="license-plate"
@@ -232,7 +234,7 @@ const VehicleExit = () => {
                   onChange={(e) =>
                     setLicensePlate(e.target.value.toUpperCase())
                   }
-                  placeholder="Örn: 34ABC123"
+                  placeholder="e.g. 34ABC123"
                   disabled={loading}
                 />
               </div>
@@ -243,7 +245,7 @@ const VehicleExit = () => {
                   className="btn btn-primary"
                   disabled={loading}
                 >
-                  {loading ? "İşleniyor..." : "Araç Çıkışı Yap"}
+                  {loading ? "Processing..." : "Record Vehicle Exit"}
                 </button>
                 <button
                   type="button"
@@ -251,29 +253,29 @@ const VehicleExit = () => {
                   onClick={() => navigate("/")}
                   disabled={loading}
                 >
-                  İptal
+                  Cancel
                 </button>
               </div>
             </form>
           ) : (
             <form onSubmit={handleImageSubmit} className="exit-form">
               <div className="form-group">
-                <label htmlFor="image-file">Plaka Görüntüsü</label>
+                <label htmlFor="image-file">License Plate Image</label>
                 <input
                   type="file"
                   id="image-file"
                   className="form-control"
-                  accept="image/*"
                   onChange={handleImageChange}
+                  accept="image/*"
                   disabled={loading}
                 />
-
-                {imagePreview && (
-                  <div className="image-preview">
-                    <img src={imagePreview} alt="Plaka Önizleme" />
-                  </div>
-                )}
               </div>
+
+              {imagePreview && (
+                <div className="image-preview">
+                  <img src={imagePreview} alt="License plate preview" />
+                </div>
+              )}
 
               <div className="form-group">
                 <button
@@ -282,8 +284,8 @@ const VehicleExit = () => {
                   disabled={loading || !imageFile}
                 >
                   {loading
-                    ? "Görüntü İşleniyor..."
-                    : "Görüntüden Plaka Tanı ve Çıkış Yap"}
+                    ? "Processing Image..."
+                    : "Process Image & Record Exit"}
                 </button>
                 <button
                   type="button"
@@ -291,7 +293,7 @@ const VehicleExit = () => {
                   onClick={() => navigate("/")}
                   disabled={loading}
                 >
-                  İptal
+                  Cancel
                 </button>
               </div>
             </form>

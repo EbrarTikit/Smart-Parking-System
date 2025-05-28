@@ -178,6 +178,10 @@ RUN pip list | grep -e uvicorn -e websockets -e wsproto && \
 # Uygulamayı kopyala - uygulama kodları en son kopyalanmalı çünkü daha sık değişir
 COPY app /app/app
 
+# Veritabanı başlatma scriptini kopyala
+COPY init-db.py /app/init-db.py
+RUN chmod +x /app/init-db.py
+
 # YOLO model dosyaları volume olarak bağlanacak
 
 # Dosya izinlerini düzelt
@@ -192,6 +196,5 @@ RUN pip show easyocr && \
     echo "EasyOCR utils.py dosyası bulunamadı"; \
     fi
 
-# Geliştirme sırasında, kod değişikliklerini otomatik algılamak için reload modunda çalış
-# Tam yolu belirt
-CMD ["/usr/local/bin/uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload", "--log-level", "debug"]
+# Önce veritabanı tablolarını oluştur, sonra uygulamayı başlat
+CMD python /app/init-db.py && /usr/local/bin/uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload --log-level debug

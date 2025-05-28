@@ -61,19 +61,34 @@ const ParkingLayout = () => {
 
   useEffect(() => {
     const fetchSensors = async () => {
+      setSensorLoading(true);
       try {
         const response = await getAllSensors();
-        setSensors(response.data);
+        const allSensors = response.data;
+
+        const parkingIdString = String(id).padStart(4, '0');
+
+        const relevantSensors = allSensors.filter(sensor =>
+          sensor.id && String(sensor.id).startsWith(parkingIdString)
+        );
+
+        setSensors(relevantSensors);
+        setError('');
       } catch (error) {
         console.error('Sensörler yüklenirken hata:', error);
         setError('Sensörler yüklenirken bir hata oluştu');
+        setSensors([]);
+      } finally {
+        setSensorLoading(false);
       }
     };
 
-    if (dialogOpen) {
+    if (dialogOpen && id) {
       fetchSensors();
+    } else if (!dialogOpen) {
+      setSensors([]);
     }
-  }, [dialogOpen]);
+  }, [dialogOpen, id]);
 
   const fetchParkingDetails = async () => {
     setLoading(true);
@@ -224,8 +239,12 @@ const ParkingLayout = () => {
     const { row, col } = selectedCell;
     const newMatrix = [...matrix];
     
+    if (dialogData.type === 'spot' && !dialogData.sensorId) {
+      setError('Park yeri için sensör seçimi zorunludur.');
+      return;
+    }
+
     try {
-      // Seçilen araca göre hücreyi güncelle
       switch (dialogData.type) {
         case 'spot':
           const spotData = {
@@ -233,26 +252,23 @@ const ParkingLayout = () => {
             identifier: dialogData.identifier,
             sensorId: dialogData.sensorId,
             id: selectedCell.current.type === 'spot' ? selectedCell.current.id : null,
-            occupied: false
+            occupied: selectedCell.current.type === 'spot' ? selectedCell.current.occupied : false
           };
           
-          // Eğer mevcut bir spot ise ve sensör ID'si değiştiyse, veritabanını güncelle
-          if (selectedCell.current.type === 'spot' && 
-              selectedCell.current.id && 
-              selectedCell.current.sensorId !== dialogData.sensorId) {
+          if (selectedCell.current.type !== 'spot' || selectedCell.current.sensorId !== dialogData.sensorId) {
             try {
-              const response = await updateSpotSensor(id, row, col, dialogData.sensorId);
+              const response = await updateSpotSensor(id, row, col, dialogData.sensorId, dialogData.identifier);
               if (response.data) {
-                setSuccess('Sensör başarıyla güncellendi');
-                // Güncellenmiş spot verilerini kullan
+                setSuccess('Park yeri başarıyla güncellendi');
                 spotData.id = response.data.id;
                 spotData.sensorId = response.data.sensorId;
+                spotData.identifier = response.data.spotIdentifier;
               }
             } catch (error) {
-              console.error('Sensör güncelleme hatası:', error);
+              console.error('Park yeri güncelleme hatası:', error);
               const errorMessage = error.response?.data?.message || error.message;
-              setError(`Sensör güncellenirken bir hata oluştu: ${errorMessage}`);
-              return; // Hata durumunda işlemi durdur
+              setError(`Park yeri güncellenirken bir hata oluştu: ${errorMessage}`);
+              return;
             }
           }
           
@@ -262,23 +278,33 @@ const ParkingLayout = () => {
         case 'road':
           newMatrix[row][col] = {
             type: 'road',
-            identifier: dialogData.identifier
+            identifier: dialogData.identifier,
+            orientation: matrix[row][col].orientation
           };
           break;
           
         case 'building':
           newMatrix[row][col] = {
-            type: 'building'
+            type: 'building',
+            id: selectedCell.current.type === 'building' ? selectedCell.current.id : null
           };
+          break;
+        case 'empty':
+          newMatrix[row][col] = { type: 'empty', data: null };
           break;
       }
       
       setMatrix(newMatrix);
       setDialogOpen(false);
       setSelectedCell(null);
+      if (!success) {
+        setSuccess('Hücre başarıyla güncellendi');
+        setTimeout(() => setSuccess(''), 3000);
+      }
     } catch (error) {
       console.error('Dialog kaydetme hatası:', error);
-      setError('İşlem sırasında bir hata oluştu: ' + error.message);
+      setError('İşlem sırasında bir hata oluştu: ' + (error.response?.data?.message || error.message));
+      setTimeout(() => setError(''), 5000);
     }
   };
 
@@ -571,45 +597,47 @@ const ParkingLayout = () => {
         )}
         
         {/* Otopark Matrisi */}
-        <Box sx={{ overflowX: 'auto' }}>
-          <Box sx={{ 
-            display: 'inline-block', 
-            border: '1px solid #ddd', 
-            borderRadius: 1,
-            p: 1,
-            bgcolor: '#fff'
-          }}>
-            <Grid container spacing={0.5}>
-              {matrix.map((row, rowIndex) => (
-                <Grid container item key={rowIndex} spacing={0.5} sx={{ flexWrap: 'nowrap' }}>
-                  {row.map((cell, colIndex) => (
-                    <Grid item key={colIndex} sx={{ flexBasis: 0, flexGrow: 1, maxWidth: `calc(100% / ${parking.columns})`, aspectRatio: '1 / 1' }}>
-                      <Paper
-                        onClick={() => handleCellClick(rowIndex, colIndex)}
-                        sx={{
-                          width: '100%',
-                          height: '100%',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          cursor: editMode ? 'pointer' : 'default',
-                          transition: 'background-color 0.2s ease',
-                          '&:hover': {
-                            bgcolor: editMode ? 'rgba(0, 0, 0, 0.1)' : undefined,
-                          },
-                          bgcolor: cell.type !== 'road' ? cellStyles[cell.type].bgcolor : undefined, // Yol hücreleri için bgcolor renderCellContent içinde ayarlanacak
-                        }}
-                        elevation={editMode ? 1 : 0}
-                        square
-                      >
-                        {renderCellContent(cell)}
-                      </Paper>
-                    </Grid>
-                  ))}
-                </Grid>
-              ))}
-            </Grid>
-          </Box>
+        <Box sx={{ overflowX: 'auto', maxWidth: '100%' }}>
+          <Grid container spacing={0.5} sx={{ display: 'inline-flex', flexDirection: 'column' }}>
+            {matrix.map((row, rowIndex) => (
+              <Grid container item key={rowIndex} spacing={0.5} sx={{ flexWrap: 'nowrap', display: 'inline-flex' }}>
+                {row.map((cell, colIndex) => (
+                  <Grid
+                    item
+                    key={colIndex}
+                    sx={{
+                      flexShrink: 0,
+                      flexGrow: 0,
+                      flexBasis: '120px',
+                      width: '120px',
+                      height: '120px',
+                    }}
+                  >
+                    <Paper
+                      onClick={() => handleCellClick(rowIndex, colIndex)}
+                      sx={{
+                        width: '100%',
+                        height: '100%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        cursor: editMode ? 'pointer' : 'default',
+                        transition: 'background-color 0.2s ease',
+                        '&:hover': {
+                          bgcolor: editMode ? 'rgba(0, 0, 0, 0.1)' : undefined,
+                        },
+                        bgcolor: cell.type !== 'road' ? cellStyles[cell.type].bgcolor : undefined,
+                      }}
+                      elevation={editMode ? 1 : 0}
+                      square
+                    >
+                      {renderCellContent(cell)}
+                    </Paper>
+                  </Grid>
+                ))}
+              </Grid>
+            ))}
+          </Grid>
         </Box>
         
         {/* Renk açıklamaları */}
@@ -680,24 +708,22 @@ const ParkingLayout = () => {
       </Box>
       
       {/* Dialog - Park Yeri/Yol Ekleme */}
-      <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)}>
-        <DialogTitle>
-          {selectedCell?.current?.type === 'spot' ? 'Park Yeri Düzenle' : 'Yeni Park Yeri Ekle'}
-        </DialogTitle>
+      <Dialog open={dialogOpen} onClose={handleDialogClose}>
+        <DialogTitle>{selectedTool === 'spot' ? 'Yeni Park Yeri Ekle' : selectedTool === 'road' ? 'Yol Ayarları' : 'Bina Ayarları'}</DialogTitle>
         <DialogContent>
-          <TextField
-            autoFocus
-            margin="dense"
-            label="Tanımlayıcı"
-            fullWidth
-            value={dialogData.identifier}
-            onChange={(e) => setDialogData({ ...dialogData, identifier: e.target.value })}
-          />
-          {dialogData.type === 'spot' && (
+          {selectedCell && selectedTool === 'spot' && (
             <>
+              <TextField
+                autoFocus
+                margin="dense"
+                label="Tanımlayıcı"
+                fullWidth
+                value={dialogData.identifier}
+                onChange={(e) => setDialogData({ ...dialogData, identifier: e.target.value })}
+              />
               <Autocomplete
                 options={sensors}
-                getOptionLabel={(option) => `${option.id} (${option.parkingId})`}
+                getOptionLabel={(option) => `${option.id}`}
                 value={sensors.find(s => s.id === dialogData.sensorId) || null}
                 onChange={(event, newValue) => {
                   setDialogData({ ...dialogData, sensorId: newValue?.id || '' });
@@ -706,25 +732,33 @@ const ParkingLayout = () => {
                   <TextField
                     {...params}
                     margin="dense"
-                    label="Sensör"
+                    label={`Sensör${sensorLoading ? ' Yükleniyor...' : ''}`}
                     fullWidth
+                    required
+                    error={selectedTool === 'spot' && !dialogData.sensorId}
+                    helperText={selectedTool === 'spot' && !dialogData.sensorId ? 'Sensör seçimi zorunludur' : ''}
                   />
                 )}
+                loading={sensorLoading}
               />
-              <Button
-                color="primary"
-                onClick={() => setNewSensorDialogOpen(true)}
-                style={{ marginTop: '8px' }}
-              >
-                Yeni Sensör Ekle
-              </Button>
             </>
+          )}
+          {selectedCell && selectedTool === 'road' && (
+            <TextField
+              autoFocus
+              margin="dense"
+              label="Yol Tanımlayıcı (entry/exit veya boş)"
+              fullWidth
+              value={dialogData.identifier}
+              onChange={(e) => setDialogData({ ...dialogData, identifier: e.target.value })}
+              placeholder="entry, exit veya boş bırakın"
+            />
           )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDialogOpen(false)}>İptal</Button>
-          <Button onClick={handleDialogSave} color="primary">
-            Kaydet
+          <Button onClick={handleDialogClose}>İptal</Button>
+          <Button onClick={handleDialogSave} color="primary" disabled={saving || (selectedTool === 'spot' && !dialogData.sensorId)}>
+            {saving ? <CircularProgress size={24} /> : 'Kaydet'}
           </Button>
         </DialogActions>
       </Dialog>

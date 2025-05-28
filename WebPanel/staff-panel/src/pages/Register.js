@@ -22,25 +22,25 @@ const Register = ({ isAuthenticated }) => {
   const validateForm = () => {
     // Form validasyonu
     if (!username || !email || !password || !confirmPassword) {
-      setError("Tüm alanları doldurunuz");
+      setError("Please fill in all fields");
       return false;
     }
 
     if (password !== confirmPassword) {
-      setError("Şifreler eşleşmiyor");
+      setError("Passwords do not match");
       return false;
     }
 
     // Email validasyonu
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      setError("Geçerli bir email adresi giriniz");
+      setError("Please enter a valid email address");
       return false;
     }
 
     // Şifre uzunluğu kontrolü
     if (password.length < 6) {
-      setError("Şifre en az 6 karakter olmalıdır");
+      setError("Password must be at least 6 characters");
       return false;
     }
 
@@ -63,12 +63,10 @@ const Register = ({ isAuthenticated }) => {
 
       // Başarılı kayıt sonrası login sayfasına yönlendir
       navigate("/login", {
-        state: { message: "Kayıt başarılı! Şimdi giriş yapabilirsiniz." },
+        state: { message: "Registration successful! You can now login." },
       });
     } catch (err) {
-      setError(
-        err.message || "Kayıt işlemi başarısız. Lütfen tekrar deneyiniz."
-      );
+      setError(err.message || "Registration failed. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -83,8 +81,8 @@ const Register = ({ isAuthenticated }) => {
               <i className="parking-icon">P</i>
             </div>
           </div>
-          <h2>Smart Parking Sistemi</h2>
-          <p>Yeni Hesap Oluşturun</p>
+          <h2>Smart Parking System</h2>
+          <p>Create a New Account</p>
         </div>
 
         {error && (
@@ -96,7 +94,7 @@ const Register = ({ isAuthenticated }) => {
         <form onSubmit={handleSubmit} className="register-form">
           <div className="form-group">
             <label htmlFor="username">
-              <i className="input-icon">👤</i> Kullanıcı Adı
+              <i className="input-icon">👤</i> Username
             </label>
             <input
               type="text"
@@ -104,7 +102,7 @@ const Register = ({ isAuthenticated }) => {
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               disabled={loading}
-              placeholder="Kullanıcı adınızı girin"
+              placeholder="Enter your username"
               autoComplete="username"
             />
           </div>
@@ -119,14 +117,14 @@ const Register = ({ isAuthenticated }) => {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               disabled={loading}
-              placeholder="Email adresinizi girin"
+              placeholder="Enter your email address"
               autoComplete="email"
             />
           </div>
 
           <div className="form-group">
             <label htmlFor="password">
-              <i className="input-icon">🔒</i> Şifre
+              <i className="input-icon">🔒</i> Password
             </label>
             <input
               type="password"
@@ -134,14 +132,14 @@ const Register = ({ isAuthenticated }) => {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               disabled={loading}
-              placeholder="Şifrenizi girin"
+              placeholder="Enter your password"
               autoComplete="new-password"
             />
           </div>
 
           <div className="form-group">
             <label htmlFor="confirmPassword">
-              <i className="input-icon">🔐</i> Şifre Tekrar
+              <i className="input-icon">🔐</i> Confirm Password
             </label>
             <input
               type="password"
@@ -149,7 +147,7 @@ const Register = ({ isAuthenticated }) => {
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               disabled={loading}
-              placeholder="Şifrenizi tekrar girin"
+              placeholder="Confirm your password"
               autoComplete="new-password"
             />
           </div>
@@ -157,16 +155,16 @@ const Register = ({ isAuthenticated }) => {
           <button type="submit" className="register-button" disabled={loading}>
             {loading ? (
               <span className="loading-spinner">
-                <span className="spinner"></span> Kayıt Yapılıyor...
+                <span className="spinner"></span> Registering...
               </span>
             ) : (
-              "Kayıt Ol"
+              "Register"
             )}
           </button>
         </form>
 
         <div className="register-footer">
-          Zaten bir hesabınız var mı? <Link to="/login">Giriş Yap</Link>
+          Already have an account? <Link to="/login">Login</Link>
         </div>
       </div>
     </div>

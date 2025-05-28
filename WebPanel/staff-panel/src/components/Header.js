@@ -20,7 +20,7 @@ const Header = () => {
           }
         }
       } catch (error) {
-        console.error("Kullanıcı bilgileri alınamadı:", error);
+        console.error("Failed to get user information:", error);
       }
     };
 
@@ -55,20 +55,20 @@ const Header = () => {
             <li
               className={location.pathname === "/vehicle-entry" ? "active" : ""}
             >
-              <Link to="/vehicle-entry">Araç Girişi</Link>
+              <Link to="/vehicle-entry">Vehicle Entry</Link>
             </li>
             <li
               className={location.pathname === "/vehicle-exit" ? "active" : ""}
             >
-              <Link to="/vehicle-exit">Araç Çıkışı</Link>
+              <Link to="/vehicle-exit">Vehicle Exit</Link>
             </li>
           </ul>
         </nav>
 
         <div className="user-menu">
-          {username && <span className="username">Merhaba, {username}</span>}
+          {username && <span className="username">Hello, {username}</span>}
           <button className="logout-button" onClick={handleLogout}>
-            Çıkış Yap
+            Logout
           </button>
         </div>
       </div>

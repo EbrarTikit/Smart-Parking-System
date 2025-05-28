@@ -61,12 +61,13 @@ const Dashboard = () => {
         
         <Grid container spacing={3}>
           <Grid item xs={12} md={6}>
-            <Paper 
-              elevation={3} 
-              sx={{ 
-                p: 3, 
+            <Paper
+              elevation={3}
+              sx={{
+                p: 3,
                 textAlign: 'center',
                 cursor: 'pointer',
+                height: '100%',
                 '&:hover': { backgroundColor: '#f5f5f5' }
               }}
               onClick={() => navigate('/add-parking')}
@@ -81,12 +82,13 @@ const Dashboard = () => {
           </Grid>
           
           <Grid item xs={12} md={6}>
-            <Paper 
-              elevation={3} 
-              sx={{ 
-                p: 3, 
+            <Paper
+              elevation={3}
+              sx={{
+                p: 3,
                 textAlign: 'center',
                 cursor: 'pointer',
+                height: '100%',
                 '&:hover': { backgroundColor: '#f5f5f5' }
               }}
               onClick={() => navigate('/parkings')}

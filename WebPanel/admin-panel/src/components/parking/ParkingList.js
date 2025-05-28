@@ -18,6 +18,7 @@ import VisibilityIcon from '@mui/icons-material/Visibility';
 import SearchIcon from '@mui/icons-material/Search';
 import ClearIcon from '@mui/icons-material/Clear';
 import PageHeader from '../common/PageHeader';
+import GridViewIcon from '@mui/icons-material/GridView';
 
 const ParkingList = () => {
   const navigate = useNavigate();
@@ -231,23 +232,20 @@ const ParkingList = () => {
       ) : viewMode === 'card' ? (
         <Grid container spacing={3}>
           {filteredParkings.map((parking) => (
-            <Grid item xs={12} sm={6} md={4} key={parking.id}>
-              <Card sx={{ 
-                height: '100%', 
-                display: 'flex', 
-                flexDirection: 'column',
-                transition: 'transform 0.3s, box-shadow 0.3s',
-                '&:hover': {
-                  transform: 'translateY(-5px)',
-                  boxShadow: 6,
-                }
-              }}>
-                <CardMedia
-                  component="img"
-                  height="140"
-                  image={parking.imageUrl || "https://source.unsplash.com/random?parking"}
-                  alt={parking.name}
-                />
+            <Grid item key={parking.id} xs={12} sm={6} md={4} lg={4}>
+              <Card
+                sx={{ height: '100%', display: 'flex', flexDirection: 'column', cursor: 'pointer' }}
+                onClick={() => handleViewDetails(parking.id)}
+              >
+                {parking.imageUrl && (
+                  <CardMedia
+                    component="img"
+                    height="140"
+                    image={parking.imageUrl}
+                    alt={parking.name}
+                    sx={{ objectFit: 'cover' }}
+                  />
+                )}
                 <CardContent sx={{ flexGrow: 1 }}>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
                     <Typography gutterBottom variant="h6" component="div" sx={{ flexGrow: 1 }}>
@@ -256,9 +254,8 @@ const ParkingList = () => {
                     <Chip label={`ID: ${parking.id}`} color="primary" size="small" />
                   </Box>
 
-                  {/* Description alanını buraya ekleyelim */}
                   {parking.description && (
-                    <Typography variant="body2" color="text.secondary" sx={{ mb: 1, whiteSpace: 'pre-wrap' }}>
+                    <Typography variant="body2" color="text.secondary" sx={{ mb: 1, whiteSpace: 'pre-wrap',  display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                       {parking.description}
                     </Typography>
                   )}
@@ -288,34 +285,22 @@ const ParkingList = () => {
                     </Typography>
                   </Box>
                 </CardContent>
-                <CardActions sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <Box>
-                    <Tooltip title="Detaylar">
-                      <IconButton 
-                        size="small" 
-                        onClick={() => handleViewDetails(parking.id)}
-                        color="primary"
-                      >
-                        <VisibilityIcon fontSize="small" />
+                <CardActions>
+                  <Box sx={{ flexGrow: 1 }}>
+                    <Tooltip title="Düzenle">
+                      <IconButton onClick={(e) => { e.stopPropagation(); handleEditParking(parking.id); }} color="info">
+                        <EditIcon />
                       </IconButton>
                     </Tooltip>
-                    <Tooltip title="Düzenle">
-                      <IconButton 
-                        size="small" 
-                        onClick={() => handleEditParking(parking.id)}
-                        color="primary"
-                      >
-                        <EditIcon fontSize="small" />
+                    <Tooltip title="Düzeni Görüntüle">
+                      <IconButton onClick={(e) => { e.stopPropagation(); navigate(`/parking-layout/${parking.id}`); }} color="success">
+                        <GridViewIcon />
                       </IconButton>
                     </Tooltip>
                   </Box>
                   <Tooltip title="Sil">
-                    <IconButton 
-                      size="small" 
-                      onClick={() => handleDeleteClick(parking)}
-                      color="error"
-                    >
-                      <DeleteIcon fontSize="small" />
+                    <IconButton onClick={(e) => { e.stopPropagation(); handleDeleteClick(parking); }} color="error">
+                      <DeleteIcon />
                     </IconButton>
                   </Tooltip>
                 </CardActions>

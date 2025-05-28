@@ -85,18 +85,21 @@
         
     </LinearLayout>
 
-    <!-- ChatBot Main Layout -->
+    <!-- Modern ChatBot Main Layout -->
     <LinearLayout
         android:id="@+id/layoutChatbot"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical"
+        android:background="@color/background"
         android:visibility="gone">
 
         <!-- Toolbar -->
         <com.google.android.material.appbar.MaterialToolbar
             android:layout_width="match_parent"
-            android:layout_height="wrap_content">
+            android:layout_height="wrap_content"
+            android:background="@color/white"
+            app:elevation="2dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -105,50 +108,33 @@
 
                 <ImageButton
                     android:id="@+id/btnBack"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
                     android:background="?attr/selectableItemBackgroundBorderless"
                     android:src="@drawable/ic_back" />
-                
-                <LinearLayout
-                    android:layout_width="match_parent"
+
+                <ImageView
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:src="@drawable/chatbot_icon"
+                    android:layout_marginStart="8dp"
+                    android:background="@drawable/bg_circle_mint" />
+
+                <TextView
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical">
+                    android:layout_marginStart="12dp"
+                    android:text="ChatBot"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/text_primary" />
 
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="16dp"
-                        android:text="ChatBot"
-                        android:textSize="18sp"
-                        android:textStyle="bold" />
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="horizontal">
-                        
-                        <ImageView
-                            android:layout_width="10dp"
-                            android:layout_height="10dp"
-                            android:src="@drawable/ic_online"
-                            android:layout_marginStart="18dp"
-                            android:layout_gravity="center_vertical"
-                            />
-                        
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginStart="3dp"
-                            android:text="Always active"
-                            android:textColor="@android:color/darker_gray"
-                            android:textSize="12sp" />
-                        
-                    </LinearLayout>
-                    
-                </LinearLayout>
-
-                
+                <ImageView
+                    android:layout_width="10dp"
+                    android:layout_height="10dp"
+                    android:src="@drawable/ic_online"
+                    android:layout_marginStart="8dp"
+                    android:layout_gravity="center_vertical" />
             </LinearLayout>
         </com.google.android.material.appbar.MaterialToolbar>
 
@@ -158,37 +144,36 @@
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_weight="1"
-            android:padding="16dp" />
+            android:padding="12dp"
+            android:clipToPadding="false"
+            android:background="@color/background" />
 
         <!-- Message Input Layout -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:padding="16dp">
+            android:padding="12dp"
+            android:background="@color/white"
+            android:gravity="center_vertical">
 
             <EditText
                 android:id="@+id/editTextMessage"
                 android:layout_width="0dp"
-                android:layout_height="wrap_content"
+                android:layout_height="48dp"
                 android:layout_weight="1"
-                android:background="@color/box"
-                android:hint="Ask me anything"
-                android:padding="12dp" />
+                android:background="@drawable/bg_message_input"
+                android:hint="Mesajınızı yazın..."
+                android:paddingHorizontal="16dp"
+                android:textColor="@color/text_primary"
+                android:textSize="16sp" />
 
             <ImageButton
                 android:id="@+id/btnSend"
                 android:layout_width="48dp"
                 android:layout_height="48dp"
                 android:layout_marginStart="8dp"
-                android:background="?attr/selectableItemBackgroundBorderless"
+                android:background="@drawable/bg_send_button"
                 android:src="@drawable/ic_send" />
-
-            <ProgressBar
-                android:id="@+id/progressBar"
-                android:layout_width="24dp"
-                android:layout_height="24dp"
-                android:layout_marginStart="8dp"
-                android:visibility="gone" />
         </LinearLayout>
     </LinearLayout>
 </FrameLayout>

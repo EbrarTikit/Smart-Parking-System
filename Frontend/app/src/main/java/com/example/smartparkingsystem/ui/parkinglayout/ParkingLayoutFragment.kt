@@ -8,6 +8,7 @@ import android.os.Bundle
 import android.util.Log
 import android.view.Gravity
 import android.view.LayoutInflater
+import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
@@ -25,7 +26,8 @@ import com.example.smartparkingsystem.data.model.Road
 import com.example.smartparkingsystem.data.remote.ParkingWebSocketClient
 import com.example.smartparkingsystem.databinding.FragmentParkingLayoutBinding
 import com.example.smartparkingsystem.utils.state.UiState
-import com.google.android.material.internal.ViewUtils.dpToPx
+import android.view.animation.AccelerateDecelerateInterpolator
+import android.animation.ValueAnimator
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -37,6 +39,10 @@ class ParkingLayoutFragment : Fragment() {
         private const val CAR_WIDTH_RATIO = 1.6
         private const val CAR_HEIGHT_RATIO = 3.2
         private const val HEIGHT_TO_WIDTH_RATIO = 2.0
+        private const val MIN_SCALE = 0.5f
+        private const val MAX_SCALE = 2.0f
+        private const val ZOOM_SPEED = 1.4f
+        private const val INVALID_POINTER_ID = -1
 
         // UI colors
         private const val COLOR_WHITE = "#FFFFFF"
@@ -67,6 +73,20 @@ class ParkingLayoutFragment : Fragment() {
 
     private val viewModel: ParkingLayoutViewModel by viewModels()
     private var webSocketClient: ParkingWebSocketClient? = null
+    private var scaleFactor = 1.0f
+    private var focusX = 0f
+    private var focusY = 0f
+    private var lastTouchX = 0f
+    private var lastTouchY = 0f
+    private var activePointerId = INVALID_POINTER_ID
+    private var lastDistance = 0f
+    private var isScaling = false
+    private var initialScale = 1.0f
+    private var lastScaleFactor = 1.0f
+    private var lastFocusX = 0f
+    private var lastFocusY = 0f
+    private var originalGridWidth = 0
+    private var originalGridHeight = 0
 
     // Maps to track UI state
     private val spotViews = mutableMapOf<Long, FrameLayout>()
@@ -110,6 +130,7 @@ class ParkingLayoutFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         setupToolbar()
+        setupTouchHandling()
         val parkingId = arguments?.getInt("parkingId") ?: 0
         observeParkingLayout(parkingId)
         initializeWebSocket()
@@ -123,6 +144,143 @@ class ParkingLayoutFragment : Fragment() {
         } catch (e: Exception) {
             Log.e(TAG, "Error setting up toolbar: ${e.message}", e)
         }
+    }
+
+    private fun setupTouchHandling() {
+        val container = binding.containerLayout
+        container.setOnTouchListener { _, event ->
+            when (event.actionMasked) {
+                MotionEvent.ACTION_DOWN -> {
+                    lastTouchX = event.x
+                    lastTouchY = event.y
+                    activePointerId = event.getPointerId(0)
+                    true
+                }
+                MotionEvent.ACTION_POINTER_DOWN -> {
+                    if (event.pointerCount == 2) {
+                        isScaling = true
+                        val index1 = event.findPointerIndex(activePointerId)
+                        val index2 = event.findPointerIndex(event.getPointerId(1))
+                        
+                        if (index1 != -1 && index2 != -1) {
+                            val x1 = event.getX(index1)
+                            val y1 = event.getY(index1)
+                            val x2 = event.getX(index2)
+                            val y2 = event.getY(index2)
+                            
+                            lastDistance = calculateDistance(x1, y1, x2, y2)
+                            initialScale = scaleFactor
+                            lastScaleFactor = scaleFactor
+                            
+                            // Store the focus point
+                            lastFocusX = (x1 + x2) / 2
+                            lastFocusY = (y1 + y2) / 2
+                            lastTouchX = lastFocusX
+                            lastTouchY = lastFocusY
+                        }
+                    }
+                    true
+                }
+                MotionEvent.ACTION_MOVE -> {
+                    if (isScaling && event.pointerCount == 2) {
+                        val index1 = event.findPointerIndex(activePointerId)
+                        val index2 = event.findPointerIndex(event.getPointerId(1))
+                        
+                        if (index1 != -1 && index2 != -1) {
+                            val x1 = event.getX(index1)
+                            val y1 = event.getY(index1)
+                            val x2 = event.getX(index2)
+                            val y2 = event.getY(index2)
+                            
+                            val currentDistance = calculateDistance(x1, y1, x2, y2)
+                            val distanceChange = currentDistance - lastDistance
+                            
+                            // Calculate new scale factor
+                            val scaleChange = (distanceChange / lastDistance) * ZOOM_SPEED
+                            val newScale = scaleFactor * (1 + scaleChange)
+                            
+                            // Apply scale with bounds
+                            scaleFactor = newScale.coerceIn(MIN_SCALE, MAX_SCALE)
+                            
+                            // Apply scale immediately
+                            binding.gridLayout.scaleX = scaleFactor
+                            binding.gridLayout.scaleY = scaleFactor
+                            
+                            // Adjust GridLayout margins based on scale factor
+                            updateGridLayoutMargins(scaleFactor)
+                            
+                            // Calculate the new focus point
+                            val currentFocusX = (x1 + x2) / 2
+                            val currentFocusY = (y1 + y2) / 2
+                            
+                            // Calculate the translation needed to keep the focus point stable
+                            val dx = (currentFocusX - lastFocusX) * scaleFactor
+                            val dy = (currentFocusY - lastFocusY) * scaleFactor
+                            
+                            // Adjust scroll position to maintain focus point
+                            binding.horizontalScrollView.scrollBy(-dx.toInt(), 0)
+                            binding.verticalScrollView.scrollBy(0, -dy.toInt())
+                            
+                            lastDistance = currentDistance
+                            lastFocusX = currentFocusX
+                            lastFocusY = currentFocusY
+                            lastTouchX = currentFocusX
+                            lastTouchY = currentFocusY
+                        }
+                    } else if (!isScaling) {
+                        // Single pointer move - handle scrolling
+                        val index = event.findPointerIndex(activePointerId)
+                        if (index != -1) {
+                            val x = event.getX(index)
+                            val y = event.getY(index)
+                            
+                            val dx = x - lastTouchX
+                            val dy = y - lastTouchY
+                            
+                            // Adjust scroll speed based on zoom level
+                            val scrollSpeed = 1.0f / scaleFactor
+                            binding.horizontalScrollView.scrollBy((-dx * scrollSpeed).toInt(), 0)
+                            binding.verticalScrollView.scrollBy(0, (-dy * scrollSpeed).toInt())
+                            
+                            lastTouchX = x
+                            lastTouchY = y
+                        }
+                    }
+                    true
+                }
+                MotionEvent.ACTION_POINTER_UP -> {
+                    if (event.pointerCount == 2) {
+                        isScaling = false
+                        val index = event.actionIndex
+                        val pointerId = event.getPointerId(index)
+                        if (pointerId == activePointerId) {
+                            val newIndex = if (index == 0) 1 else 0
+                            lastTouchX = event.getX(newIndex)
+                            lastTouchY = event.getY(newIndex)
+                            activePointerId = event.getPointerId(newIndex)
+                        }
+                    }
+                    true
+                }
+                MotionEvent.ACTION_UP -> {
+                    isScaling = false
+                    activePointerId = INVALID_POINTER_ID
+                    true
+                }
+                MotionEvent.ACTION_CANCEL -> {
+                    isScaling = false
+                    activePointerId = INVALID_POINTER_ID
+                    true
+                }
+                else -> false
+            }
+        }
+    }
+
+    private fun calculateDistance(x1: Float, y1: Float, x2: Float, y2: Float): Float {
+        val dx = x2 - x1
+        val dy = y2 - y1
+        return Math.sqrt((dx * dx + dy * dy).toDouble()).toFloat()
     }
 
     private fun observeParkingLayout(parkingId: Int) {
@@ -301,6 +459,13 @@ class ParkingLayoutFragment : Fragment() {
                 buildingSet,
                 roadOrientations
             )
+
+            // Store original grid dimensions after drawing and set initial margins
+            binding.gridLayout.post { // Wait for layout pass to get dimensions
+                originalGridWidth = binding.gridLayout.width
+                originalGridHeight = binding.gridLayout.height
+                updateGridLayoutMargins(scaleFactor)
+            }
 
             // Calculate and update statistics
             totalSpotCount = layout.parkingSpots.size
@@ -786,5 +951,24 @@ class ParkingLayoutFragment : Fragment() {
 
         // Kareyi frameLayout'a ekle
         frameLayout.addView(blackSquare)
+    }
+
+    private fun updateGridLayoutMargins(scale: Float) {
+        if (originalGridWidth == 0 || originalGridHeight == 0) {
+            // Dimensions not yet measured, wait for post
+            return
+        }
+
+        val scaledWidth = originalGridWidth * scale
+        val scaledHeight = originalGridHeight * scale
+
+        // Calculate required margins to allow scrolling to the scaled edges
+        // These margins represent the extra space needed beyond the original grid size
+        val marginHorizontal = ((scaledWidth - originalGridWidth) / 2).toInt()
+        val marginVertical = ((scaledHeight - originalGridHeight) / 2).toInt()
+
+        val layoutParams = binding.gridLayout.layoutParams as ViewGroup.MarginLayoutParams
+        layoutParams.setMargins(marginHorizontal, marginVertical, marginHorizontal, marginVertical)
+        binding.gridLayout.layoutParams = layoutParams
     }
 }

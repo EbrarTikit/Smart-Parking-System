@@ -104,6 +104,11 @@ class ProfileFragment : Fragment() {
                     .build()
             )
         }
+
+        // Help & Support click listener
+        binding.helpSupportLayout.setOnClickListener {
+            findNavController().navigate(R.id.action_navigation_profile_to_helpSupportFragment)
+        }
     }
 
     private fun updateSwitchColors(isChecked: Boolean) {

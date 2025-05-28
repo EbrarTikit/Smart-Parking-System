@@ -4,6 +4,7 @@
         <domain includeSubdomains="true">10.0.2.2</domain>
         <domain includeSubdomains="true">192.168.1.243</domain>
         <domain includeSubdomains="true">192.168.1.7</domain>
+        <domain includeSubdomains="true">192.168.157.190</domain>
 
         <!-- other development domains-->
     </domain-config>

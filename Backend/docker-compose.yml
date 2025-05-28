@@ -8,6 +8,18 @@ services:
       - backend_network
     restart: always
 
+  rabbit-mq:
+    image: rabbitmq:3-management
+    container_name: rabbit_mq
+    ports:
+      - "5672:5672"   # RabbitMQ mesajlaşma portu
+      - "15672:15672" # Yönetim arayüzü portu
+    environment:
+      - RABBITMQ_DEFAULT_USER=guest
+      - RABBITMQ_DEFAULT_PASS=guest  
+    networks:
+      - backend_network
+    restart: always
 
   # redis-commander:
   #   image: rediscommander/redis-commander:latest
@@ -22,35 +34,22 @@ services:
   #     - redis
   #   restart: always
 
-  rabbit-mq:
-    image: rabbitmq:3-management
-    container_name: rabbit_mq
+  chatbot-service:
+    build: 
+      context: ./chatbot-service
+      dockerfile: Dockerfile
+    container_name: chatbot_service
     ports:
-      - "5672:5672"   # RabbitMQ mesajlaşma portu
-      - "15672:15672" # Yönetim arayüzü portu
+      - "8001:8001"
+    env_file:
+      - ./chatbot-service/.env
     environment:
-      - RABBITMQ_DEFAULT_USER=guest
-      - RABBITMQ_DEFAULT_PASS=guest  
+      - REDIS_HOST=redis_service
+    depends_on:
+      - redis
+    restart: always
     networks:
       - backend_network
-    restart: always
-
-  # chatbot-service:
-  #   build: 
-  #     context: ./chatbot-service
-  #     dockerfile: Dockerfile
-  #   container_name: chatbot_service
-  #   ports:
-  #     - "8001:8001"
-  #   env_file:
-  #     - ./chatbot-service/.env
-  #   environment:
-  #     - REDIS_HOST=redis_service
-  #   depends_on:
-  #     - redis
-  #   restart: always
-  #   networks:
-  #     - backend_network
 
   postgres:
     image: postgres
@@ -65,7 +64,6 @@ services:
       - postgres_data:/var/lib/postgresql/data
     networks:
       - backend_network
-    restart: always
 
   # pgadmin:
   #   image: dpage/pgadmin4
@@ -82,16 +80,14 @@ services:
   #     - backend_network
   #   restart: always
 
-  # admin-panel:
-  #   build: ../WebPanel/admin-panel
-  #   ports:
-  #     - "3000:80"
-  #   depends_on:
-  #     - user-service
-  #     - parking-management-service
-  #   networks:
-  #     - backend_network
-  #   restart: always
+  admin-panel:
+    build: ../WebPanel/admin-panel
+    ports:
+      - "3002:80"
+    depends_on:
+      - user-service
+    networks:
+      - backend_network
 
   license-plate-service:
     build:
@@ -115,7 +111,6 @@ services:
       - ./license-plate-service/app/model/license_plate_detector.pt:/app/app/model/license_plate_detector.pt
     depends_on:
       - postgres
-      - parking-management-service
     networks:
       - backend_network
     deploy:
@@ -197,7 +192,7 @@ services:
   #     - backend_network
   #   restart: always
 
-  # Frontend uygulaması - Geliştirme modu (hot reloading)
+# Frontend uygulaması - Geliştirme modu (hot reloading)
   staff-panel-dev:
     build:
       context: ../WebPanel/staff-panel

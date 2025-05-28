@@ -51,8 +51,8 @@ const ParkingLayout = () => {
   const cellStyles = {
     empty: { bgcolor: '#f5f5f5', color: '#757575' },
     spot: { bgcolor: '#bbdefb', color: '#1976d2', icon: <DirectionsCarIcon /> },
-    road: { bgcolor: '#ffecb3', color: '#ff9800', icon: <StraightIcon /> },
-    building: { bgcolor: '#e0e0e0', color: '#616161', icon: <ApartmentIcon /> }
+    road: { bgcolor: '#ffecb3', color: '#ff9800' },
+    building: { bgcolor: '#e0e0e0', color: '#616161', icon: <ApartmentIcon /> },
   };
 
   useEffect(() => {
@@ -108,6 +108,51 @@ const ParkingLayout = () => {
       Array(columns).fill().map(() => ({ type: 'empty', data: null }))
     );
     
+    // Tüm yol hücrelerinin setini oluştur
+    const roadSet = new Set();
+    if (parkingData.roads && parkingData.roads.length > 0) {
+      parkingData.roads.forEach(road => {
+        if (road.roadRow >= 0 && road.roadRow < rows && road.roadColumn >= 0 && road.roadColumn < columns) {
+          emptyMatrix[road.roadRow][road.roadColumn] = {
+            type: 'road',
+            data: road,
+            id: road.id,
+            identifier: road.roadIdentifier,
+            orientation: 'vertical', // Varsayılan yön
+          };
+          roadSet.add(`${road.roadRow},${road.roadColumn}`);
+        }
+      });
+    }
+
+    // Yolların yönünü belirle
+    if (parkingData.roads && parkingData.roads.length > 0) {
+      parkingData.roads.forEach(road => {
+        const row = road.roadRow;
+        const col = road.roadColumn;
+        const pos = `${row},${col}`;
+
+        const leftPos = `${row},${col - 1}`;
+        const rightPos = `${row},${col + 1}`;
+        const topPos = `${row - 1},${col}`;
+        const bottomPos = `${row + 1},${col}`;
+
+        // Komşu yol hücrelerini kontrol et ve yönü belirle
+        let orientation = 'vertical'; // Varsayılan
+        if (roadSet.has(leftPos) || roadSet.has(rightPos)) {
+          orientation = 'horizontal';
+        } else if (roadSet.has(topPos) || roadSet.has(bottomPos)) {
+          orientation = 'vertical';
+        }
+
+        // Matristeki hücrenin yön bilgisini güncelle
+        if (emptyMatrix[row] && emptyMatrix[row][col] && emptyMatrix[row][col].type === 'road') {
+          emptyMatrix[row][col].orientation = orientation;
+        }
+
+      });
+    }
+    
     // Park yerlerini ekle
     if (parkingData.parkingSpots && parkingData.parkingSpots.length > 0) {
       parkingData.parkingSpots.forEach(spot => {
@@ -119,20 +164,6 @@ const ParkingLayout = () => {
             identifier: spot.spotIdentifier,
             sensorId: spot.sensorId,
             occupied: spot.occupied
-          };
-        }
-      });
-    }
-    
-    // Yolları ekle
-    if (parkingData.roads && parkingData.roads.length > 0) {
-      parkingData.roads.forEach(road => {
-        if (road.roadRow >= 0 && road.roadRow < rows && road.roadColumn >= 0 && road.roadColumn < columns) {
-          emptyMatrix[road.roadRow][road.roadColumn] = {
-            type: 'road',
-            data: road,
-            id: road.id,
-            identifier: road.roadIdentifier
           };
         }
       });
@@ -354,9 +385,9 @@ const ParkingLayout = () => {
     switch (cell.type) {
       case 'spot':
         return (
-          <Box sx={{ 
-            textAlign: 'center', 
-            display: 'flex', 
+          <Box sx={{
+            textAlign: 'center',
+            display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
@@ -374,23 +405,55 @@ const ParkingLayout = () => {
           </Box>
         );
       case 'road':
+        const isHorizontal = cell.orientation === 'horizontal';
+        const isEntryExit = cell.identifier === 'entry' || cell.identifier === 'exit';
+
         return (
-          <Box sx={{ 
-            textAlign: 'center', 
-            display: 'flex', 
+          <Box sx={{
+            display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
-            height: '100%'
+            height: '100%',
+            width: '100%',
+            bgcolor: cellStyles.road.bgcolor,
+            position: 'relative',
           }}>
-            <StraightIcon sx={{ mb: 0.5 }} />
-            <Typography variant="caption">
-              {cell.identifier || 'Yol'}
-            </Typography>
+            {/* Eğer entry/exit ise identifier'ı göster */}
+            {isEntryExit && cell.identifier && (
+               <Typography
+                 variant="caption"
+                 sx={{
+                   position: 'relative',
+                   zIndex: 1,
+                   bgcolor: cellStyles.road.bgcolor,
+                   px: 0.5,
+                   color: cellStyles.road.color,
+                   fontWeight: 'bold'
+                 }}
+               >
+                 {cell.identifier}
+               </Typography>
+             )}
+            {/* Eğer entry/exit değilse yön çizgisi/tire işareti göster */}
+            {!isEntryExit && (
+              <Typography
+                variant="h4" // Daha büyük boyut için h4 kullandık
+                sx={{
+                  color: cellStyles.road.color,
+                  fontWeight: 'bold',
+                  // Yön bilgisine göre döndürme
+                  transform: isHorizontal ? 'rotate(0deg)' : 'rotate(90deg)',
+                  lineHeight: 1, // Satır yüksekliğini ayarla
+                }}
+              >
+                — {/* Uzun tire işareti */}
+              </Typography>
+            )}
           </Box>
         );
       case 'building':
-        return <ApartmentIcon sx={{ color: '#616161' }} />;
+        return <ApartmentIcon sx={{ color: cellStyles.building.color }} />;
       default:
         return null;
     }
@@ -516,39 +579,36 @@ const ParkingLayout = () => {
             p: 1,
             bgcolor: '#fff'
           }}>
-            {matrix.map((row, rowIndex) => (
-              <Box 
-                key={`row-${rowIndex}`} 
-                sx={{ 
-                  display: 'flex', 
-                  borderBottom: rowIndex < matrix.length - 1 ? '1px solid #eee' : 'none' 
-                }}
-              >
-                {row.map((cell, colIndex) => (
-                  <Box 
-                    key={`cell-${rowIndex}-${colIndex}`}
-                    onClick={() => handleCellClick(rowIndex, colIndex)}
-                    sx={{
-                      width: 80,
-                      height: 80,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      borderRight: colIndex < row.length - 1 ? '1px solid #eee' : 'none',
-                      bgcolor: cellStyles[cell.type].bgcolor,
-                      cursor: editMode ? 'pointer' : 'default',
-                      transition: 'all 0.2s',
-                      '&:hover': {
-                        bgcolor: editMode ? cellStyles[cell.type === 'empty' ? 'empty' : cell.type].bgcolor + '80' : 'inherit',
-                        boxShadow: editMode ? 'inset 0 0 0 2px #1976d2' : 'none'
-                      }
-                    }}
-                  >
-                    {renderCellContent(cell)}
-                  </Box>
-                ))}
-              </Box>
-            ))}
+            <Grid container spacing={0.5}>
+              {matrix.map((row, rowIndex) => (
+                <Grid container item key={rowIndex} spacing={0.5} sx={{ flexWrap: 'nowrap' }}>
+                  {row.map((cell, colIndex) => (
+                    <Grid item key={colIndex} sx={{ flexBasis: 0, flexGrow: 1, maxWidth: `calc(100% / ${parking.columns})`, aspectRatio: '1 / 1' }}>
+                      <Paper
+                        onClick={() => handleCellClick(rowIndex, colIndex)}
+                        sx={{
+                          width: '100%',
+                          height: '100%',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          cursor: editMode ? 'pointer' : 'default',
+                          transition: 'background-color 0.2s ease',
+                          '&:hover': {
+                            bgcolor: editMode ? 'rgba(0, 0, 0, 0.1)' : undefined,
+                          },
+                          bgcolor: cell.type !== 'road' ? cellStyles[cell.type].bgcolor : undefined, // Yol hücreleri için bgcolor renderCellContent içinde ayarlanacak
+                        }}
+                        elevation={editMode ? 1 : 0}
+                        square
+                      >
+                        {renderCellContent(cell)}
+                      </Paper>
+                    </Grid>
+                  ))}
+                </Grid>
+              ))}
+            </Grid>
           </Box>
         </Box>
         

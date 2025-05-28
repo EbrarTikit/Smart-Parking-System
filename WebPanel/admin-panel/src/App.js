@@ -54,11 +54,17 @@ const SignIn = () => {
         throw new Error('Geçersiz API yanıtı');
       }
 
-      localStorage.setItem('userId', response.data.id || '1');
-      localStorage.setItem('username', response.data.username || formData.username);
-      localStorage.setItem('userEmail', response.data.email || 'admin@example.com');
+      // Token ve kullanıcı bilgilerini localStorage'a kaydet
+      localStorage.setItem('token', response.data.token);
+      localStorage.setItem('userId', response.data.userId);
+      localStorage.setItem('username', formData.username);
+      localStorage.setItem('isLoggedIn', 'true');
       
-      navigate('/dashboard');
+      // API isteklerinde token'ı kullan
+      axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.token}`;
+      
+      // Yönlendirme
+      navigate('/dashboard', { replace: true });
       
     } catch (error) {
       console.error('Giriş hatası:', error);
@@ -294,16 +300,16 @@ const theme = createTheme({
 // Protected route component
 const ProtectedRoute = ({ children }) => {
   const navigate = useNavigate();
-  const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+  const token = localStorage.getItem('token');
   const username = localStorage.getItem('username');
   
   React.useEffect(() => {
-    if (!isLoggedIn || !username) {
-      navigate('/signin');
+    if (!token || !username) {
+      navigate('/signin', { replace: true });
     }
-  }, [isLoggedIn, username, navigate]);
+  }, [token, username, navigate]);
   
-  if (!isLoggedIn || !username) {
+  if (!token || !username) {
     return null;
   }
   

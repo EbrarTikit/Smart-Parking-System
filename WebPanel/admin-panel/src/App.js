@@ -45,35 +45,30 @@ const SignIn = () => {
     setError('');
     
     try {
-      // apiService'i kullan
       const response = await signIn({
         username: formData.username,
         password: formData.password
       });
       
-      console.log('Giriş başarılı:', response.data);
-      
-      // Kullanıcı bilgilerini localStorage'a kaydet
-      localStorage.setItem('isLoggedIn', 'true');
+      if (!response || !response.data) {
+        throw new Error('Geçersiz API yanıtı');
+      }
+
       localStorage.setItem('userId', response.data.id || '1');
       localStorage.setItem('username', response.data.username || formData.username);
       localStorage.setItem('userEmail', response.data.email || 'admin@example.com');
       
-      // Dashboard'a yönlendir
       navigate('/dashboard');
       
     } catch (error) {
       console.error('Giriş hatası:', error);
       
-      if (error.response) {
-        // Sunucudan gelen hata mesajını göster
+      if (error.response && error.response.data) {
         setError(`Hata: ${error.response.status} - ${error.response.data.message || 'Giriş başarısız'}`);
       } else if (error.request) {
-        // İstek yapıldı ama cevap alınamadı
         setError('Sunucuya ulaşılamıyor. Lütfen daha sonra tekrar deneyin.');
       } else {
-        // İstek yapılırken bir hata oluştu
-        setError('Bir hata oluştu: ' + error.message);
+        setError('Bir hata oluştu: ' + (error.message || 'Bilinmeyen hata'));
       }
     } finally {
       setLoading(false);
@@ -169,19 +164,20 @@ const SignUp = () => {
     setError('');
     
     try {
-      // apiService'i kullan
       const response = await signUp({
         username: formData.username,
         email: formData.email,
         password: formData.password
       });
       
-      console.log('Kayıt başarılı:', response.data);
+      console.log('Kayıt başarılı:', response);
       
-      // Kullanıcı bilgilerini localStorage'a da kaydet
-      localStorage.setItem('userId', response.data.id || '1');
-      localStorage.setItem('username', response.data.username || formData.username);
-      localStorage.setItem('userEmail', response.data.email || formData.email);
+      // Kullanıcı bilgilerini localStorage'a kaydet
+      if (response && response.id) {
+        localStorage.setItem('userId', response.id);
+        localStorage.setItem('username', response.username || formData.username);
+        localStorage.setItem('userEmail', response.email || formData.email);
+      }
       
       setSuccess('Kayıt başarılı! Giriş sayfasına yönlendiriliyorsunuz...');
       
@@ -193,13 +189,10 @@ const SignUp = () => {
       console.error('Kayıt hatası:', error);
       
       if (error.response) {
-        // Sunucudan gelen hata mesajını göster
         setError(`Hata: ${error.response.status} - ${error.response.data.message || 'Kayıt başarısız'}`);
       } else if (error.request) {
-        // İstek yapıldı ama cevap alınamadı
         setError('Sunucuya ulaşılamıyor. Lütfen daha sonra tekrar deneyin.');
       } else {
-        // İstek yapılırken bir hata oluştu
         setError('Bir hata oluştu: ' + error.message);
       }
     } finally {

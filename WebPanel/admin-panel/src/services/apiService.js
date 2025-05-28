@@ -10,14 +10,14 @@ const api = axios.create({
     baseURL: AUTH_SERVICE_URL,
     headers: {
         'Content-Type': 'application/json'
-    }
+    },
+    timeout: 10000 // 10 saniye timeout
 });
 
 // API istekleri için interceptor
-axios.interceptors.request.use(
+api.interceptors.request.use(
   config => {
     console.log('API İsteği:', config.method.toUpperCase(), config.url, config.data);
-    // Token yerine kullanıcı bilgilerini header'a ekle
     const userId = localStorage.getItem('userId');
     const username = localStorage.getItem('username');
     
@@ -34,18 +34,24 @@ axios.interceptors.request.use(
   }
 );
 
-axios.interceptors.response.use(
+api.interceptors.response.use(
   response => {
     console.log('API Yanıtı:', response.status, response.data);
     return response;
   },
   error => {
-    console.error('API Yanıt hatası:', 
-      error.response ? 
-      `${error.response.status} - ${JSON.stringify(error.response.data)}` : 
-      error.message
-    );
-    return Promise.reject(error);
+    if (error.code === 'ERR_NETWORK') {
+      console.error('Ağ hatası: Backend servisine ulaşılamıyor');
+      return Promise.reject(new Error('Sunucuya ulaşılamıyor. Lütfen daha sonra tekrar deneyin.'));
+    }
+    
+    if (error.response) {
+      console.error('API Yanıt hatası:', error.response.status, error.response.data);
+      return Promise.reject(error);
+    }
+    
+    console.error('Beklenmeyen hata:', error);
+    return Promise.reject(new Error('Beklenmeyen bir hata oluştu'));
   }
 );
 
@@ -53,7 +59,7 @@ axios.interceptors.response.use(
 export const signIn = async (credentials) => {
     try {
         const response = await api.post('/auth/signin', credentials);
-        return response.data;
+        return response;
     } catch (error) {
         console.error('Giriş hatası:', error);
         throw error;

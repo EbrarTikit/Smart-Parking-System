@@ -83,7 +83,8 @@ class FavoritesFragment : Fragment() {
 
                     is UiState.Error -> {
                         hideLoading()
-                        showError(state.message)
+                        Log.e("FavoritesFragment", state.message)
+                        //showError(state.message)
                     }
                 }
             }
@@ -103,7 +104,8 @@ class FavoritesFragment : Fragment() {
         val userId = sessionManager.getUserId()
         if (userId > 0) {
             viewModel.removeFavorite(userId.toInt(), favoriteParking.id)
-            Toast.makeText(requireContext(), "Removed from favorites", Toast.LENGTH_SHORT).show()
+            Log.d("FavoritesFragment", "Removed favorite: ${favoriteParking.name}")
+            //Toast.makeText(requireContext(), "Removed from favorites", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -153,6 +155,7 @@ class FavoritesFragment : Fragment() {
     }
 
     private fun showError(message: String) {
+        Log.e("FavoritesFragment", message)
         Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
     }
 

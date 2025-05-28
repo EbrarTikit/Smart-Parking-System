@@ -3,6 +3,7 @@ package com.example.smartparkingsystem.ui.chatbot
 import android.content.Context
 import android.content.SharedPreferences
 import android.os.Bundle
+import android.util.Log
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
@@ -39,8 +40,12 @@ class ChatbotFragment : Fragment() {
         observeViewModel()
 
         if (hasUsedChatbot()) {
+            binding.layoutChatbotOpening.visibility = View.GONE
+            binding.layoutChatbot.visibility = View.VISIBLE
             viewModel.loadChatHistory()
         } else {
+            binding.layoutChatbotOpening.visibility = View.VISIBLE
+            binding.layoutChatbot.visibility = View.GONE
             showWelcomeMessage()
         }
     }
@@ -50,8 +55,11 @@ class ChatbotFragment : Fragment() {
         binding.recyclerViewChat.apply {
             layoutManager = LinearLayoutManager(context).apply {
                 stackFromEnd = true
+                reverseLayout = false
             }
             adapter = chatAdapter
+            setHasFixedSize(true)
+            itemAnimator = null
         }
     }
 
@@ -65,7 +73,7 @@ class ChatbotFragment : Fragment() {
         }
 
         binding.btnStartChat.setOnClickListener {
-            viewModel.sendMessage("Hello")
+            //viewModel.sendMessage("Hello")
 
             binding.layoutChatbotOpening.visibility = View.GONE
             binding.layoutChatbot.visibility = View.VISIBLE
@@ -88,13 +96,17 @@ class ChatbotFragment : Fragment() {
         }
         
         viewModel.isLoading.observe(viewLifecycleOwner) { isLoading ->
-            binding.progressBar.visibility = if (isLoading) View.VISIBLE else View.GONE
+            //binding.progressBar.visibility = if (isLoading) View.VISIBLE else View.GONE
             binding.btnSend.isEnabled = !isLoading
+            if (!isLoading) {
+                scrollToBottom()
+            }
         }
         
         viewModel.error.observe(viewLifecycleOwner) { errorMessage ->
             errorMessage?.let {
-                Toast.makeText(requireContext(), it, Toast.LENGTH_LONG).show()
+                Log.e("ChatbotFragment", it)
+                //Toast.makeText(requireContext(), it, Toast.LENGTH_LONG).show()
                 viewModel.clearError()
             }
         }

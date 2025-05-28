@@ -1,6 +1,7 @@
 package com.example.smartparkingsystem.ui.profile
 
 import android.os.Bundle
+import android.util.Log
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
@@ -20,6 +21,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.collectLatest
 import com.example.smartparkingsystem.utils.state.UiState
 import androidx.core.content.ContextCompat
+import androidx.appcompat.app.AppCompatDelegate
 
 @AndroidEntryPoint
 class ProfileFragment : Fragment() {
@@ -43,6 +45,14 @@ class ProfileFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         _binding = FragmentProfileBinding.bind(view)
 
+        // Dark mode tercihini yükle
+        val prefs = requireContext().getSharedPreferences("settings", 0)
+        val isDarkMode = prefs.getBoolean("dark_mode", false)
+        binding.switchDarkMode.isChecked = isDarkMode
+        AppCompatDelegate.setDefaultNightMode(
+            if (isDarkMode) AppCompatDelegate.MODE_NIGHT_YES else AppCompatDelegate.MODE_NIGHT_NO
+        )
+
         val userId = SessionManager(requireContext()).getUserId().toInt()
         if (userId > 0) {
             viewModel.getNotificationPreferences(userId)
@@ -55,6 +65,16 @@ class ProfileFragment : Fragment() {
             updateSwitchColors(isChecked)
         }
 
+        binding.switchDarkMode.setOnCheckedChangeListener { _, isChecked ->
+            // Tercihi kaydet
+            prefs.edit().putBoolean("dark_mode", isChecked).apply()
+            if (isChecked) {
+                AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
+            } else {
+                AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
+            }
+        }
+
         lifecycleScope.launch {
             viewModel.notificationState.collectLatest { state ->
                 when (state) {
@@ -63,7 +83,8 @@ class ProfileFragment : Fragment() {
                         binding.switchNotifications.isChecked = state.data.parkingFullNotification
                     }
                     is UiState.Error -> {
-                        Toast.makeText(requireContext(), state.message, Toast.LENGTH_SHORT).show()
+                        Log.e("ProfileFragment", state.message)
+                        //Toast.makeText(requireContext(), state.message, Toast.LENGTH_SHORT).show()
                     }
                 }
             }

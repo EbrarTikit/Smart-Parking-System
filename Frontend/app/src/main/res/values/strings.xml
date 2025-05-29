@@ -1,12 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">SmartParkingSystem</string>
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
-    <string name="let_s_find_best_parking_spots_for_you">Let’s find best parking spots for you!</string>
+    <string name="let_s_find_best_parking_spots_for_you">Let\'s find best parking spots for you!</string>
     <string name="welcome_to_greenspot">Welcome to GreenSpot!</string>
     <string name="sign_up">SIGN UP</string>
     <string name="sign_in">SIGN IN</string>
     <string name="search">Search</string>
-    <string name="help_support"><![CDATA[Help & Support]]></string>
+    <string name="help_support">Help &amp; Support</string>
     <string name="parking_image">Parking image</string>
+    <string name="title_profile">Profile</string>
 </resources>

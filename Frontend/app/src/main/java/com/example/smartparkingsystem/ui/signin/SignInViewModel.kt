@@ -55,16 +55,18 @@ class SignInViewModel @Inject constructor(
         // Convert to ensure correct type
         val userIdLong = response.id
 
-        // Save to session manager
-        sessionManager.saveUserSession(userIdLong, response.token)
+        // Save to session manager with email and username
+        sessionManager.saveUserSession(userIdLong, response.token, response.email, response.username)
 
         // Verify session was saved correctly
         val savedUserId = sessionManager.getUserId()
         val isLoggedIn = sessionManager.isLoggedIn()
         val token = sessionManager.getToken()
+        val email = sessionManager.getEmail()
+        val username = sessionManager.getUsername()
         android.util.Log.d(
             "SignInViewModel",
-            "Session saved - userId: $savedUserId, isLoggedIn: $isLoggedIn, token: $token"
+            "Session saved - userId: $savedUserId, isLoggedIn: $isLoggedIn, token: $token, email: $email, username: $username"
         )
     }
 

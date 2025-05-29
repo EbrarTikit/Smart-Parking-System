@@ -25,4 +25,6 @@ object Constants {
     const val KEY_USER_ID = "user_id"
     const val KEY_TOKEN = "token"
     const val KEY_IS_LOGGED_IN = "is_logged_in"
+    const val KEY_EMAIL = "email"
+    const val KEY_USERNAME = "username"
 }

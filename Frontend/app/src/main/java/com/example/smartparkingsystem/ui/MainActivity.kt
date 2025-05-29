@@ -24,6 +24,7 @@ import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import androidx.appcompat.app.AppCompatDelegate
 
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
@@ -42,6 +43,14 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        
+        // Initialize theme
+        val prefs = getSharedPreferences("settings", 0)
+        val isDarkMode = prefs.getBoolean("dark_mode", false)
+        AppCompatDelegate.setDefaultNightMode(
+            if (isDarkMode) AppCompatDelegate.MODE_NIGHT_YES else AppCompatDelegate.MODE_NIGHT_NO
+        )
+        
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 

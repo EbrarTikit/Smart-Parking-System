@@ -23,7 +23,7 @@ const Login = ({ setIsAuthenticated }) => {
     setError("");
 
     if (!username || !password) {
-      setError("Kullanıcı adı ve şifre gereklidir");
+      setError("Username and password are required");
       return;
     }
 
@@ -37,9 +37,7 @@ const Login = ({ setIsAuthenticated }) => {
       setIsAuthenticated(true);
       navigate("/");
     } catch (err) {
-      setError(
-        err.message || "Giriş başarısız. Lütfen bilgilerinizi kontrol edin."
-      );
+      setError(err.message || "Login failed. Please check your credentials.");
     } finally {
       setLoading(false);
     }
@@ -54,8 +52,8 @@ const Login = ({ setIsAuthenticated }) => {
               <i className="parking-icon">P</i>
             </div>
           </div>
-          <h2>Smart Parking Sistemi</h2>
-          <p>Yönetim Paneline Giriş Yapın</p>
+          <h2>Smart Parking System</h2>
+          <p>Login to Management Panel</p>
         </div>
 
         {error && (
@@ -67,7 +65,7 @@ const Login = ({ setIsAuthenticated }) => {
         <form onSubmit={handleSubmit} className="login-form">
           <div className="form-group">
             <label htmlFor="username">
-              <i className="input-icon">👤</i> Kullanıcı Adı
+              <i className="input-icon">👤</i> Username
             </label>
             <input
               type="text"
@@ -75,14 +73,14 @@ const Login = ({ setIsAuthenticated }) => {
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               disabled={loading}
-              placeholder="Kullanıcı adınızı girin"
+              placeholder="Enter your username"
               autoComplete="username"
             />
           </div>
 
           <div className="form-group">
             <label htmlFor="password">
-              <i className="input-icon">🔒</i> Şifre
+              <i className="input-icon">🔒</i> Password
             </label>
             <input
               type="password"
@@ -90,7 +88,7 @@ const Login = ({ setIsAuthenticated }) => {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               disabled={loading}
-              placeholder="Şifrenizi girin"
+              placeholder="Enter your password"
               autoComplete="current-password"
             />
           </div>
@@ -98,16 +96,16 @@ const Login = ({ setIsAuthenticated }) => {
           <button type="submit" className="login-button" disabled={loading}>
             {loading ? (
               <span className="loading-spinner">
-                <span className="spinner"></span> Giriş Yapılıyor...
+                <span className="spinner"></span> Logging in...
               </span>
             ) : (
-              "Giriş Yap"
+              "Login"
             )}
           </button>
         </form>
 
         <div className="login-footer">
-          Hesabınız yok mu? <Link to="/register">Kayıt Ol</Link>
+          Don't have an account? <Link to="/register">Register</Link>
         </div>
       </div>
     </div>

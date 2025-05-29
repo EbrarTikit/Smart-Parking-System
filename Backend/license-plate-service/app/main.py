@@ -16,7 +16,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
 # Veritabanı bağlantısı
-from sqlalchemy import create_engine, Column, Integer, String, Float, DateTime, func, Boolean, Text, inspect
+from sqlalchemy import create_engine, Column, Integer, String, Float, DateTime, func, Boolean, Text, inspect, text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
 import datetime
@@ -195,13 +195,24 @@ def startup_event():
     try:
         # Bağlantı kontrolü
         if engine is not None:
+            # Veritabanı bağlantısını test et
+            try:
+                with engine.connect() as conn:
+                    conn.execute(text("SELECT 1"))
+                    logger.info("Veritabanı bağlantısı başarılı")
+            except Exception as e:
+                logger.error(f"Veritabanı bağlantı testi başarısız: {str(e)}")
+                raise
+
             inspector = inspect(engine)
             
             # Önce Vehicle ve ParkingRecord modellerini içe aktar
             from app.models import Vehicle, ParkingRecord
             
             # Tüm tabloları oluştur
+            logger.info("Veritabanı tablolarını oluşturmaya başlıyor...")
             Base.metadata.create_all(bind=engine)
+            logger.info("Veritabanı tabloları oluşturuldu")
             
             # Tablo durumunu kontrol et ve log'a yaz
             if inspector.has_table("plate_records"):
@@ -218,6 +229,27 @@ def startup_event():
                 logger.info("Parking Records tablosu mevcut")
             else:
                 logger.info("Parking Records tablosu oluşturuldu")
+
+            # Tabloları tekrar kontrol et
+            inspector = inspect(engine)
+            all_tables = ["vehicles", "parking_records", "plate_records"]
+            missing_tables = [table for table in all_tables if not inspector.has_table(table)]
+            
+            if missing_tables:
+                logger.error(f"Bazı tablolar oluşturulamadı: {missing_tables}")
+                # Tekrar oluşturmayı dene
+                logger.info("Eksik tabloları tekrar oluşturmaya çalışıyor...")
+                Base.metadata.create_all(bind=engine)
+                
+                # Son bir kontrol daha yap
+                inspector = inspect(engine)
+                still_missing = [table for table in all_tables if not inspector.has_table(table)]
+                if still_missing:
+                    logger.error(f"Bazı tablolar hala eksik: {still_missing}")
+                else:
+                    logger.info("Tüm tablolar başarıyla oluşturuldu")
+            else:
+                logger.info("Tüm tablolar mevcut ve hazır")
 
             logger.info("Veritabanı tabloları hazır")
         else:
@@ -1149,6 +1181,7 @@ def get_recent_activities(
             # Ücret TL'ye çevrilmeli
             fee_tl = float(record.parking_fee) / 100.0 if record.parking_fee else 0
             
+            # Çıkış aktivitesi
             result.append({
                 "id": record.id,
                 "vehicle_id": vehicle.id,
@@ -1161,8 +1194,19 @@ def get_recent_activities(
                 "message": f"Araç çıkışı: {vehicle.license_plate}",
                 "parking_id": record.parking_id or 1  # Default 1 olarak ayarla
             })
+            
+            # Aynı araç için giriş aktivitesi de ekle
+            result.append({
+                "id": f"{record.id}_entry",  # Benzersiz ID oluştur
+                "vehicle_id": vehicle.id,
+                "license_plate": vehicle.license_plate,
+                "action": "entry",
+                "entry_time": record.entry_time.isoformat(),
+                "message": f"Araç girişi: {vehicle.license_plate}",
+                "parking_id": record.parking_id or 1  # Default 1 olarak ayarla
+            })
         
-        # Giriş aktiviteleri
+        # Aktif araçların giriş aktiviteleri
         for record in active_records:
             vehicle = record.vehicle
             result.append({

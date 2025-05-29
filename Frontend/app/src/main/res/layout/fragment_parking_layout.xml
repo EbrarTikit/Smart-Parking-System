@@ -99,25 +99,36 @@
 
     <!-- Main Content with Scrollable Parking Layout -->
     <HorizontalScrollView
+        android:id="@+id/horizontalScrollView"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:fillViewport="true"
+        android:scrollbars="none"
+        android:overScrollMode="never"
+        android:clickable="true"
+        android:focusable="true"
         app:layout_constraintTop_toBottomOf="@id/layoutStats"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
         <ScrollView
+            android:id="@+id/verticalScrollView"
             android:layout_width="wrap_content"
             android:layout_height="match_parent"
-            android:fillViewport="true">
+            android:fillViewport="true"
+            android:scrollbars="none"
+            android:overScrollMode="never"
+            android:clickable="true"
+            android:focusable="true">
 
-            <LinearLayout
+            <FrameLayout
+                android:id="@+id/containerLayout"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:gravity="center_horizontal"
-                android:padding="16dp">
+                android:padding="16dp"
+                android:clickable="true"
+                android:focusable="true">
 
                 <GridLayout
                     android:id="@+id/gridLayout"
@@ -126,16 +137,17 @@
                     android:alignmentMode="alignMargins"
                     android:useDefaultMargins="true"
                     android:columnCount="4"
-                    android:rowCount="5" />
+                    android:rowCount="5"
+                    android:scaleType="matrix" />
 
                 <ProgressBar
                     android:id="@+id/progressBar"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:visibility="gone"
-                    android:layout_marginTop="16dp" />
+                    android:layout_gravity="center" />
 
-            </LinearLayout>
+            </FrameLayout>
         </ScrollView>
     </HorizontalScrollView>
 

@@ -92,7 +92,7 @@
                         android:layout_weight="1"
                         android:text="Notifications"
                         android:textSize="16sp"
-                        android:textColor="#222222"
+                        android:textColor="@color/text_primary"
                         android:layout_marginStart="16dp" />
 
                     <com.google.android.material.switchmaterial.SwitchMaterial
@@ -139,40 +139,41 @@
                         app:trackTint="@color/green_box"/>
                 </LinearLayout>
 
+<!--                <View-->
+<!--                    android:layout_width="match_parent"-->
+<!--                    android:layout_height="1dp"-->
+<!--                    android:background="@color/green_box" />-->
+
+<!--                <LinearLayout-->
+<!--                    android:layout_width="match_parent"-->
+<!--                    android:layout_height="56dp"-->
+<!--                    android:orientation="horizontal"-->
+<!--                    android:gravity="center_vertical"-->
+<!--                    android:paddingStart="12dp"-->
+<!--                    android:paddingEnd="12dp">-->
+
+<!--                    <ImageView-->
+<!--                        android:layout_width="24dp"-->
+<!--                        android:layout_height="24dp"-->
+<!--                        android:src="@drawable/ic_lock"-->
+<!--                        app:tint="@color/secondary" />-->
+
+<!--                    <TextView-->
+<!--                        android:layout_width="wrap_content"-->
+<!--                        android:layout_height="wrap_content"-->
+<!--                        android:text="Change Password"-->
+<!--                        android:textSize="16sp"-->
+<!--                        android:textColor="@color/text_primary"-->
+<!--                        android:layout_marginStart="16dp" />-->
+<!--                </LinearLayout>-->
+
                 <View
                     android:layout_width="match_parent"
                     android:layout_height="1dp"
                     android:background="@color/green_box" />
 
                 <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="56dp"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
-                    android:paddingStart="12dp"
-                    android:paddingEnd="12dp">
-
-                    <ImageView
-                        android:layout_width="24dp"
-                        android:layout_height="24dp"
-                        android:src="@drawable/ic_lock"
-                        app:tint="@color/secondary" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Change Password"
-                        android:textSize="16sp"
-                        android:textColor="@color/text_primary"
-                        android:layout_marginStart="16dp" />
-                </LinearLayout>
-
-                <View
-                    android:layout_width="match_parent"
-                    android:layout_height="1dp"
-                    android:background="@color/green_box" />
-
-                <LinearLayout
+                    android:id="@+id/helpSupportLayout"
                     android:layout_width="match_parent"
                     android:layout_height="56dp"
                     android:orientation="horizontal"
@@ -191,7 +192,7 @@
                         android:layout_height="wrap_content"
                         android:text="@string/help_support"
                         android:textSize="16sp"
-                        android:textColor="#222222"
+                        android:textColor="@color/text_primary"
                         android:layout_marginStart="16dp" />
                 </LinearLayout>
             </LinearLayout>
@@ -203,10 +204,10 @@
             android:layout_height="48dp"
             android:text="Logout"
             android:textAllCaps="false"
-            android:textColor="#00C9A7"
-            android:backgroundTint="#E6FCF7"
+            android:textColor="@color/primary"
+            android:backgroundTint="@color/green_box"
             app:icon="@drawable/ic_logout"
-            app:iconTint="#00C9A7"
+            app:iconTint="@color/primary"
             app:cornerRadius="24dp"
             android:layout_marginTop="32dp"
             android:layout_marginBottom="16dp"

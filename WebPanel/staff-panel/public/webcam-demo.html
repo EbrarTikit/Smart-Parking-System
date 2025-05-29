@@ -265,8 +265,10 @@
       <div class="form-group">
         <label for="parkingSelect">Otopark Seçin:</label>
         <select id="parkingSelect">
-          <option value="17">Merkez Otopark (ID: 17)</option>
-          <option value="23">Milas Otopark (ID: 23)</option>
+          <option value="35">Kaleici Otopark (ID: 35)</option>
+          <option value="34">Otopark Antalya (ID: 34)</option>
+          <option value="33">Şişli Park Otopark (ID: 33)</option>
+          <option value="32">Sabiha Gökçen Otopark (ID: 32)</option>
         </select>
       </div>
 
@@ -434,15 +436,10 @@
       // API URL
       const API_BASE_URL =
         window.location.protocol + "//" + window.location.host;
-      const API_URL = API_BASE_URL.includes("3000")
-        ? "http://localhost:8005" // Geliştirme ortamı
-        : API_BASE_URL; // Üretim ortamı
+      const API_URL = "http://localhost:8005"; // Doğrudan API URL'ini belirt
 
       // WebSocket URL
-      const WS_BASE_URL = API_URL.replace("http://", "ws://").replace(
-        "https://",
-        "wss://"
-      );
+      const WS_BASE_URL = "ws://localhost:8005"; // Doğrudan WebSocket URL'ini belirt
 
       // WebSocket bağlantısı
       let ws = null;
@@ -1036,35 +1033,89 @@ Base64 Uzunluğu: ${base64Length} karakter`;
               displayResult(data, "entry");
 
               // WebSocket üzerinden güncelleme bildirimi gönder
-              if (data.success && wsConnected) {
+              if (data.success && wsConnected && ws) {
                 try {
-                  // Park kaydı güncellemesi gönder
-                  ws.send(
-                    JSON.stringify({
-                      type: "parking_record_update",
-                      data: {
-                        id: data.parking_record_id,
-                        vehicle_id: data.vehicle ? data.vehicle.id : null,
-                        license_plate: data.license_plate,
-                        action: "entry",
-                        entry_time: data.entry_time,
-                        parking_id: parseInt(parkingId),
-                        message: `Araç girişi: ${data.license_plate}`,
-                      },
-                    })
+                  // 1. Önce parking_record_update mesajı gönder
+                  const updateMessage = {
+                    type: "parking_record_update",
+                    data: {
+                      id: data.parking_record_id,
+                      vehicle_id: data.vehicle ? data.vehicle.id : null,
+                      license_plate: data.license_plate,
+                      action: "entry",
+                      entry_time: data.entry_time,
+                      exit_time: data.exit_time,
+                      duration_hours: data.duration_hours,
+                      parking_fee: data.parking_fee,
+                      parking_id: parseInt(parkingId),
+                      message: `Araç girişi: ${data.license_plate}`,
+                    },
+                  };
+
+                  console.log(
+                    "1. WebSocket parking_record_update mesajı gönderiliyor:",
+                    JSON.stringify(updateMessage)
                   );
+                  ws.send(JSON.stringify(updateMessage));
+                  console.log("1. WebSocket mesajı başarıyla gönderildi");
+
+                  // 2. Sonra status mesajı gönder
+                  const statusMessage = { type: "status" };
+                  console.log(
+                    "2. WebSocket status mesajı gönderiliyor:",
+                    JSON.stringify(statusMessage)
+                  );
+                  ws.send(JSON.stringify(statusMessage));
+                  console.log("2. WebSocket mesajı başarıyla gönderildi");
+
+                  // 3. Son olarak dashboard_update mesajı gönder
+                  const dashboardUpdateMessage = {
+                    type: "vehicle_update",
+                    data: {
+                      parking_id: parseInt(parkingId),
+                      timestamp: new Date().toISOString(),
+                      message: `Araç girişi: ${data.license_plate}`,
+                      license_plate: data.license_plate,
+                      action: "entry",
+                    },
+                  };
+
+                  console.log(
+                    "3. WebSocket vehicle_update mesajı gönderiliyor:",
+                    JSON.stringify(dashboardUpdateMessage)
+                  );
+                  ws.send(JSON.stringify(dashboardUpdateMessage));
+                  console.log("3. WebSocket mesajı başarıyla gönderildi");
+
+                  // 4. Ekstra olarak refresh mesajı gönder
+                  const refreshMessage = {
+                    type: "parking_info",
+                    data: {
+                      parking_id: parseInt(parkingId),
+                      action: "refresh",
+                    },
+                  };
+                  console.log(
+                    "4. WebSocket parking_info mesajı gönderiliyor:",
+                    JSON.stringify(refreshMessage)
+                  );
+                  ws.send(JSON.stringify(refreshMessage));
+                  console.log("4. WebSocket mesajı başarıyla gönderildi");
 
                   if (debugMode.checked) {
                     logDebugInfo(
-                      `WebSocket üzerinden park kaydı güncellemesi gönderildi: ${data.license_plate}`,
+                      `WebSocket üzerinden tüm güncelleme mesajları başarıyla gönderildi: ${data.license_plate}`,
                       "api"
                     );
                   }
                 } catch (error) {
-                  console.error("WebSocket mesajı gönderilirken hata:", error);
+                  console.error(
+                    "WebSocket mesajları gönderilirken hata:",
+                    error
+                  );
                   if (debugMode.checked) {
                     logDebugInfo(
-                      `WebSocket mesajı gönderilirken hata: ${error.message}`,
+                      `WebSocket mesajları gönderilirken hata: ${error.message}`,
                       "api"
                     );
                   }
@@ -1171,38 +1222,89 @@ Base64 Uzunluğu: ${base64Length} karakter`;
               displayResult(data, "exit");
 
               // WebSocket üzerinden güncelleme bildirimi gönder
-              if (data.success && wsConnected) {
+              if (data.success && wsConnected && ws) {
                 try {
-                  // Park kaydı güncellemesi gönder
-                  ws.send(
-                    JSON.stringify({
-                      type: "parking_record_update",
-                      data: {
-                        id: data.parking_record_id,
-                        vehicle_id: data.vehicle_id,
-                        license_plate: data.license_plate,
-                        action: "exit",
-                        entry_time: data.entry_time,
-                        exit_time: data.exit_time,
-                        duration_hours: data.duration_hours,
-                        parking_fee: data.parking_fee,
-                        parking_id: parseInt(parkingId),
-                        message: `Araç çıkışı: ${data.license_plate}`,
-                      },
-                    })
+                  // 1. Önce parking_record_update mesajı gönder
+                  const updateMessage = {
+                    type: "parking_record_update",
+                    data: {
+                      id: data.parking_record_id,
+                      vehicle_id: data.vehicle_id,
+                      license_plate: data.license_plate,
+                      action: "exit",
+                      entry_time: data.entry_time,
+                      exit_time: data.exit_time,
+                      duration_hours: data.duration_hours,
+                      parking_fee: data.parking_fee,
+                      parking_id: parseInt(parkingId),
+                      message: `Araç çıkışı: ${data.license_plate}`,
+                    },
+                  };
+
+                  console.log(
+                    "1. WebSocket parking_record_update mesajı gönderiliyor:",
+                    JSON.stringify(updateMessage)
                   );
+                  ws.send(JSON.stringify(updateMessage));
+                  console.log("1. WebSocket mesajı başarıyla gönderildi");
+
+                  // 2. Sonra status mesajı gönder
+                  const statusMessage = { type: "status" };
+                  console.log(
+                    "2. WebSocket status mesajı gönderiliyor:",
+                    JSON.stringify(statusMessage)
+                  );
+                  ws.send(JSON.stringify(statusMessage));
+                  console.log("2. WebSocket mesajı başarıyla gönderildi");
+
+                  // 3. Son olarak dashboard_update mesajı gönder
+                  const dashboardUpdateMessage = {
+                    type: "vehicle_update",
+                    data: {
+                      parking_id: parseInt(parkingId),
+                      timestamp: new Date().toISOString(),
+                      message: `Araç çıkışı: ${data.license_plate}`,
+                      license_plate: data.license_plate,
+                      action: "exit",
+                    },
+                  };
+
+                  console.log(
+                    "3. WebSocket vehicle_update mesajı gönderiliyor:",
+                    JSON.stringify(dashboardUpdateMessage)
+                  );
+                  ws.send(JSON.stringify(dashboardUpdateMessage));
+                  console.log("3. WebSocket mesajı başarıyla gönderildi");
+
+                  // 4. Ekstra olarak refresh mesajı gönder
+                  const refreshMessage = {
+                    type: "parking_info",
+                    data: {
+                      parking_id: parseInt(parkingId),
+                      action: "refresh",
+                    },
+                  };
+                  console.log(
+                    "4. WebSocket parking_info mesajı gönderiliyor:",
+                    JSON.stringify(refreshMessage)
+                  );
+                  ws.send(JSON.stringify(refreshMessage));
+                  console.log("4. WebSocket mesajı başarıyla gönderildi");
 
                   if (debugMode.checked) {
                     logDebugInfo(
-                      `WebSocket üzerinden park kaydı güncellemesi gönderildi: ${data.license_plate}`,
+                      `WebSocket üzerinden tüm güncelleme mesajları başarıyla gönderildi: ${data.license_plate}`,
                       "api"
                     );
                   }
                 } catch (error) {
-                  console.error("WebSocket mesajı gönderilirken hata:", error);
+                  console.error(
+                    "WebSocket mesajları gönderilirken hata:",
+                    error
+                  );
                   if (debugMode.checked) {
                     logDebugInfo(
-                      `WebSocket mesajı gönderilirken hata: ${error.message}`,
+                      `WebSocket mesajları gönderilirken hata: ${error.message}`,
                       "api"
                     );
                   }
@@ -1852,7 +1954,7 @@ Base64 Uzunluğu: ${base64Length} karakter`;
 
           // 3. Son olarak dashboard_update mesajı gönder
           const dashboardUpdateMessage = {
-            type: "dashboard_update",
+            type: "vehicle_update",
             data: {
               parking_id: parseInt(parkingId),
               timestamp: new Date().toISOString(),
@@ -1865,7 +1967,7 @@ Base64 Uzunluğu: ${base64Length} karakter`;
           };
 
           console.log(
-            "3. WebSocket dashboard_update mesajı gönderiliyor:",
+            "3. WebSocket vehicle_update mesajı gönderiliyor:",
             JSON.stringify(dashboardUpdateMessage)
           );
           ws.send(JSON.stringify(dashboardUpdateMessage));
@@ -1873,13 +1975,14 @@ Base64 Uzunluğu: ${base64Length} karakter`;
 
           // 4. Ekstra olarak refresh mesajı gönder
           const refreshMessage = {
-            type: "refresh",
+            type: "parking_info",
             data: {
               parking_id: parseInt(parkingId),
+              action: "refresh",
             },
           };
           console.log(
-            "4. WebSocket refresh mesajı gönderiliyor:",
+            "4. WebSocket parking_info mesajı gönderiliyor:",
             JSON.stringify(refreshMessage)
           );
           ws.send(JSON.stringify(refreshMessage));

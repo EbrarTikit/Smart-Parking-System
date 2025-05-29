@@ -6,6 +6,9 @@ import android.content.pm.PackageManager
 import android.graphics.Rect
 import android.os.Build
 import android.os.Bundle
+import android.text.Editable
+import android.text.TextWatcher
+import android.util.Log
 import android.view.View
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
@@ -15,8 +18,11 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
+import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import androidx.appcompat.widget.AppCompatEditText
 import com.example.smartparkingsystem.R
+import com.example.smartparkingsystem.data.model.ParkingListResponse
 import com.example.smartparkingsystem.databinding.FragmentHomeBinding
 import com.example.smartparkingsystem.utils.SessionManager
 import com.example.smartparkingsystem.utils.state.UiState
@@ -27,9 +33,11 @@ import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.maps.model.LatLngBounds
 import com.google.android.gms.maps.model.MarkerOptions
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -69,6 +77,15 @@ class HomeFragment : Fragment(R.layout.fragment_home), OnMapReadyCallback {
         observeUiState()
         viewModel.fetchParkings()
         checkNotificationPermissions()
+
+        // Arama barı için listener
+        binding.etSearchParking.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            override fun afterTextChanged(s: Editable?) {
+                filterBySearchQuery(s?.toString() ?: "")
+            }
+        })
     }
 
     private fun setupAdapter() {
@@ -162,7 +179,8 @@ class HomeFragment : Fragment(R.layout.fragment_home), OnMapReadyCallback {
 
                     is UiState.Error -> {
                         binding.progressBar.visibility = View.GONE
-                        Toast.makeText(requireContext(), state.message, Toast.LENGTH_LONG).show()
+                        Log.e("HomeFragment", state.message)
+                        //Toast.makeText(requireContext(), state.message, Toast.LENGTH_LONG).show()
                     }
                 }
             }
@@ -190,7 +208,126 @@ class HomeFragment : Fragment(R.layout.fragment_home), OnMapReadyCallback {
             isMapToolbarEnabled = true
         }
 
+        // Kamera hareketlerini dinle
+        googleMap.setOnCameraMoveListener {
+            // Harita hareket ederken loading göster
+            binding.progressBar.visibility = View.VISIBLE
+        }
+
+        googleMap.setOnCameraIdleListener {
+            try {
+                // Harita durduğunda görünen bölgeyi al
+                val visibleRegion = googleMap.projection.visibleRegion
+                
+                // Koordinatları doğru sırayla al
+                val southwest = LatLng(
+                    minOf(visibleRegion.farLeft.latitude, visibleRegion.nearRight.latitude),
+                    minOf(visibleRegion.farLeft.longitude, visibleRegion.nearRight.longitude)
+                )
+                
+                val northeast = LatLng(
+                    maxOf(visibleRegion.farLeft.latitude, visibleRegion.nearRight.latitude),
+                    maxOf(visibleRegion.farLeft.longitude, visibleRegion.nearRight.longitude)
+                )
+                
+                // Bounds'u oluştur
+                val bounds = LatLngBounds(southwest, northeast)
+                
+                // Görünen bölgedeki otoparkları filtrele
+                filterParkingsInBounds(bounds)
+            } catch (e: Exception) {
+                // Hata durumunda tüm otoparkları göster
+                val allParkings = viewModel.parkings.value
+                if (allParkings is UiState.Success) {
+                    parkingAdapter.submitList(allParkings.data)
+                    updateMapMarkers(allParkings.data)
+                }
+            } finally {
+                binding.progressBar.visibility = View.GONE
+            }
+        }
+
+        googleMap.setOnMarkerClickListener { marker ->
+            
+            val markerLatLng = marker.position
+            
+            val layoutManager = binding.rvParkings.layoutManager as LinearLayoutManager
+            val adapter = binding.rvParkings.adapter as ParkingAdapter
+            
+            // Tıklanan marker'a en yakın otoparkı bul
+            var closestParkingIndex = -1
+            var minDistance = Double.MAX_VALUE
+            
+            adapter.getCurrentList().forEachIndexed { index, parking ->
+                val parkingLatLng = LatLng(parking.latitude, parking.longitude)
+                val distance = calculateDistance(markerLatLng, parkingLatLng)
+                
+                if (distance < minDistance) {
+                    minDistance = distance
+                    closestParkingIndex = index
+                }
+            }
+
+            if (closestParkingIndex != -1) {
+                val currentPosition = layoutManager.findFirstVisibleItemPosition()
+
+                val scrollDistance = closestParkingIndex - currentPosition
+                binding.rvParkings.smoothScrollToPosition(closestParkingIndex)
+                adapter.setSelectedPosition(closestParkingIndex)
+            }
+            
+            true
+        }
+
         moveToUserLocation()
+    }
+
+    private fun filterParkingsInBounds(bounds: LatLngBounds) {
+        viewLifecycleOwner.lifecycleScope.launch {
+            try {
+                val allParkings = viewModel.parkings.value
+                if (allParkings is UiState.Success) {
+                    val filteredParkings = allParkings.data.filter { parking ->
+                        val parkingLatLng = LatLng(parking.latitude, parking.longitude)
+                        bounds.contains(parkingLatLng)
+                    }
+
+                    parkingAdapter.submitList(filteredParkings)
+
+                    updateMapMarkers(filteredParkings)
+                }
+            } catch (e: Exception) {
+                Log.e("HomeFragment", "Error filtering parkings: ${e.message}")
+                //Toast.makeText(requireContext(), "Error filtering parkings: ${e.message}", Toast.LENGTH_SHORT).show()
+            } finally {
+                binding.progressBar.visibility = View.GONE
+            }
+        }
+    }
+
+    private fun updateMapMarkers(parkings: List<ParkingListResponse>) {
+        // Mevcut markerları temizle
+        googleMap.clear()
+
+        // Yeni markerları ekle
+        parkings.forEach { parking ->
+            googleMap.addMarker(
+                MarkerOptions()
+                    .position(LatLng(parking.latitude, parking.longitude))
+                    .title(parking.name)
+            )
+        }
+    }
+
+    // İki nokta arasındaki mesafeyi hesapla
+    private fun calculateDistance(point1: LatLng, point2: LatLng): Double {
+        val results = FloatArray(1)
+        android.location.Location.distanceBetween(
+            point1.latitude, point1.longitude,
+            point2.latitude, point2.longitude,
+            results
+        )
+        return results[0].toDouble()
     }
 
     private fun moveToUserLocation() {
@@ -276,6 +413,35 @@ class HomeFragment : Fragment(R.layout.fragment_home), OnMapReadyCallback {
         val userId = sessionManager.getUserId()
         if (userId > 0) {
             viewModel.updateNotificationPreferences(userId.toInt(), isEnabled)
+        }
+    }
+
+    private fun filterBySearchQuery(query: String) {
+        val allParkings = viewModel.parkings.value
+        if (allParkings is UiState.Success) {
+            val filtered = if (query.isBlank()) {
+                allParkings.data
+            } else {
+                allParkings.data.filter { it.name.contains(query, ignoreCase = true) }
+            }
+            parkingAdapter.submitList(filtered)
+            updateMapMarkers(filtered)
+
+            if (filtered.isNotEmpty()) {
+                if (filtered.size == 1) {
+                    val parking = filtered.first()
+                    val latLng = LatLng(parking.latitude, parking.longitude)
+                    googleMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, 17f))
+                } else {
+                    // Birden fazla otopark varsa hepsini kapsayacak şekilde haritayı ayarla
+                    val builder = LatLngBounds.Builder()
+                    filtered.forEach { parking ->
+                        builder.include(LatLng(parking.latitude, parking.longitude))
+                    }
+                    val bounds = builder.build()
+                    googleMap.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds, 120))
+                }
+            }
         }
     }
 

@@ -6,5 +6,7 @@ data class SignInResponse(
     @SerializedName("userId")
     val id: Long,
     val token: String,
-    val type: String = "Bearer"
+    val type: String = "Bearer",
+    val email: String,
+    val username: String
 )

@@ -26,7 +26,7 @@ public class NotificationService {
         
         // Create notification title and body
         String title = "Parking Full Alert";
-        String body = "The parking " + notification.getParkingName() + " is now full.";
+        String body = "The " + notification.getParkingName() + " is now full.";
         
         // Send to all users who should receive this notification
         for (Long userId : notification.getUserIds()) {

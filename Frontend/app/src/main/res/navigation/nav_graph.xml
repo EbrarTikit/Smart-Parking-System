@@ -94,11 +94,22 @@
     <fragment
         android:id="@+id/navigation_profile"
         android:name="com.example.smartparkingsystem.ui.profile.ProfileFragment"
-        android:label="Profile" >
+        android:label="@string/title_profile"
+        tools:layout="@layout/fragment_profile">
         <action
             android:id="@+id/action_navigation_profile_to_signInFragment"
-            app:destination="@id/signInFragment" />
+            app:destination="@id/signInFragment"
+            app:popUpTo="@id/nav_graph"
+            app:popUpToInclusive="true" />
+        <action
+            android:id="@+id/action_navigation_profile_to_helpSupportFragment"
+            app:destination="@id/helpSupportFragment" />
     </fragment>
+    <fragment
+        android:id="@+id/helpSupportFragment"
+        android:name="com.example.smartparkingsystem.ui.help.HelpSupportFragment"
+        android:label="Help &amp; Support"
+        tools:layout="@layout/fragment_help_support" />
     <fragment
         android:id="@+id/detailFragment"
         android:name="com.example.smartparkingsystem.ui.detail.DetailFragment"

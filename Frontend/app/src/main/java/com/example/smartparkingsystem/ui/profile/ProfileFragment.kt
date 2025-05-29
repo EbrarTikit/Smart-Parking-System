@@ -45,6 +45,10 @@ class ProfileFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         _binding = FragmentProfileBinding.bind(view)
 
+        // Set user details
+        binding.tvName.text = sessionManager.getUsername() ?: "User"
+        binding.tvEmail.text = sessionManager.getEmail() ?: "No email"
+
         // Dark mode tercihini yükle
         val prefs = requireContext().getSharedPreferences("settings", 0)
         val isDarkMode = prefs.getBoolean("dark_mode", false)

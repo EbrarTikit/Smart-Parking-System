@@ -58,7 +58,7 @@ public class AuthController {
                 throw new UsernameNotFoundException("User not found");
             }
 
-            return ResponseEntity.ok(new JwtResponse(jwt, user.getId()));
+            return ResponseEntity.ok(new JwtResponse(jwt, user.getId(), user.getUsername(), user.getEmail()));
         } catch (BadCredentialsException e) {
             throw new InvalidCredentialsException("Invalid username or password");
         }

@@ -53,12 +53,12 @@ const ParkingDetails = () => {
     setLoading(true);
     try {
       const response = await getParkingById(id);
-      console.log('Otopark detayları:', response.data);
+      console.log('Parking details:', response.data);
       setParking(response.data);
       setError('');
     } catch (error) {
-      console.error('Otopark detayları alınırken hata oluştu:', error);
-      setError('Otopark detayları yüklenirken bir hata oluştu');
+      console.error('Error fetching parking details:', error);
+      setError('An error occurred while loading parking details');
     } finally {
       setLoading(false);
     }
@@ -88,10 +88,10 @@ const ParkingDetails = () => {
     return (
       <Container maxWidth="lg" sx={{ mt: 4 }}>
         <PageHeader 
-          title="Otopark Detayları" 
+          title="Parking Details" 
           breadcrumbs={[
-            { text: 'Otoparklar', link: '/parkings' },
-            { text: 'Otopark Detayları' }
+            { text: 'Parkings', link: '/parkings' },
+            { text: 'Parking Details' }
           ]}
         />
         <Alert severity="error" sx={{ mb: 2 }}>
@@ -102,7 +102,7 @@ const ParkingDetails = () => {
           startIcon={<ArrowBackIcon />} 
           onClick={handleBackClick}
         >
-          Geri Dön
+          Go Back
         </Button>
       </Container>
     );
@@ -112,21 +112,21 @@ const ParkingDetails = () => {
     return (
       <Container maxWidth="lg" sx={{ mt: 4 }}>
         <PageHeader 
-          title="Otopark Detayları" 
+          title="Parking Details" 
           breadcrumbs={[
-            { text: 'Otoparklar', link: '/parkings' },
-            { text: 'Otopark Detayları' }
+            { text: 'Parkings', link: '/parkings' },
+            { text: 'Parking Details' }
           ]}
         />
         <Alert severity="warning" sx={{ mb: 2 }}>
-          Otopark bulunamadı
+          Parking not found
         </Alert>
         <Button 
           variant="outlined" 
           startIcon={<ArrowBackIcon />} 
           onClick={handleBackClick}
         >
-          Geri Dön
+          Go Back
         </Button>
       </Container>
     );
@@ -135,14 +135,14 @@ const ParkingDetails = () => {
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
       <PageHeader 
-        title={`${parking.name} Detayları`} 
+        title={`${parking.name} Details`} 
         breadcrumbs={[
-          { text: 'Otoparklar', link: '/parkings' },
-          { text: `${parking.name} Detayları` }
+          { text: 'Parkings', link: '/parkings' },
+          { text: `${parking.name} Details` }
         ]}
       />
 
-      {/* Üst Bilgi Kartı */}
+      {/* Top Information Card */}
       <Paper sx={{ p: 3, mb: 3 }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
           <Box>
@@ -169,7 +169,7 @@ const ParkingDetails = () => {
             startIcon={<EditIcon />} 
             onClick={handleEditClick}
           >
-            Düzenle
+            Edit
           </Button>
         </Box>
 
@@ -180,12 +180,12 @@ const ParkingDetails = () => {
             <Card variant="outlined">
               <CardContent>
                 <Typography variant="subtitle2" color="text.secondary">
-                  Kapasite
+                  Capacity
                 </Typography>
                 <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
                   <DirectionsCarIcon color="primary" sx={{ mr: 1 }} />
                   <Typography variant="h6">
-                    {parking.capacity} araç
+                    {parking.capacity} vehicles
                   </Typography>
                 </Box>
               </CardContent>
@@ -195,7 +195,7 @@ const ParkingDetails = () => {
             <Card variant="outlined">
               <CardContent>
                 <Typography variant="subtitle2" color="text.secondary">
-                  Çalışma Saatleri
+                  Opening Hours
                 </Typography>
                 <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
                   <AccessTimeIcon color="primary" sx={{ mr: 1 }} />
@@ -210,12 +210,12 @@ const ParkingDetails = () => {
             <Card variant="outlined">
               <CardContent>
                 <Typography variant="subtitle2" color="text.secondary">
-                  Saat Ücreti
+                  Hourly Rate
                 </Typography>
                 <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
                   <AttachMoneyIcon color="primary" sx={{ mr: 1 }} />
                   <Typography variant="h6">
-                    {parking.rate} TL
+                    {parking.rate} TRY
                   </Typography>
                 </Box>
               </CardContent>
@@ -225,7 +225,7 @@ const ParkingDetails = () => {
             <Card variant="outlined">
               <CardContent>
                 <Typography variant="subtitle2" color="text.secondary">
-                  Boyut
+                  Size
                 </Typography>
                 <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
                   <GridViewIcon color="primary" sx={{ mr: 1 }} />
@@ -241,10 +241,10 @@ const ParkingDetails = () => {
         <Divider sx={{ my: 2 }} />
         
         <Typography variant="h6" gutterBottom>
-          Açıklama
+          Description
         </Typography>
         <Typography variant="body1" color="text.secondary" sx={{ whiteSpace: 'pre-wrap' }}>
-          {parking.description || 'Açıklama bulunmuyor.'}
+          {parking.description || 'No description available.'}
         </Typography>
       </Paper>
 
@@ -252,12 +252,12 @@ const ParkingDetails = () => {
       <Paper sx={{ mb: 3 }}>
         <Box sx={{ p: 3 }}>
           <Typography variant="h6" gutterBottom>
-            Konum
+            Location
           </Typography>
           <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
             <MapIcon color="primary" sx={{ mr: 1 }} />
             <Typography variant="body1">
-              Enlem: {parking.latitude}, Boylam: {parking.longitude}
+              Latitude: {parking.latitude}, Longitude: {parking.longitude}
             </Typography>
           </Box>
           <Box 
@@ -271,7 +271,7 @@ const ParkingDetails = () => {
             }}
           >
             <Typography variant="body2" color="text.secondary">
-              Harita burada gösterilecek (Google Maps API entegrasyonu gerekli)
+              Map will be shown here (Google Maps API integration required)
             </Typography>
           </Box>
         </Box>
@@ -281,9 +281,9 @@ const ParkingDetails = () => {
       <Paper sx={{ mb: 3 }}>
         <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
           <Tabs value={tabValue} onChange={handleTabChange} aria-label="parking details tabs">
-            <Tab label="Park Yerleri" />
-            <Tab label="Yollar" />
-            <Tab label="Binalar" />
+            <Tab label="Parking Spots" />
+            <Tab label="Roads" />
+            <Tab label="Buildings" />
           </Tabs>
         </Box>
 
@@ -295,11 +295,11 @@ const ParkingDetails = () => {
                 <TableHead>
                   <TableRow>
                     <TableCell>ID</TableCell>
-                    <TableCell>Tanımlayıcı</TableCell>
-                    <TableCell>Satır</TableCell>
-                    <TableCell>Sütun</TableCell>
-                    <TableCell>Sensör ID</TableCell>
-                    <TableCell>Durum</TableCell>
+                    <TableCell>Identifier</TableCell>
+                    <TableCell>Row</TableCell>
+                    <TableCell>Column</TableCell>
+                    <TableCell>Sensor ID</TableCell>
+                    <TableCell>Status</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -309,10 +309,10 @@ const ParkingDetails = () => {
                       <TableCell>{spot.spotIdentifier}</TableCell>
                       <TableCell>{spot.row}</TableCell>
                       <TableCell>{spot.column}</TableCell>
-                      <TableCell>{spot.sensorId || "Yok"}</TableCell>
+                      <TableCell>{spot.sensorId || "None"}</TableCell>
                       <TableCell>
                         <Chip 
-                          label={spot.occupied ? "Dolu" : "Boş"} 
+                          label={spot.occupied ? "Occupied" : "Empty"} 
                           color={spot.occupied ? "error" : "success"} 
                           size="small" 
                         />
@@ -324,7 +324,7 @@ const ParkingDetails = () => {
             </TableContainer>
           ) : (
             <Typography variant="body1" sx={{ py: 2 }}>
-              Bu otoparkta tanımlı park yeri bulunmamaktadır.
+              No parking spots defined for this parking.
             </Typography>
           )}
         </TabPanel>
@@ -337,9 +337,9 @@ const ParkingDetails = () => {
                 <TableHead>
                   <TableRow>
                     <TableCell>ID</TableCell>
-                    <TableCell>Tanımlayıcı</TableCell>
-                    <TableCell>Satır</TableCell>
-                    <TableCell>Sütun</TableCell>
+                    <TableCell>Identifier</TableCell>
+                    <TableCell>Row</TableCell>
+                    <TableCell>Column</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -356,7 +356,7 @@ const ParkingDetails = () => {
             </TableContainer>
           ) : (
             <Typography variant="body1" sx={{ py: 2 }}>
-              Bu otoparkta tanımlı yol bulunmamaktadır.
+              No roads defined for this parking.
             </Typography>
           )}
         </TabPanel>
@@ -369,8 +369,8 @@ const ParkingDetails = () => {
                 <TableHead>
                   <TableRow>
                     <TableCell>ID</TableCell>
-                    <TableCell>Satır</TableCell>
-                    <TableCell>Sütun</TableCell>
+                    <TableCell>Row</TableCell>
+                    <TableCell>Column</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -386,7 +386,7 @@ const ParkingDetails = () => {
             </TableContainer>
           ) : (
             <Typography variant="body1" sx={{ py: 2 }}>
-              Bu otoparkta tanımlı bina bulunmamaktadır.
+              No buildings defined for this parking.
             </Typography>
           )}
         </TabPanel>
@@ -396,7 +396,7 @@ const ParkingDetails = () => {
       {parking.imageUrl && (
         <Paper sx={{ p: 3, mb: 3 }}>
           <Typography variant="h6" gutterBottom>
-            Otopark Görünümü
+            Parking View
           </Typography>
           <Box sx={{ width: '100%', textAlign: 'center' }}>
             <img 
@@ -409,7 +409,7 @@ const ParkingDetails = () => {
               }} 
               onError={(e) => {
                 e.target.onerror = null;
-                e.target.src = "https://via.placeholder.com/800x400?text=Otopark+Resmi+Bulunamadı";
+                e.target.src = "https://via.placeholder.com/800x400?text=Parking+Image+Not+Found";
               }}
             />
           </Box>
@@ -422,7 +422,7 @@ const ParkingDetails = () => {
           startIcon={<ArrowBackIcon />} 
           onClick={handleBackClick}
         >
-          Otoparklar Listesine Dön
+          Back to Parking List
         </Button>
         <Box>
           <Button 
@@ -431,14 +431,14 @@ const ParkingDetails = () => {
             onClick={() => navigate(`/parking-layout/${id}`)}
             sx={{ mr: 2 }}
           >
-            Otopark Düzenini Görüntüle
+            View Parking Layout
           </Button>
           <Button 
             variant="contained" 
             startIcon={<EditIcon />} 
             onClick={handleEditClick}
           >
-            Otoparkı Düzenle
+            Edit Parking
           </Button>
         </Box>
       </Box>

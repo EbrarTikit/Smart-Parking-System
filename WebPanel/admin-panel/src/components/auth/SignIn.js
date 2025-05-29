@@ -27,7 +27,7 @@ const SignIn = () => {
     e.preventDefault();
     
     if (!formData.username || !formData.password) {
-      setError('Kullanıcı adı ve şifre gereklidir');
+      setError('Username and password are required');
       return;
     }
     
@@ -41,7 +41,7 @@ const SignIn = () => {
         password: formData.password
       });
       
-      console.log('Giriş başarılı:', response.data);
+      console.log('Login successful:', response.data);
       
       // JWT token'ı localStorage'a kaydediyoruz (gerçek uygulamada)
       if (response.data.token) {
@@ -56,11 +56,11 @@ const SignIn = () => {
       navigate('/dashboard');
       
     } catch (error) {
-      console.error('Giriş hatası:', error);
+      console.error('Login error:', error);
       if (error.response) {
-        setError(error.response.data.message || 'Kullanıcı adı veya şifre hatalı');
+        setError(error.response.data.message || 'Invalid username or password');
       } else {
-        setError('Sunucu bağlantısı kurulamadı');
+        setError('Server connection failed');
       }
     } finally {
       setLoading(false);
@@ -79,10 +79,10 @@ const SignIn = () => {
       >
         <Paper elevation={3} sx={{ padding: 4, width: '100%' }}>
           <Typography component="h1" variant="h5" align="center" gutterBottom>
-            Akıllı Otopark Sistemi
+            Smart Parking System
           </Typography>
           <Typography component="h2" variant="h5" align="center" gutterBottom>
-            Admin Girişi
+            Admin Login
           </Typography>
           
           {error && (
@@ -96,7 +96,7 @@ const SignIn = () => {
               margin="normal"
               required
               fullWidth
-              label="Kullanıcı Adı"
+              label="Username"
               name="username"
               autoComplete="username"
               autoFocus
@@ -108,7 +108,7 @@ const SignIn = () => {
               required
               fullWidth
               name="password"
-              label="Şifre"
+              label="Password"
               type="password"
               autoComplete="current-password"
               value={formData.password}
@@ -121,12 +121,12 @@ const SignIn = () => {
               sx={{ mt: 3, mb: 2 }}
               disabled={loading}
             >
-              {loading ? <CircularProgress size={24} /> : 'Giriş Yap'}
+              {loading ? <CircularProgress size={24} /> : 'Sign In'}
             </Button>
             <Grid container>
               <Grid item>
                 <Link component={RouterLink} to="/signup" variant="body2">
-                  {"Hesabınız yok mu? Kayıt olun"}
+                  {"Don't have an account? Sign Up"}
                 </Link>
               </Grid>
             </Grid>

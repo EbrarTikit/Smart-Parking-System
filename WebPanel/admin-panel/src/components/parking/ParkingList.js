@@ -26,7 +26,7 @@ const ParkingList = () => {
   const [filteredParkings, setFilteredParkings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [viewMode, setViewMode] = useState('card'); // 'card' veya 'table'
+  const [viewMode, setViewMode] = useState('card'); // 'card' or 'table'
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [parkingToDelete, setParkingToDelete] = useState(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
@@ -37,7 +37,7 @@ const ParkingList = () => {
     fetchParkings();
   }, []);
 
-  // Arama terimi değiştiğinde filtreleme yap
+  // Filter when search term changes
   useEffect(() => {
     if (!parkings.length) {
       setFilteredParkings([]);
@@ -63,13 +63,13 @@ const ParkingList = () => {
     setLoading(true);
     try {
       const response = await getParkings();
-      console.log('Otoparklar:', response.data);
+      console.log('Parkings:', response.data);
       setParkings(response.data);
       setFilteredParkings(response.data);
       setError('');
     } catch (error) {
-      console.error('Otopark listesi alınırken hata oluştu:', error);
-      setError('Otoparklar yüklenirken bir hata oluştu');
+      console.error('Error fetching parking list:', error);
+      setError('An error occurred while loading parkings');
     } finally {
       setLoading(false);
     }
@@ -99,7 +99,7 @@ const ParkingList = () => {
     setSearchTerm('');
   };
   
-  // Silme işlevi
+  // Delete function
   const handleDeleteClick = (parking) => {
     setParkingToDelete(parking);
     setDeleteDialogOpen(true);
@@ -117,19 +117,19 @@ const ParkingList = () => {
     try {
       await deleteParking(parkingToDelete.id);
       
-      // Silme işlemi başarılı olduğunda, listeden otoparkı çıkar
+      // When deletion is successful, remove the parking from the list
       setParkings(prevParkings => prevParkings.filter(p => p.id !== parkingToDelete.id));
-      setSuccessMessage(`${parkingToDelete.name} otoparkı başarıyla silindi.`);
+      setSuccessMessage(`${parkingToDelete.name} deleted successfully.`);
       
-      // Başarı mesajını 3 saniye sonra otomatik kapat
+      // Auto-close success message after 3 seconds
       setTimeout(() => {
         setSuccessMessage('');
       }, 3000);
     } catch (error) {
-      console.error('Otopark silinemedi:', error);
-      setError(`Otopark silinemedi: ${error.response?.data?.message || error.message}`);
+      console.error('Could not delete parking:', error);
+      setError(`Could not delete parking: ${error.response?.data?.message || error.message}`);
       
-      // Hata mesajını 5 saniye sonra otomatik kapat
+      // Auto-close error message after 5 seconds
       setTimeout(() => {
         setError('');
       }, 5000);
@@ -151,9 +151,9 @@ const ParkingList = () => {
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
       <PageHeader 
-        title="Otoparklar" 
+        title="Parkings" 
         breadcrumbs={[
-          { text: 'Otoparklar' }
+          { text: 'Parkings' }
         ]}
       />
       
@@ -169,12 +169,12 @@ const ParkingList = () => {
         </Alert>
       )}
       
-      {/* Arama çubuğu */}
+      {/* Search bar */}
       <Paper sx={{ p: 2, mb: 3 }}>
         <TextField
           fullWidth
           variant="outlined"
-          placeholder="ID, isim veya konum ile otopark ara..."
+          placeholder="Search parking by ID, name, or location..."
           value={searchTerm}
           onChange={handleSearchChange}
           InputProps={{
@@ -196,7 +196,7 @@ const ParkingList = () => {
       
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="body2">
-          {filteredParkings.length} otopark bulundu
+          {filteredParkings.length} parkings found
         </Typography>
         <Box>
           <Button 
@@ -204,13 +204,13 @@ const ParkingList = () => {
             sx={{ mr: 2 }}
             onClick={handleToggleView}
           >
-            {viewMode === 'card' ? 'Tablo Görünümü' : 'Kart Görünümü'}
+            {viewMode === 'card' ? 'Table View' : 'Card View'}
           </Button>
           <Button 
             variant="contained" 
             onClick={handleAddParking}
           >
-            Yeni Otopark Ekle
+            Add New Parking
           </Button>
         </Box>
       </Box>
@@ -219,13 +219,13 @@ const ParkingList = () => {
         <Paper sx={{ p: 4, textAlign: 'center' }}>
           {searchTerm ? (
             <>
-              <Typography variant="h6" sx={{ mb: 2 }}>Aramanızla eşleşen otopark bulunamadı</Typography>
-              <Button variant="outlined" onClick={handleClearSearch}>Aramayı Temizle</Button>
+              <Typography variant="h6" sx={{ mb: 2 }}>No parkings found matching your search</Typography>
+              <Button variant="outlined" onClick={handleClearSearch}>Clear Search</Button>
             </>
           ) : (
             <>
-              <Typography variant="h6" sx={{ mb: 2 }}>Henüz hiç otopark bulunmuyor</Typography>
-              <Button variant="contained" onClick={handleAddParking}>İlk Otoparkı Ekle</Button>
+              <Typography variant="h6" sx={{ mb: 2 }}>No parkings available yet</Typography>
+              <Button variant="contained" onClick={handleAddParking}>Add First Parking</Button>
             </>
           )}
         </Paper>
@@ -269,7 +269,7 @@ const ParkingList = () => {
                   <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
                     <DirectionsCarIcon fontSize="small" color="action" sx={{ mr: 1 }} />
                     <Typography variant="body2" color="text.secondary">
-                      Kapasite: {parking.capacity} araç
+                      Capacity: {parking.capacity} vehicles
                     </Typography>
                   </Box>
                   <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
@@ -281,24 +281,24 @@ const ParkingList = () => {
                   <Box sx={{ display: 'flex', alignItems: 'center' }}>
                     <AttachMoneyIcon fontSize="small" color="action" sx={{ mr: 1 }} />
                     <Typography variant="body2" color="text.secondary">
-                      Saat ücreti: {parking.rate} TL
+                      Hourly rate: {parking.rate} TL
                     </Typography>
                   </Box>
                 </CardContent>
                 <CardActions>
                   <Box sx={{ flexGrow: 1 }}>
-                    <Tooltip title="Düzenle">
+                    <Tooltip title="Edit">
                       <IconButton onClick={(e) => { e.stopPropagation(); handleEditParking(parking.id); }} color="info">
                         <EditIcon />
                       </IconButton>
                     </Tooltip>
-                    <Tooltip title="Düzeni Görüntüle">
+                    <Tooltip title="View Layout">
                       <IconButton onClick={(e) => { e.stopPropagation(); navigate(`/parking-layout/${parking.id}`); }} color="success">
                         <GridViewIcon />
                       </IconButton>
                     </Tooltip>
                   </Box>
-                  <Tooltip title="Sil">
+                  <Tooltip title="Delete">
                     <IconButton onClick={(e) => { e.stopPropagation(); handleDeleteClick(parking); }} color="error">
                       <DeleteIcon />
                     </IconButton>
@@ -310,60 +310,41 @@ const ParkingList = () => {
         </Grid>
       ) : (
         <TableContainer component={Paper}>
-          <Table sx={{ minWidth: 650 }}>
+          <Table>
             <TableHead>
               <TableRow>
                 <TableCell>ID</TableCell>
-                <TableCell>İsim</TableCell>
-                <TableCell>Konum</TableCell>
-                <TableCell align="right">Kapasite</TableCell>
-                <TableCell>Çalışma Saatleri</TableCell>
-                <TableCell align="right">Saat Ücreti</TableCell>
-                <TableCell align="center">İşlemler</TableCell>
+                <TableCell>Name</TableCell>
+                <TableCell>Location</TableCell>
+                <TableCell>Capacity</TableCell>
+                <TableCell>Opening Hours</TableCell>
+                <TableCell>Hourly Rate</TableCell>
+                <TableCell>Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {filteredParkings.map((parking) => (
-                <TableRow
-                  key={parking.id}
-                  sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
-                >
+                <TableRow key={parking.id}>
                   <TableCell>{parking.id}</TableCell>
-                  <TableCell component="th" scope="row">
-                    {parking.name}
-                  </TableCell>
+                  <TableCell>{parking.name}</TableCell>
                   <TableCell>{parking.location}</TableCell>
-                  <TableCell align="right">{parking.capacity}</TableCell>
-                  <TableCell>{parking.openingHours} - {parking.closingHours}</TableCell>
-                  <TableCell align="right">{parking.rate} TL</TableCell>
-                  <TableCell align="center">
-                    <Tooltip title="Detaylar">
-                      <IconButton 
-                        size="small" 
-                        onClick={() => handleViewDetails(parking.id)}
-                        color="primary"
-                        sx={{ mr: 1 }}
-                      >
-                        <VisibilityIcon fontSize="small" />
+                  <TableCell>{parking.capacity}</TableCell>
+                  <TableCell>{`${parking.openingHours} - ${parking.closingHours}`}</TableCell>
+                  <TableCell>{`${parking.rate} TL`}</TableCell>
+                  <TableCell>
+                    <Tooltip title="View Details">
+                      <IconButton onClick={() => handleViewDetails(parking.id)} size="small">
+                        <VisibilityIcon color="primary" />
                       </IconButton>
                     </Tooltip>
-                    <Tooltip title="Düzenle">
-                      <IconButton 
-                        size="small" 
-                        onClick={() => handleEditParking(parking.id)}
-                        color="primary"
-                        sx={{ mr: 1 }}
-                      >
-                        <EditIcon fontSize="small" />
+                    <Tooltip title="Edit">
+                      <IconButton onClick={() => handleEditParking(parking.id)} size="small" sx={{ ml: 1 }}>
+                        <EditIcon color="action" />
                       </IconButton>
                     </Tooltip>
-                    <Tooltip title="Sil">
-                      <IconButton 
-                        size="small" 
-                        onClick={() => handleDeleteClick(parking)}
-                        color="error"
-                      >
-                        <DeleteIcon fontSize="small" />
+                    <Tooltip title="Delete">
+                      <IconButton onClick={() => handleDeleteClick(parking)} size="small" sx={{ ml: 1 }}>
+                        <DeleteIcon color="error" />
                       </IconButton>
                     </Tooltip>
                   </TableCell>
@@ -374,38 +355,23 @@ const ParkingList = () => {
         </TableContainer>
       )}
       
-      {/* Silme Onay Dialog'u */}
+      {/* Delete Confirmation Dialog */}
       <Dialog
         open={deleteDialogOpen}
         onClose={handleDeleteCancel}
-        aria-labelledby="alert-dialog-title"
-        aria-describedby="alert-dialog-description"
+        aria-labelledby="delete-dialog-title"
+        aria-describedby="delete-dialog-description"
       >
-        <DialogTitle id="alert-dialog-title">
-          {"Otoparkı silmek istediğinize emin misiniz?"}
-        </DialogTitle>
+        <DialogTitle id="delete-dialog-title">{"Delete Parking"}</DialogTitle>
         <DialogContent>
-          <DialogContentText id="alert-dialog-description">
-            {parkingToDelete && (
-              <>
-                <strong>{parkingToDelete.name}</strong> otoparkını silmek üzeresiniz. 
-                Bu işlem geri alınamaz ve tüm otopark verileri kalıcı olarak silinecektir.
-              </>
-            )}
+          <DialogContentText id="delete-dialog-description">
+            {`Are you sure you want to delete the parking "${parkingToDelete?.name}"? This action cannot be undone.`}
           </DialogContentText>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleDeleteCancel} disabled={deleteLoading}>
-            İptal
-          </Button>
-          <Button 
-            onClick={handleDeleteConfirm} 
-            color="error" 
-            variant="contained"
-            autoFocus
-            disabled={deleteLoading}
-          >
-            {deleteLoading ? <CircularProgress size={24} /> : 'Evet, Sil'}
+          <Button onClick={handleDeleteCancel} disabled={deleteLoading}>Cancel</Button>
+          <Button onClick={handleDeleteConfirm} color="error" disabled={deleteLoading}>
+            {deleteLoading ? <CircularProgress size={24} /> : 'Delete'}
           </Button>
         </DialogActions>
       </Dialog>

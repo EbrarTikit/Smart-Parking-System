@@ -45,7 +45,7 @@ const AppHeader = ({ title }) => {
     <AppBar position="static" color="primary" sx={{ mb: 3 }}>
       <Toolbar>
         {isAuthenticated && !isDashboard && (
-          <Tooltip title="Geri">
+          <Tooltip title="Go Back">
             <IconButton
               size="large"
               edge="start"
@@ -60,7 +60,7 @@ const AppHeader = ({ title }) => {
         )}
 
         {isAuthenticated && (
-          <Tooltip title="Ana Sayfa">
+          <Tooltip title="Home Page">
             <IconButton
               size="large"
               edge="start"
@@ -75,12 +75,12 @@ const AppHeader = ({ title }) => {
         )}
 
         <Typography variant="h6" component="div" sx={{ flexGrow: 1, ml: 2 }}>
-          {title || 'Otopark Yönetim Sistemi'}
+          {title || 'Parking Management System'}
         </Typography>
 
         {isAuthenticated ? (
           <>
-            <Tooltip title="Kullanıcı Menüsü">
+            <Tooltip title="User Menu">
               <IconButton
                 onClick={handleProfileMenuOpen}
                 size="large"
@@ -116,19 +116,19 @@ const AppHeader = ({ title }) => {
               anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
             >
               <MenuItem onClick={() => { handleClose(); navigate('/profile'); }}>
-                <Avatar /> Profil
+                <Avatar /> Profile
               </MenuItem>
               <Divider />
               <MenuItem onClick={handleLogout}>
                 <ExitToAppIcon fontSize="small" sx={{ mr: 1 }} /> 
-                Çıkış Yap
+                Sign Out
               </MenuItem>
             </Menu>
           </>
         ) : (
           <Box>
-            <Button color="inherit" onClick={() => navigate('/signin')}>Giriş Yap</Button>
-            <Button color="inherit" onClick={() => navigate('/signup')}>Kayıt Ol</Button>
+            <Button color="inherit" onClick={() => navigate('/signin')}>Sign In</Button>
+            <Button color="inherit" onClick={() => navigate('/signup')}>Sign Up</Button>
           </Box>
         )}
       </Toolbar>

@@ -75,8 +75,8 @@ const ParkingLayout = () => {
         setSensors(relevantSensors);
         setError('');
       } catch (error) {
-        console.error('Sensörler yüklenirken hata:', error);
-        setError('Sensörler yüklenirken bir hata oluştu');
+        console.error('Error loading sensors:', error);
+        setError('An error occurred while loading sensors');
         setSensors([]);
       } finally {
         setSensorLoading(false);
@@ -97,13 +97,12 @@ const ParkingLayout = () => {
       const parkingData = response.data;
       setParking(parkingData);
       
-      // Matrisi oluştur
       createMatrix(parkingData);
       
       setError('');
     } catch (error) {
-      console.error('Otopark detayları alınırken hata oluştu:', error);
-      setError('Otopark detayları yüklenirken bir hata oluştu');
+      console.error('Error fetching parking details:', error);
+      setError('An error occurred while loading parking details');
     } finally {
       setLoading(false);
     }
@@ -111,20 +110,21 @@ const ParkingLayout = () => {
 
   const createMatrix = (parkingData) => {
     if (!parkingData || !parkingData.rows || !parkingData.columns) {
-      setError('Otopark satır ve sütun bilgileri bulunamadı');
+      setError('Parking row and column information not found');
       return;
     }
 
     const rows = parkingData.rows;
     const columns = parkingData.columns;
-    
-    // Boş matrisi oluştur
-    const emptyMatrix = Array(rows).fill().map(() => 
+
+    const emptyMatrix = Array(rows).fill().map(() =>
       Array(columns).fill().map(() => ({ type: 'empty', data: null }))
     );
-    
-    // Tüm yol hücrelerinin setini oluştur
+
+    // roadSet değişkenini burada, her iki yol işleme bloğunun dışında tanımlayalım
     const roadSet = new Set();
+
+    // Tüm yol hücrelerini setini oluştur (Bu blok roadSet'i doldurur)
     if (parkingData.roads && parkingData.roads.length > 0) {
       parkingData.roads.forEach(road => {
         if (road.roadRow >= 0 && road.roadRow < rows && road.roadColumn >= 0 && road.roadColumn < columns) {
@@ -140,7 +140,7 @@ const ParkingLayout = () => {
       });
     }
 
-    // Yolların yönünü belirle
+    // Yolların yönünü belirle (Bu blok roadSet'i kullanır)
     if (parkingData.roads && parkingData.roads.length > 0) {
       parkingData.roads.forEach(road => {
         const row = road.roadRow;
@@ -167,8 +167,8 @@ const ParkingLayout = () => {
 
       });
     }
-    
-    // Park yerlerini ekle
+
+    // Park yerlerini ekle (mevcut mantık aynı kalabilir)
     if (parkingData.parkingSpots && parkingData.parkingSpots.length > 0) {
       parkingData.parkingSpots.forEach(spot => {
         if (spot.row >= 0 && spot.row < rows && spot.column >= 0 && spot.column < columns) {
@@ -183,8 +183,8 @@ const ParkingLayout = () => {
         }
       });
     }
-    
-    // Binaları ekle
+
+    // Binaları ekle (mevcut mantık aynı kalabilir)
     if (parkingData.buildings && parkingData.buildings.length > 0) {
       parkingData.buildings.forEach(building => {
         if (building.buildingRow >= 0 && building.buildingRow < rows && building.buildingColumn >= 0 && building.buildingColumn < columns) {
@@ -196,7 +196,7 @@ const ParkingLayout = () => {
         }
       });
     }
-    
+
     setMatrix(emptyMatrix);
   };
 
@@ -212,12 +212,10 @@ const ParkingLayout = () => {
     const cell = matrix[rowIndex][colIndex];
     
     if (selectedTool === 'delete') {
-      // Hücreyi temizle
       const newMatrix = [...matrix];
       newMatrix[rowIndex][colIndex] = { type: 'empty', data: null };
       setMatrix(newMatrix);
     } else {
-      // Seçilen hücreyi kaydet ve dialog'u aç
       setSelectedCell({ row: rowIndex, col: colIndex, current: cell });
       setDialogData({ 
         identifier: cell.type === selectedTool ? (cell.identifier || '') : '',
@@ -231,6 +229,64 @@ const ParkingLayout = () => {
   const handleDialogClose = () => {
     setDialogOpen(false);
     setSelectedCell(null);
+    setError('');
+  };
+
+  const handleNewSensorDialogClose = () => {
+    setNewSensorDialogOpen(false);
+    setNewSensorData({
+      parkingId: '',
+      controllerId: '',
+      echoPin: '',
+      trigPin: ''
+    });
+    setError('');
+  };
+
+  const handleAddSensor = async () => {
+    if (!newSensorData.controllerId || newSensorData.echoPin === '' || newSensorData.trigPin === '') {
+      setError('Please fill in all new sensor fields.');
+      return;
+    }
+
+    setSaving(true);
+    setError('');
+    try {
+      const sensorDataToSend = {
+        ...newSensorData,
+        parkingId: String(id).padStart(4, '0')
+      };
+      const response = await addSensor(sensorDataToSend);
+      console.log('Sensor added successfully:', response.data);
+      setSuccess('New sensor added successfully!');
+      
+      // Yeni sensör ekleme penceresini kapat
+      setNewSensorDialogOpen(false);
+      
+      // Sensör listesini güncelle
+      const sensorsResponse = await getAllSensors();
+      const allSensors = sensorsResponse.data;
+      const parkingIdString = String(id).padStart(4, '0');
+      const relevantSensors = allSensors.filter(sensor =>
+        sensor.id && String(sensor.id).startsWith(parkingIdString)
+      );
+      setSensors(relevantSensors);
+
+      // Yeni eklenen sensörü seç
+      const newlyAddedSensorId = response.data.id;
+      if (newlyAddedSensorId) {
+        setDialogData(prevData => ({
+          ...prevData,
+          sensorId: newlyAddedSensorId
+        }));
+      }
+
+    } catch (error) {
+      console.error('Error adding sensor:', error);
+      setError('An error occurred while adding the new sensor.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleDialogSave = async () => {
@@ -240,7 +296,7 @@ const ParkingLayout = () => {
     const newMatrix = [...matrix];
     
     if (dialogData.type === 'spot' && !dialogData.sensorId) {
-      setError('Park yeri için sensör seçimi zorunludur.');
+      setError('Sensor selection is required for parking spot.');
       return;
     }
 
@@ -251,65 +307,82 @@ const ParkingLayout = () => {
             type: 'spot',
             identifier: dialogData.identifier,
             sensorId: dialogData.sensorId,
-            id: selectedCell.current.type === 'spot' ? selectedCell.current.id : null,
-            occupied: selectedCell.current.type === 'spot' ? selectedCell.current.occupied : false
+            row: row,
+            column: col,
+            parkingId: parseInt(id)
           };
-          
-          if (selectedCell.current.type !== 'spot' || selectedCell.current.sensorId !== dialogData.sensorId) {
-            try {
-              const response = await updateSpotSensor(id, row, col, dialogData.sensorId, dialogData.identifier);
-              if (response.data) {
-                setSuccess('Park yeri başarıyla güncellendi');
-                spotData.id = response.data.id;
-                spotData.sensorId = response.data.sensorId;
-                spotData.identifier = response.data.spotIdentifier;
-              }
-            } catch (error) {
-              console.error('Park yeri güncelleme hatası:', error);
-              const errorMessage = error.response?.data?.message || error.message;
-              setError(`Park yeri güncellenirken bir hata oluştu: ${errorMessage}`);
-              return;
-            }
-          }
-          
-          newMatrix[row][col] = spotData;
-          break;
-          
-        case 'road':
+          const updateSpotResponse = await updateSpotSensor(id, row, col, dialogData.sensorId);
+          console.log('Spot updated with sensor:', updateSpotResponse.data);
+
           newMatrix[row][col] = {
-            type: 'road',
+            ...newMatrix[row][col],
+            type: 'spot',
             identifier: dialogData.identifier,
-            orientation: matrix[row][col].orientation
+            sensorId: dialogData.sensorId,
+            occupied: newMatrix[row][col]?.occupied || false
           };
-          break;
+          setSuccess('Parking spot updated successfully!');
           
-        case 'building':
-          newMatrix[row][col] = {
-            type: 'building',
-            id: selectedCell.current.type === 'building' ? selectedCell.current.id : null
-          };
           break;
-        case 'empty':
-          newMatrix[row][col] = { type: 'empty', data: null };
+        case 'road':
+          const roadData = {
+             type: 'road',
+             roadIdentifier: dialogData.identifier,
+             roadRow: row,
+             roadColumn: col,
+             parkingId: parseInt(id)
+          };
+          const addRoadResponse = await updateParkingLayout(id, { roads: [roadData] });
+          console.log('Road added/updated:', addRoadResponse.data);
+          
+          newMatrix[row][col] = {
+             ...newMatrix[row][col],
+             type: 'road',
+             identifier: dialogData.identifier,
+          };
+          setSuccess('Road updated successfully!');
+          break;
+        case 'building':
+           const buildingData = {
+              type: 'building',
+              buildingRow: row,
+              buildingColumn: col,
+              parkingId: parseInt(id)
+           };
+           const addBuildingResponse = await updateParkingLayout(id, { buildings: [buildingData] });
+           console.log('Building added:', addBuildingResponse.data);
+
+           newMatrix[row][col] = {
+              ...newMatrix[row][col],
+              type: 'building',
+           };
+           setSuccess('Building added successfully!');
+           break;
+        default:
           break;
       }
-      
+
       setMatrix(newMatrix);
       setDialogOpen(false);
       setSelectedCell(null);
-      if (!success) {
-        setSuccess('Hücre başarıyla güncellendi');
-        setTimeout(() => setSuccess(''), 3000);
-      }
+      
+      setTimeout(() => {
+        setSuccess('');
+      }, 3000);
+
     } catch (error) {
-      console.error('Dialog kaydetme hatası:', error);
-      setError('İşlem sırasında bir hata oluştu: ' + (error.response?.data?.message || error.message));
-      setTimeout(() => setError(''), 5000);
+      console.error('Error saving layout:', error);
+      setError(`Error saving layout: ${error.response?.data?.message || error.message}`);
+      
+      setTimeout(() => {
+        setError('');
+      }, 5000);
+    } finally {
+      setSaving(false);
     }
   };
 
   const handleSaveLayout = async () => {
-    // Matristen veri toplama
     const parkingSpots = [];
     const roads = [];
     const buildings = [];
@@ -318,7 +391,7 @@ const ParkingLayout = () => {
       row.forEach((cell, colIndex) => {
         if (cell.type === 'spot') {
           parkingSpots.push({
-            id: cell.id || null, // Mevcut ID'yi koru
+            id: cell.id || null,
             row: rowIndex,
             column: colIndex,
             spotIdentifier: cell.identifier || `R${rowIndex}C${colIndex}`,
@@ -342,7 +415,6 @@ const ParkingLayout = () => {
       });
     });
     
-    // Layout verisi
     const layoutData = {
       parkingId: id,
       parkingSpots,
@@ -353,28 +425,25 @@ const ParkingLayout = () => {
     setSaving(true);
     
     try {
-      // Önce mevcut layout'u temizliyoruz
       await clearParkingLayout(id);
       
-      // Sonra yeni layout'u ekliyoruz
       await updateParkingLayout(id, layoutData);
       
-      setSuccess('Otopark düzeni başarıyla güncellendi');
+      setSuccess('Parking layout updated successfully');
       setEditMode(false);
       
-      // Yeni verileri getir
       await fetchParkingDetails();
       
     } catch (error) {
-      console.error('Layout güncelleme hatası:', error);
-      setError('Layout güncellenirken bir hata oluştu: ' + (error.response?.data?.message || error.message));
+      console.error('Layout update error:', error);
+      setError('An error occurred while updating the layout: ' + (error.response?.data?.message || error.message));
     } finally {
       setSaving(false);
     }
   };
 
   const handleClearLayout = async () => {
-    if (!window.confirm('Otopark düzenini tamamen temizlemek istediğinizden emin misiniz? Bu işlem geri alınamaz.')) {
+    if (!window.confirm('Are you sure you want to completely clear the parking layout? This action cannot be undone.')) {
       return;
     }
     
@@ -382,17 +451,16 @@ const ParkingLayout = () => {
     
     try {
       await clearParkingLayout(id);
-      setSuccess('Otopark düzeni başarıyla temizlendi');
+      setSuccess('Parking layout cleared successfully');
       
-      // Boş bir matris oluştur
       setMatrix(Array(parking.rows).fill().map(() => 
         Array(parking.columns).fill().map(() => ({ type: 'empty', data: null }))
       ));
       
-      setEditMode(false); // Düzenleme modundan çık
+      setEditMode(false);
     } catch (error) {
-      console.error('Düzen temizleme hatası:', error);
-      setError('Düzen temizlenirken bir hata oluştu: ' + (error.response?.data?.message || error.message));
+      console.error('Layout clearing error:', error);
+      setError('An error occurred while clearing the layout: ' + (error.response?.data?.message || error.message));
     } finally {
       setSaving(false);
     }
@@ -406,7 +474,6 @@ const ParkingLayout = () => {
     navigate(`/parking-details/${id}`);
   };
   
-  // Hücre içeriğini render et
   const renderCellContent = (cell) => {
     switch (cell.type) {
       case 'spot':
@@ -431,9 +498,6 @@ const ParkingLayout = () => {
           </Box>
         );
       case 'road':
-        const isHorizontal = cell.orientation === 'horizontal';
-        const isEntryExit = cell.identifier === 'entry' || cell.identifier === 'exit';
-
         return (
           <Box sx={{
             display: 'flex',
@@ -445,37 +509,19 @@ const ParkingLayout = () => {
             bgcolor: cellStyles.road.bgcolor,
             position: 'relative',
           }}>
-            {/* Eğer entry/exit ise identifier'ı göster */}
-            {isEntryExit && cell.identifier && (
-               <Typography
-                 variant="caption"
-                 sx={{
-                   position: 'relative',
-                   zIndex: 1,
-                   bgcolor: cellStyles.road.bgcolor,
-                   px: 0.5,
-                   color: cellStyles.road.color,
-                   fontWeight: 'bold'
-                 }}
-               >
-                 {cell.identifier}
-               </Typography>
-             )}
-            {/* Eğer entry/exit değilse yön çizgisi/tire işareti göster */}
-            {!isEntryExit && (
-              <Typography
-                variant="h4" // Daha büyük boyut için h4 kullandık
-                sx={{
-                  color: cellStyles.road.color,
-                  fontWeight: 'bold',
-                  // Yön bilgisine göre döndürme
-                  transform: isHorizontal ? 'rotate(0deg)' : 'rotate(90deg)',
-                  lineHeight: 1, // Satır yüksekliğini ayarla
-                }}
-              >
-                — {/* Uzun tire işareti */}
-              </Typography>
-            )}
+            <Typography
+              variant="caption"
+              sx={{
+                position: 'relative',
+                zIndex: 1,
+                bgcolor: cellStyles.road.bgcolor,
+                px: 0.5,
+                color: cellStyles.road.color,
+                fontWeight: 'bold'
+              }}
+            >
+              {cell.identifier || 'Road'}
+            </Typography>
           </Box>
         );
       case 'building':
@@ -496,7 +542,7 @@ const ParkingLayout = () => {
   if (!parking) {
     return (
       <Container maxWidth="lg" sx={{ mt: 4 }}>
-        <Alert severity="error">Otopark bulunamadı</Alert>
+        <Alert severity="error">Parking not found</Alert>
       </Container>
     );
   }
@@ -504,11 +550,11 @@ const ParkingLayout = () => {
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
       <PageHeader 
-        title={`${parking.name} Otopark Düzeni`} 
+        title={`${parking.name} Parking Layout`} 
         breadcrumbs={[
-          { text: 'Otoparklar', link: '/parkings' },
+          { text: 'Parkings', link: '/parkings' },
           { text: parking.name, link: `/parking-details/${id}` },
-          { text: 'Otopark Düzeni' }
+          { text: 'Parking Layout' }
         ]}
       />
       
@@ -527,7 +573,7 @@ const ParkingLayout = () => {
       <Paper sx={{ p: 3, mb: 3 }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
           <Typography variant="h6">
-            Düzen Boyutu: {parking.rows} x {parking.columns}
+            Layout Size: {parking.rows} x {parking.columns}
           </Typography>
           <Box>
             {!editMode && (
@@ -539,7 +585,7 @@ const ParkingLayout = () => {
                 startIcon={<DeleteIcon />}
                 sx={{ mr: 2 }}
               >
-                Düzeni Temizle
+                Clear Layout
               </Button>
             )}
             <Button 
@@ -548,7 +594,7 @@ const ParkingLayout = () => {
               startIcon={editMode ? <DoDisturbIcon /> : <EditIcon />}
               onClick={handleToggleEditMode}
             >
-              {editMode ? 'Düzenlemeyi İptal Et' : 'Düzeni Düzenle'}
+              {editMode ? 'Cancel Editing' : 'Edit Layout'}
             </Button>
           </Box>
         </Box>
@@ -556,7 +602,7 @@ const ParkingLayout = () => {
         {editMode && (
           <Box sx={{ mb: 3, p: 2, bgcolor: '#f8f9fa', borderRadius: 1 }}>
             <Typography variant="subtitle1" gutterBottom>
-              Düzenleme Araçları
+              Editing Tools
             </Typography>
             <Box sx={{ display: 'flex', alignItems: 'center' }}>
               <ToggleButtonGroup
@@ -568,35 +614,34 @@ const ParkingLayout = () => {
                 sx={{ mr: 2 }}
               >
                 <ToggleButton value="spot" aria-label="parking spot">
-                  <Tooltip title="Park Yeri Ekle">
+                  <Tooltip title="Add Parking Spot">
                     <DirectionsCarIcon />
                   </Tooltip>
                 </ToggleButton>
                 <ToggleButton value="road" aria-label="road">
-                  <Tooltip title="Yol Ekle">
+                  <Tooltip title="Add Road">
                     <StraightIcon />
                   </Tooltip>
                 </ToggleButton>
                 <ToggleButton value="building" aria-label="building">
-                  <Tooltip title="Bina Ekle">
+                  <Tooltip title="Add Building">
                     <ApartmentIcon />
                   </Tooltip>
                 </ToggleButton>
                 <ToggleButton value="delete" aria-label="delete">
-                  <Tooltip title="Sil">
+                  <Tooltip title="Delete">
                     <DeleteIcon />
                   </Tooltip>
                 </ToggleButton>
               </ToggleButtonGroup>
               
               <Typography variant="body2" color="text.secondary">
-                Eklemek istediğiniz öğeyi seçin ve matristeki bir hücreye tıklayın
+                Select the item you want to add and click on a cell in the matrix
               </Typography>
             </Box>
           </Box>
         )}
         
-        {/* Otopark Matrisi */}
         <Box sx={{ overflowX: 'auto', maxWidth: '100%' }}>
           <Grid container spacing={0.5} sx={{ display: 'inline-flex', flexDirection: 'column' }}>
             {matrix.map((row, rowIndex) => (
@@ -640,7 +685,6 @@ const ParkingLayout = () => {
           </Grid>
         </Box>
         
-        {/* Renk açıklamaları */}
         <Box sx={{ mt: 3, display: 'flex', flexWrap: 'wrap', gap: 2 }}>
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
             <Box sx={{ 
@@ -650,7 +694,7 @@ const ParkingLayout = () => {
               mr: 1, 
               borderRadius: '4px' 
             }} />
-            <Typography variant="body2">Park Yeri</Typography>
+            <Typography variant="body2">Parking Spot</Typography>
           </Box>
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
             <Box sx={{ 
@@ -660,7 +704,7 @@ const ParkingLayout = () => {
               mr: 1, 
               borderRadius: '4px' 
             }} />
-            <Typography variant="body2">Yol</Typography>
+            <Typography variant="body2">Road</Typography>
           </Box>
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
             <Box sx={{ 
@@ -670,7 +714,7 @@ const ParkingLayout = () => {
               mr: 1, 
               borderRadius: '4px' 
             }} />
-            <Typography variant="body2">Bina</Typography>
+            <Typography variant="body2">Building</Typography>
           </Box>
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
             <Box sx={{ 
@@ -680,7 +724,7 @@ const ParkingLayout = () => {
               mr: 1, 
               borderRadius: '4px' 
             }} />
-            <Typography variant="body2">Boş</Typography>
+            <Typography variant="body2">Empty</Typography>
           </Box>
         </Box>
       </Paper>
@@ -691,7 +735,7 @@ const ParkingLayout = () => {
           startIcon={<ArrowBackIcon />} 
           onClick={handleBack}
         >
-          Geri Dön
+          Go Back
         </Button>
         
         {editMode && (
@@ -702,79 +746,88 @@ const ParkingLayout = () => {
             onClick={handleSaveLayout}
             disabled={saving}
           >
-            {saving ? <CircularProgress size={24} /> : 'Düzeni Kaydet'}
+            {saving ? <CircularProgress size={24} /> : 'Save Layout'}
           </Button>
         )}
       </Box>
       
-      {/* Dialog - Park Yeri/Yol Ekleme */}
       <Dialog open={dialogOpen} onClose={handleDialogClose}>
-        <DialogTitle>{selectedTool === 'spot' ? 'Yeni Park Yeri Ekle' : selectedTool === 'road' ? 'Yol Ayarları' : 'Bina Ayarları'}</DialogTitle>
+        <DialogTitle>{selectedTool === 'spot' ? 'Add New Parking Spot' : selectedTool === 'road' ? 'Add/Edit Road' : 'Add Building'}</DialogTitle>
         <DialogContent>
-          {selectedCell && selectedTool === 'spot' && (
+          {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+          {dialogData.type === 'spot' && (
             <>
               <TextField
                 autoFocus
                 margin="dense"
-                label="Tanımlayıcı"
+                label="Identifier"
                 fullWidth
                 value={dialogData.identifier}
                 onChange={(e) => setDialogData({ ...dialogData, identifier: e.target.value })}
               />
-              <Autocomplete
-                options={sensors}
-                getOptionLabel={(option) => `${option.id}`}
-                value={sensors.find(s => s.id === dialogData.sensorId) || null}
-                onChange={(event, newValue) => {
-                  setDialogData({ ...dialogData, sensorId: newValue?.id || '' });
-                }}
-                renderInput={(params) => (
-                  <TextField
-                    {...params}
-                    margin="dense"
-                    label={`Sensör${sensorLoading ? ' Yükleniyor...' : ''}`}
-                    fullWidth
-                    required
-                    error={selectedTool === 'spot' && !dialogData.sensorId}
-                    helperText={selectedTool === 'spot' && !dialogData.sensorId ? 'Sensör seçimi zorunludur' : ''}
-                  />
-                )}
-                loading={sensorLoading}
-              />
+              <FormControl fullWidth margin="dense">
+                <Autocomplete
+                  options={sensors}
+                  getOptionLabel={(option) => option.id ? String(option.id) : ''}
+                  value={sensors.find(s => s.id === dialogData.sensorId) || null}
+                  onChange={(event, newValue) => {
+                    setDialogData({ ...dialogData, sensorId: newValue ? newValue.id : '' });
+                    setError('');
+                  }}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      label="Sensor *"
+                      error={!!error && error.includes('Sensor selection is required')}
+                      helperText={error && error.includes('Sensor selection is required') ? error : ''}
+                    />
+                  )}
+                  disabled={sensorLoading}
+                />
+              </FormControl>
+              <Box sx={{ mt: 1, textAlign: 'right' }}>
+                <Button 
+                  variant="outlined" 
+                  size="small" 
+                  onClick={() => { 
+                    setNewSensorDialogOpen(true); 
+                  }}
+                >
+                  Add New Sensor
+                </Button>
+              </Box>
             </>
           )}
-          {selectedCell && selectedTool === 'road' && (
+          {dialogData.type === 'road' && (
             <TextField
               autoFocus
               margin="dense"
-              label="Yol Tanımlayıcı (entry/exit veya boş)"
+              label="Identifier"
               fullWidth
               value={dialogData.identifier}
               onChange={(e) => setDialogData({ ...dialogData, identifier: e.target.value })}
-              placeholder="entry, exit veya boş bırakın"
             />
+          )}
+          {dialogData.type === 'building' && (
+            <Typography variant="body1">
+              Click Save to add a building at this location.
+            </Typography>
           )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleDialogClose}>İptal</Button>
-          <Button onClick={handleDialogSave} color="primary" disabled={saving || (selectedTool === 'spot' && !dialogData.sensorId)}>
-            {saving ? <CircularProgress size={24} /> : 'Kaydet'}
+          <Button onClick={handleDialogClose}>Cancel</Button>
+          <Button onClick={handleDialogSave} variant="contained" disabled={saving}>
+            {saving ? <CircularProgress size={24} /> : 'Save'}
           </Button>
         </DialogActions>
       </Dialog>
 
-      {/* Yeni Sensör Ekleme Dialog'u */}
-      <Dialog open={newSensorDialogOpen} onClose={() => setNewSensorDialogOpen(false)}>
-        <DialogTitle>Yeni Sensör Ekle</DialogTitle>
+      <Dialog open={newSensorDialogOpen} onClose={handleNewSensorDialogClose}>
+        <DialogTitle>Add New Sensor for Parking {id}</DialogTitle>
         <DialogContent>
+          {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
           <TextField
-            margin="dense"
-            label="Parking ID"
-            fullWidth
-            value={newSensorData.parkingId}
-            onChange={(e) => setNewSensorData({ ...newSensorData, parkingId: e.target.value })}
-          />
-          <TextField
+            autoFocus
             margin="dense"
             label="Controller ID"
             fullWidth
@@ -784,37 +837,24 @@ const ParkingLayout = () => {
           <TextField
             margin="dense"
             label="Echo Pin"
-            fullWidth
             type="number"
+            fullWidth
             value={newSensorData.echoPin}
             onChange={(e) => setNewSensorData({ ...newSensorData, echoPin: e.target.value })}
           />
           <TextField
             margin="dense"
             label="Trig Pin"
-            fullWidth
             type="number"
+            fullWidth
             value={newSensorData.trigPin}
             onChange={(e) => setNewSensorData({ ...newSensorData, trigPin: e.target.value })}
           />
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setNewSensorDialogOpen(false)}>İptal</Button>
-          <Button 
-            onClick={async () => {
-              try {
-                const response = await addSensor(newSensorData);
-                setSensors([...sensors, response.data]);
-                setDialogData({ ...dialogData, sensorId: response.data.id });
-                setNewSensorDialogOpen(false);
-                setSuccess('Yeni sensör başarıyla eklendi');
-              } catch (error) {
-                setError('Sensör eklenirken bir hata oluştu: ' + error.message);
-              }
-            }} 
-            color="primary"
-          >
-            Ekle
+          <Button onClick={handleNewSensorDialogClose} disabled={saving}>Cancel</Button>
+          <Button onClick={handleAddSensor} variant="contained" disabled={saving}>
+            {saving ? <CircularProgress size={24} /> : 'Add Sensor'}
           </Button>
         </DialogActions>
       </Dialog>

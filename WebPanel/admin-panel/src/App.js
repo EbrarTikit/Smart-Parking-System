@@ -37,7 +37,7 @@ const SignIn = () => {
     e.preventDefault();
     
     if (!formData.username || !formData.password) {
-      setError('Kullanıcı adı ve şifre gereklidir');
+      setError('Username and password are required');
       return;
     }
     
@@ -51,7 +51,7 @@ const SignIn = () => {
       });
       
       if (!response || !response.data) {
-        throw new Error('Geçersiz API yanıtı');
+        throw new Error('Invalid API response');
       }
 
       // Token ve kullanıcı bilgilerini localStorage'a kaydet
@@ -67,14 +67,14 @@ const SignIn = () => {
       navigate('/dashboard', { replace: true });
       
     } catch (error) {
-      console.error('Giriş hatası:', error);
+      console.error('Login error:', error);
       
       if (error.response && error.response.data) {
-        setError(`Hata: ${error.response.status} - ${error.response.data.message || 'Giriş başarısız'}`);
+        setError(`Error: ${error.response.status} - ${error.response.data.message || 'Login failed'}`);
       } else if (error.request) {
-        setError('Sunucuya ulaşılamıyor. Lütfen daha sonra tekrar deneyin.');
+        setError('Could not reach server. Please try again later.');
       } else {
-        setError('Bir hata oluştu: ' + (error.message || 'Bilinmeyen hata'));
+        setError('An error occurred: ' + (error.message || 'Unknown error'));
       }
     } finally {
       setLoading(false);
@@ -86,7 +86,7 @@ const SignIn = () => {
       <Box sx={{ marginTop: 8, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
         <Paper elevation={3} sx={{ padding: 4, width: '100%' }}>
           <Typography component="h1" variant="h5" align="center" gutterBottom>
-            Admin Girişi
+            Admin Login
           </Typography>
           
           {error && (
@@ -100,7 +100,7 @@ const SignIn = () => {
               margin="normal"
               required
               fullWidth
-              label="Kullanıcı Adı"
+              label="Username"
               name="username"
               autoFocus
               value={formData.username}
@@ -111,7 +111,7 @@ const SignIn = () => {
               required
               fullWidth
               name="password"
-              label="Şifre"
+              label="Password"
               type="password"
               value={formData.password}
               onChange={handleChange}
@@ -123,12 +123,12 @@ const SignIn = () => {
               sx={{ mt: 3, mb: 2 }}
               disabled={loading}
             >
-              {loading ? <CircularProgress size={24} /> : 'Giriş Yap'}
+              {loading ? <CircularProgress size={24} /> : 'Login'}
             </Button>
             <Grid container>
               <Grid item>
                 <Link component={RouterLink} to="/signup" variant="body2">
-                  {"Hesabınız yok mu? Kayıt olun"}
+                  {"Don't have an account? Sign Up"}
                 </Link>
               </Grid>
             </Grid>
@@ -162,7 +162,7 @@ const SignUp = () => {
     e.preventDefault();
     
     if (!formData.username || !formData.email || !formData.password) {
-      setError('Lütfen tüm alanları doldurun');
+      setError('Please fill in all fields');
       return;
     }
     
@@ -176,7 +176,7 @@ const SignUp = () => {
         password: formData.password
       });
       
-      console.log('Kayıt başarılı:', response);
+      console.log('Registration successful:', response);
       
       // Kullanıcı bilgilerini localStorage'a kaydet
       if (response && response.id) {
@@ -185,21 +185,21 @@ const SignUp = () => {
         localStorage.setItem('userEmail', response.email || formData.email);
       }
       
-      setSuccess('Kayıt başarılı! Giriş sayfasına yönlendiriliyorsunuz...');
+      setSuccess('Registration successful! Redirecting to login page...');
       
       setTimeout(() => {
         navigate('/signin');
       }, 2000);
       
     } catch (error) {
-      console.error('Kayıt hatası:', error);
+      console.error('Registration error:', error);
       
       if (error.response) {
-        setError(`Hata: ${error.response.status} - ${error.response.data.message || 'Kayıt başarısız'}`);
+        setError(`Error: ${error.response.status} - ${error.response.data.message || 'Registration failed'}`);
       } else if (error.request) {
-        setError('Sunucuya ulaşılamıyor. Lütfen daha sonra tekrar deneyin.');
+        setError('Could not reach server. Please try again later.');
       } else {
-        setError('Bir hata oluştu: ' + error.message);
+        setError('An error occurred: ' + error.message);
       }
     } finally {
       setLoading(false);
@@ -211,7 +211,7 @@ const SignUp = () => {
       <Box sx={{ marginTop: 8, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
         <Paper elevation={3} sx={{ padding: 4, width: '100%' }}>
           <Typography component="h1" variant="h5" align="center" gutterBottom>
-            Admin Kaydı
+            Admin Registration
           </Typography>
           
           {error && (
@@ -232,7 +232,7 @@ const SignUp = () => {
                 <TextField
                   required
                   fullWidth
-                  label="Kullanıcı Adı"
+                  label="Username"
                   name="username"
                   value={formData.username}
                   onChange={handleChange}
@@ -243,7 +243,7 @@ const SignUp = () => {
                 <TextField
                   required
                   fullWidth
-                  label="Email Adresi"
+                  label="Email Address"
                   name="email"
                   type="email"
                   value={formData.email}
@@ -255,7 +255,7 @@ const SignUp = () => {
                   required
                   fullWidth
                   name="password"
-                  label="Şifre"
+                  label="Password"
                   type="password"
                   value={formData.password}
                   onChange={handleChange}
@@ -269,12 +269,12 @@ const SignUp = () => {
               sx={{ mt: 3, mb: 2 }}
               disabled={loading}
             >
-              {loading ? <CircularProgress size={24} /> : 'Kayıt Ol'}
+              {loading ? <CircularProgress size={24} /> : 'Sign Up'}
             </Button>
             <Grid container justifyContent="flex-end">
               <Grid item>
                 <Link component={RouterLink} to="/signin" variant="body2">
-                  Zaten bir hesabınız var mı? Giriş yapın
+                  {"Already have an account? Sign In"}
                 </Link>
               </Grid>
             </Grid>

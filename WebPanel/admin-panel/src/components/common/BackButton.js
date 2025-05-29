@@ -17,7 +17,7 @@ const BackButton = ({
     if (toDashboard) {
       navigate(dashboardPath);
     } else {
-      navigate(-1); // Önceki sayfaya dön
+      navigate(-1); // Go back to previous page
     }
   };
 
@@ -29,14 +29,14 @@ const BackButton = ({
                       position === 'end' ? 'flex-end' : 'center',
       ...sx
     }}>
-      <Tooltip title={toDashboard ? "Ana Sayfaya Dön" : "Önceki Sayfaya Dön"}>
+      <Tooltip title={toDashboard ? "Return to Home Page" : "Go Back to Previous Page"}>
         <Button
           variant={variant}
           color="primary"
           startIcon={toDashboard ? <HomeIcon /> : <ArrowBackIcon />}
           onClick={handleBack}
         >
-          {toDashboard ? "Ana Sayfa" : "Geri"}
+          {toDashboard ? "Home Page" : "Go Back"}
         </Button>
       </Tooltip>
     </Box>

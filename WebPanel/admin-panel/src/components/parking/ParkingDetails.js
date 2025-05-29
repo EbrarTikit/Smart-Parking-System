@@ -142,6 +142,30 @@ const ParkingDetails = () => {
         ]}
       />
 
+      {/* Resim */}
+      {parking.imageUrl && (
+        <Paper sx={{ p: 3, mb: 3 }}>
+          <Typography variant="h6" gutterBottom>
+            Parking View
+          </Typography>
+          <Box sx={{ width: '100%', textAlign: 'center' }}>
+            <img 
+              src={parking.imageUrl} 
+              alt={parking.name} 
+              style={{ 
+                maxWidth: '100%', 
+                maxHeight: '400px', 
+                objectFit: 'contain' 
+              }} 
+              onError={(e) => {
+                e.target.onerror = null;
+                e.target.src = "https://via.placeholder.com/800x400?text=Parking+Image+Not+Found";
+              }}
+            />
+          </Box>
+        </Paper>
+      )}
+
       {/* Top Information Card */}
       <Paper sx={{ p: 3, mb: 3 }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
@@ -157,11 +181,29 @@ const ParkingDetails = () => {
                 sx={{ ml: 2 }} 
               />
             </Box>
-            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-              <LocationOnIcon fontSize="small" color="action" sx={{ mr: 1 }} />
-              <Typography variant="body1" color="text.secondary">
-                {parking.location}
-              </Typography>
+            <Box sx={{ 
+              display: 'flex', 
+              flexDirection: 'column',
+              backgroundColor: '#f5f5f5',
+              padding: '12px 16px',
+              borderRadius: '4px',
+              mt: 2,
+              gap: 1
+            }}>
+              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                <LocationOnIcon fontSize="medium" color="primary" sx={{ mr: 1 }} />
+                <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                  {parking.location}
+                </Typography>
+              </Box>
+              <Box sx={{ display: 'flex', gap: 2, ml: 4 }}>
+                <Typography variant="body2" color="text.secondary">
+                  Latitude: {parking.latitude}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Longitude: {parking.longitude}
+                </Typography>
+              </Box>
             </Box>
           </Box>
           <Button 
@@ -246,35 +288,6 @@ const ParkingDetails = () => {
         <Typography variant="body1" color="text.secondary" sx={{ whiteSpace: 'pre-wrap' }}>
           {parking.description || 'No description available.'}
         </Typography>
-      </Paper>
-
-      {/* Harita */}
-      <Paper sx={{ mb: 3 }}>
-        <Box sx={{ p: 3 }}>
-          <Typography variant="h6" gutterBottom>
-            Location
-          </Typography>
-          <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-            <MapIcon color="primary" sx={{ mr: 1 }} />
-            <Typography variant="body1">
-              Latitude: {parking.latitude}, Longitude: {parking.longitude}
-            </Typography>
-          </Box>
-          <Box 
-            sx={{ 
-              width: '100%', 
-              height: '300px', 
-              bgcolor: 'grey.200', 
-              display: 'flex', 
-              justifyContent: 'center', 
-              alignItems: 'center' 
-            }}
-          >
-            <Typography variant="body2" color="text.secondary">
-              Map will be shown here (Google Maps API integration required)
-            </Typography>
-          </Box>
-        </Box>
       </Paper>
 
       {/* Sekmeler */}
@@ -391,30 +404,6 @@ const ParkingDetails = () => {
           )}
         </TabPanel>
       </Paper>
-
-      {/* Resim */}
-      {parking.imageUrl && (
-        <Paper sx={{ p: 3, mb: 3 }}>
-          <Typography variant="h6" gutterBottom>
-            Parking View
-          </Typography>
-          <Box sx={{ width: '100%', textAlign: 'center' }}>
-            <img 
-              src={parking.imageUrl} 
-              alt={parking.name} 
-              style={{ 
-                maxWidth: '100%', 
-                maxHeight: '400px', 
-                objectFit: 'contain' 
-              }} 
-              onError={(e) => {
-                e.target.onerror = null;
-                e.target.src = "https://via.placeholder.com/800x400?text=Parking+Image+Not+Found";
-              }}
-            />
-          </Box>
-        </Paper>
-      )}
 
       <Box sx={{ mt: 3, display: 'flex', justifyContent: 'space-between' }}>
         <Button 

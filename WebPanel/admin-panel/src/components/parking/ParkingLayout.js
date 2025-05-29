@@ -291,95 +291,46 @@ const ParkingLayout = () => {
 
   const handleDialogSave = async () => {
     if (!selectedCell) return;
-    
+
     const { row, col } = selectedCell;
     const newMatrix = [...matrix];
-    
+    const cell = newMatrix[row][col];
+
     if (dialogData.type === 'spot' && !dialogData.sensorId) {
-      setError('Sensor selection is required for parking spot.');
-      return;
+        setError('Sensor selection is required for parking spot.');
+        return;
     }
 
-    try {
-      switch (dialogData.type) {
+    switch (dialogData.type) {
         case 'spot':
-          const spotData = {
-            type: 'spot',
-            identifier: dialogData.identifier,
-            sensorId: dialogData.sensorId,
-            row: row,
-            column: col,
-            parkingId: parseInt(id)
-          };
-          const updateSpotResponse = await updateSpotSensor(id, row, col, dialogData.sensorId);
-          console.log('Spot updated with sensor:', updateSpotResponse.data);
-
-          newMatrix[row][col] = {
-            ...newMatrix[row][col],
-            type: 'spot',
-            identifier: dialogData.identifier,
-            sensorId: dialogData.sensorId,
-            occupied: newMatrix[row][col]?.occupied || false
-          };
-          setSuccess('Parking spot updated successfully!');
-          
-          break;
+            newMatrix[row][col] = {
+                ...cell,
+                type: 'spot',
+                identifier: dialogData.identifier,
+                sensorId: dialogData.sensorId,
+            };
+            break;
         case 'road':
-          const roadData = {
-             type: 'road',
-             roadIdentifier: dialogData.identifier,
-             roadRow: row,
-             roadColumn: col,
-             parkingId: parseInt(id)
-          };
-          const addRoadResponse = await updateParkingLayout(id, { roads: [roadData] });
-          console.log('Road added/updated:', addRoadResponse.data);
-          
-          newMatrix[row][col] = {
-             ...newMatrix[row][col],
-             type: 'road',
-             identifier: dialogData.identifier,
-          };
-          setSuccess('Road updated successfully!');
-          break;
+            newMatrix[row][col] = {
+                ...cell,
+                type: 'road',
+                identifier: dialogData.identifier,
+            };
+            break;
         case 'building':
-           const buildingData = {
-              type: 'building',
-              buildingRow: row,
-              buildingColumn: col,
-              parkingId: parseInt(id)
-           };
-           const addBuildingResponse = await updateParkingLayout(id, { buildings: [buildingData] });
-           console.log('Building added:', addBuildingResponse.data);
-
-           newMatrix[row][col] = {
-              ...newMatrix[row][col],
-              type: 'building',
-           };
-           setSuccess('Building added successfully!');
-           break;
+            newMatrix[row][col] = {
+                 ...cell,
+                type: 'building',
+            };
+            break;
         default:
-          break;
-      }
-
-      setMatrix(newMatrix);
-      setDialogOpen(false);
-      setSelectedCell(null);
-      
-      setTimeout(() => {
-        setSuccess('');
-      }, 3000);
-
-    } catch (error) {
-      console.error('Error saving layout:', error);
-      setError(`Error saving layout: ${error.response?.data?.message || error.message}`);
-      
-      setTimeout(() => {
-        setError('');
-      }, 5000);
-    } finally {
-      setSaving(false);
+            break;
     }
+
+    setMatrix(newMatrix);
+    setDialogOpen(false);
+    setSelectedCell(null);
+    setError('');
   };
 
   const handleSaveLayout = async () => {

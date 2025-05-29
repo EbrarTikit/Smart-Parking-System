@@ -24,7 +24,8 @@ const EditParking = () => {
     longitude: '',
     rows: '',
     columns: '',
-    imageUrl: ''
+    imageUrl: '',
+    description: ''
   });
   
   const [originalData, setOriginalData] = useState(null);
@@ -38,7 +39,7 @@ const EditParking = () => {
     fetchParkingDetails();
   }, [id]);
 
-  // Form değişikliklerini izle
+  // Track form changes
   useEffect(() => {
     if (originalData) {
       const changed = Object.keys(formData).some(key => 
@@ -52,9 +53,9 @@ const EditParking = () => {
     setLoading(true);
     try {
       const response = await getParkingById(id);
-      console.log('Otopark detayları:', response.data);
+      console.log('Parking details:', response.data);
       
-      // API'den gelen verileri form verilerine dönüştür
+      // Convert API data to form data
       const parkingData = {
         name: response.data.name || '',
         location: response.data.location || '',
@@ -66,15 +67,16 @@ const EditParking = () => {
         longitude: response.data.longitude || '',
         rows: response.data.rows || '',
         columns: response.data.columns || '',
-        imageUrl: response.data.imageUrl || ''
+        imageUrl: response.data.imageUrl || '',
+        description: response.data.description || ''
       };
       
       setFormData(parkingData);
       setOriginalData(parkingData);
       setError('');
     } catch (error) {
-      console.error('Otopark detayları alınırken hata oluştu:', error);
-      setError('Otopark detayları yüklenirken bir hata oluştu');
+      console.error('Error fetching parking details:', error);
+      setError('An error occurred while loading parking details');
     } finally {
       setLoading(false);
     }
@@ -93,7 +95,7 @@ const EditParking = () => {
     
     // Basic validation
     if (!formData.name || !formData.location || !formData.capacity) {
-      setError('Lütfen zorunlu alanları doldurun: İsim, Konum ve Kapasite');
+      setError('Please fill in the required fields: Name, Location, and Capacity');
       return;
     }
     
@@ -114,25 +116,25 @@ const EditParking = () => {
     try {
       const response = await updateParking(id, parkingData);
       
-      console.log('Otopark güncelleme başarılı:', response.data);
-      setSuccess('Otopark başarıyla güncellendi!');
+      console.log('Parking update successful:', response.data);
+      setSuccess('Parking updated successfully!');
       
-      // Orijinal verileri güncelle
+      // Update original data
       setOriginalData({...formData});
       setHasChanges(false);
       
-      // Başarı mesajını gösterdikten sonra detay sayfasına yönlendir
+      // Redirect to details page after showing success message
       setTimeout(() => {
         navigate(`/parking-details/${id}`);
       }, 2000);
       
     } catch (error) {
-      console.error('Otopark güncelleme hatası:', error);
+      console.error('Parking update error:', error);
       
       if (error.response) {
-        setError(`Güncelleme hatası: ${error.response.status} - ${error.response.data.message || 'Bilinmeyen hata'}`);
+        setError(`Update error: ${error.response.status} - ${error.response.data.message || 'Unknown error'}`);
       } else {
-        setError('Otopark güncellenirken bir hata oluştu: ' + error.message);
+        setError('An error occurred while updating the parking: ' + error.message);
       }
     } finally {
       setSaving(false);
@@ -141,7 +143,7 @@ const EditParking = () => {
 
   const handleCancel = () => {
     if (hasChanges) {
-      if (window.confirm('Kaydedilmemiş değişiklikler var. Çıkmak istediğinizden emin misiniz?')) {
+      if (window.confirm('You have unsaved changes. Are you sure you want to leave?')) {
         navigate(`/parking-details/${id}`);
       }
     } else {
@@ -150,7 +152,7 @@ const EditParking = () => {
   };
 
   const handleReset = () => {
-    if (window.confirm('Tüm değişiklikleri geri almak istediğinizden emin misiniz?')) {
+    if (window.confirm('Are you sure you want to revert all changes?')) {
       setFormData({...originalData});
     }
   };
@@ -166,11 +168,11 @@ const EditParking = () => {
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
       <PageHeader 
-        title={`${formData.name} Düzenle`} 
+        title={`Edit ${formData.name}`} 
         breadcrumbs={[
-          { text: 'Otoparklar', link: '/parkings' },
+          { text: 'Parkings', link: '/parkings' },
           { text: `${formData.name}`, link: `/parking-details/${id}` },
-          { text: 'Düzenle' }
+          { text: 'Edit' }
         ]}
       />
       
@@ -189,7 +191,7 @@ const EditParking = () => {
       <Paper elevation={3} sx={{ p: 4 }}>
         <Box component="form" onSubmit={handleSubmit}>
           <Typography variant="h6" gutterBottom>
-            Temel Bilgiler
+            Basic Information
           </Typography>
           
           <Grid container spacing={3}>
@@ -197,7 +199,7 @@ const EditParking = () => {
               <TextField
                 required
                 fullWidth
-                label="Otopark Adı"
+                label="Parking Name"
                 name="name"
                 value={formData.name}
                 onChange={handleChange}
@@ -207,7 +209,7 @@ const EditParking = () => {
               <TextField
                 required
                 fullWidth
-                label="Konum"
+                label="Location"
                 name="location"
                 value={formData.location}
                 onChange={handleChange}
@@ -217,7 +219,7 @@ const EditParking = () => {
               <TextField
                 required
                 fullWidth
-                label="Kapasite"
+                label="Capacity"
                 name="capacity"
                 type="number"
                 value={formData.capacity}
@@ -227,7 +229,7 @@ const EditParking = () => {
             <Grid item xs={12} sm={4}>
               <TextField
                 fullWidth
-                label="Açılış Saati (ÖR: 08:00)"
+                label="Opening Hours (e.g. 08:00)"
                 name="openingHours"
                 value={formData.openingHours}
                 onChange={handleChange}
@@ -236,10 +238,22 @@ const EditParking = () => {
             <Grid item xs={12} sm={4}>
               <TextField
                 fullWidth
-                label="Kapanış Saati (ÖR: 22:00)"
+                label="Closing Hours (e.g. 22:00)"
                 name="closingHours"
                 value={formData.closingHours}
                 onChange={handleChange}
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Description"
+                name="description"
+                multiline
+                rows={4}
+                value={formData.description}
+                onChange={handleChange}
+                placeholder="Enter detailed information about the parking..."
               />
             </Grid>
           </Grid>
@@ -247,14 +261,14 @@ const EditParking = () => {
           <Divider sx={{ my: 3 }} />
           
           <Typography variant="h6" gutterBottom>
-            Fiyatlandırma
+            Additional Information
           </Typography>
           
           <Grid container spacing={3}>
-            <Grid item xs={12} sm={4}>
+            <Grid item xs={12} sm={6}>
               <TextField
                 fullWidth
-                label="Ücret (Saat Başı)"
+                label="Hourly Rate (TRY)"
                 name="rate"
                 type="number"
                 step="0.01"
@@ -262,19 +276,19 @@ const EditParking = () => {
                 onChange={handleChange}
               />
             </Grid>
-          </Grid>
-          
-          <Divider sx={{ my: 3 }} />
-          
-          <Typography variant="h6" gutterBottom>
-            Konum Bilgileri
-          </Typography>
-          
-          <Grid container spacing={3}>
             <Grid item xs={12} sm={6}>
               <TextField
                 fullWidth
-                label="Enlem (Latitude)"
+                label="Image URL"
+                name="imageUrl"
+                value={formData.imageUrl}
+                onChange={handleChange}
+              />
+            </Grid>
+            <Grid item xs={12} sm={4}>
+              <TextField
+                fullWidth
+                label="Latitude"
                 name="latitude"
                 type="number"
                 step="0.0001"
@@ -282,10 +296,10 @@ const EditParking = () => {
                 onChange={handleChange}
               />
             </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid item xs={12} sm={4}>
               <TextField
                 fullWidth
-                label="Boylam (Longitude)"
+                label="Longitude"
                 name="longitude"
                 type="number"
                 step="0.0001"
@@ -293,29 +307,20 @@ const EditParking = () => {
                 onChange={handleChange}
               />
             </Grid>
-          </Grid>
-          
-          <Divider sx={{ my: 3 }} />
-          
-          <Typography variant="h6" gutterBottom>
-            Yerleşim Bilgileri
-          </Typography>
-          
-          <Grid container spacing={3}>
-            <Grid item xs={12} sm={6}>
+            <Grid item xs={12} sm={2}>
               <TextField
                 fullWidth
-                label="Satır Sayısı"
+                label="Rows"
                 name="rows"
                 type="number"
                 value={formData.rows}
                 onChange={handleChange}
               />
             </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid item xs={12} sm={2}>
               <TextField
                 fullWidth
-                label="Sütun Sayısı"
+                label="Columns"
                 name="columns"
                 type="number"
                 value={formData.columns}
@@ -324,70 +329,28 @@ const EditParking = () => {
             </Grid>
           </Grid>
           
-          <Divider sx={{ my: 3 }} />
-          
-          <Typography variant="h6" gutterBottom>
-            Görsel
-          </Typography>
-          
-          <Grid container spacing={3}>
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="Resim URL"
-                name="imageUrl"
-                value={formData.imageUrl}
-                onChange={handleChange}
-              />
-            </Grid>
-            {formData.imageUrl && (
-              <Grid item xs={12}>
-                <Box sx={{ width: '100%', textAlign: 'center', mt: 2 }}>
-                  <img 
-                    src={formData.imageUrl} 
-                    alt="Otopark Önizleme" 
-                    style={{ 
-                      maxWidth: '100%', 
-                      maxHeight: '200px', 
-                      objectFit: 'contain' 
-                    }} 
-                    onError={(e) => {
-                      e.target.onerror = null;
-                      e.target.src = "https://via.placeholder.com/400x200?text=Resim+Yüklenemedi";
-                    }}
-                  />
-                </Box>
-              </Grid>
-            )}
-          </Grid>
-          
-          <Box sx={{ mt: 4, display: 'flex', justifyContent: 'space-between' }}>
-            <Box>
-              <Button
-                variant="outlined"
-                color="secondary"
-                startIcon={<ArrowBackIcon />}
-                onClick={handleCancel}
-                sx={{ mr: 2 }}
-              >
-                İptal
-              </Button>
-              <Button
-                variant="outlined"
-                color="warning"
-                onClick={handleReset}
-                disabled={!hasChanges}
-              >
-                Değişiklikleri Geri Al
-              </Button>
-            </Box>
+          <Box sx={{ mt: 4, display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
+            <Button
+              variant="outlined"
+              startIcon={<CancelIcon />}
+              onClick={handleCancel}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="outlined"
+              onClick={handleReset}
+              disabled={!hasChanges}
+            >
+              Reset
+            </Button>
             <Button
               type="submit"
               variant="contained"
               startIcon={<SaveIcon />}
-              disabled={saving || !hasChanges}
+              disabled={!hasChanges || saving}
             >
-              {saving ? <CircularProgress size={24} /> : 'Değişiklikleri Kaydet'}
+              {saving ? 'Saving...' : 'Save Changes'}
             </Button>
           </Box>
         </Box>

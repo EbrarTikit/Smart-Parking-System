@@ -37,7 +37,7 @@ const SignIn = () => {
     e.preventDefault();
     
     if (!formData.username || !formData.password) {
-      setError('Kullanıcı adı ve şifre gereklidir');
+      setError('Username and password are required');
       return;
     }
     
@@ -45,35 +45,36 @@ const SignIn = () => {
     setError('');
     
     try {
-      // apiService'i kullan
       const response = await signIn({
         username: formData.username,
         password: formData.password
       });
       
-      console.log('Giriş başarılı:', response.data);
-      
-      // Kullanıcı bilgilerini localStorage'a kaydet
+      if (!response || !response.data) {
+        throw new Error('Invalid API response');
+      }
+
+      // Token ve kullanıcı bilgilerini localStorage'a kaydet
+      localStorage.setItem('token', response.data.token);
+      localStorage.setItem('userId', response.data.userId);
+      localStorage.setItem('username', formData.username);
       localStorage.setItem('isLoggedIn', 'true');
-      localStorage.setItem('userId', response.data.id || '1');
-      localStorage.setItem('username', response.data.username || formData.username);
-      localStorage.setItem('userEmail', response.data.email || 'admin@example.com');
       
-      // Dashboard'a yönlendir
-      navigate('/dashboard');
+      // API isteklerinde token'ı kullan
+      axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.token}`;
+      
+      // Yönlendirme
+      navigate('/dashboard', { replace: true });
       
     } catch (error) {
-      console.error('Giriş hatası:', error);
+      console.error('Login error:', error);
       
-      if (error.response) {
-        // Sunucudan gelen hata mesajını göster
-        setError(`Hata: ${error.response.status} - ${error.response.data.message || 'Giriş başarısız'}`);
+      if (error.response && error.response.data) {
+        setError(`Error: ${error.response.status} - ${error.response.data.message || 'Login failed'}`);
       } else if (error.request) {
-        // İstek yapıldı ama cevap alınamadı
-        setError('Sunucuya ulaşılamıyor. Lütfen daha sonra tekrar deneyin.');
+        setError('Could not reach server. Please try again later.');
       } else {
-        // İstek yapılırken bir hata oluştu
-        setError('Bir hata oluştu: ' + error.message);
+        setError('An error occurred: ' + (error.message || 'Unknown error'));
       }
     } finally {
       setLoading(false);
@@ -85,7 +86,7 @@ const SignIn = () => {
       <Box sx={{ marginTop: 8, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
         <Paper elevation={3} sx={{ padding: 4, width: '100%' }}>
           <Typography component="h1" variant="h5" align="center" gutterBottom>
-            Admin Girişi
+            Admin Login
           </Typography>
           
           {error && (
@@ -99,7 +100,7 @@ const SignIn = () => {
               margin="normal"
               required
               fullWidth
-              label="Kullanıcı Adı"
+              label="Username"
               name="username"
               autoFocus
               value={formData.username}
@@ -110,7 +111,7 @@ const SignIn = () => {
               required
               fullWidth
               name="password"
-              label="Şifre"
+              label="Password"
               type="password"
               value={formData.password}
               onChange={handleChange}
@@ -122,12 +123,12 @@ const SignIn = () => {
               sx={{ mt: 3, mb: 2 }}
               disabled={loading}
             >
-              {loading ? <CircularProgress size={24} /> : 'Giriş Yap'}
+              {loading ? <CircularProgress size={24} /> : 'Login'}
             </Button>
             <Grid container>
               <Grid item>
                 <Link component={RouterLink} to="/signup" variant="body2">
-                  {"Hesabınız yok mu? Kayıt olun"}
+                  {"Don't have an account? Sign Up"}
                 </Link>
               </Grid>
             </Grid>
@@ -161,7 +162,7 @@ const SignUp = () => {
     e.preventDefault();
     
     if (!formData.username || !formData.email || !formData.password) {
-      setError('Lütfen tüm alanları doldurun');
+      setError('Please fill in all fields');
       return;
     }
     
@@ -169,38 +170,36 @@ const SignUp = () => {
     setError('');
     
     try {
-      // apiService'i kullan
       const response = await signUp({
         username: formData.username,
         email: formData.email,
         password: formData.password
       });
       
-      console.log('Kayıt başarılı:', response.data);
+      console.log('Registration successful:', response);
       
-      // Kullanıcı bilgilerini localStorage'a da kaydet
-      localStorage.setItem('userId', response.data.id || '1');
-      localStorage.setItem('username', response.data.username || formData.username);
-      localStorage.setItem('userEmail', response.data.email || formData.email);
+      // Kullanıcı bilgilerini localStorage'a kaydet
+      if (response && response.id) {
+        localStorage.setItem('userId', response.id);
+        localStorage.setItem('username', response.username || formData.username);
+        localStorage.setItem('userEmail', response.email || formData.email);
+      }
       
-      setSuccess('Kayıt başarılı! Giriş sayfasına yönlendiriliyorsunuz...');
+      setSuccess('Registration successful! Redirecting to login page...');
       
       setTimeout(() => {
         navigate('/signin');
       }, 2000);
       
     } catch (error) {
-      console.error('Kayıt hatası:', error);
+      console.error('Registration error:', error);
       
       if (error.response) {
-        // Sunucudan gelen hata mesajını göster
-        setError(`Hata: ${error.response.status} - ${error.response.data.message || 'Kayıt başarısız'}`);
+        setError(`Error: ${error.response.status} - ${error.response.data.message || 'Registration failed'}`);
       } else if (error.request) {
-        // İstek yapıldı ama cevap alınamadı
-        setError('Sunucuya ulaşılamıyor. Lütfen daha sonra tekrar deneyin.');
+        setError('Could not reach server. Please try again later.');
       } else {
-        // İstek yapılırken bir hata oluştu
-        setError('Bir hata oluştu: ' + error.message);
+        setError('An error occurred: ' + error.message);
       }
     } finally {
       setLoading(false);
@@ -212,7 +211,7 @@ const SignUp = () => {
       <Box sx={{ marginTop: 8, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
         <Paper elevation={3} sx={{ padding: 4, width: '100%' }}>
           <Typography component="h1" variant="h5" align="center" gutterBottom>
-            Admin Kaydı
+            Admin Registration
           </Typography>
           
           {error && (
@@ -233,7 +232,7 @@ const SignUp = () => {
                 <TextField
                   required
                   fullWidth
-                  label="Kullanıcı Adı"
+                  label="Username"
                   name="username"
                   value={formData.username}
                   onChange={handleChange}
@@ -244,7 +243,7 @@ const SignUp = () => {
                 <TextField
                   required
                   fullWidth
-                  label="Email Adresi"
+                  label="Email Address"
                   name="email"
                   type="email"
                   value={formData.email}
@@ -256,7 +255,7 @@ const SignUp = () => {
                   required
                   fullWidth
                   name="password"
-                  label="Şifre"
+                  label="Password"
                   type="password"
                   value={formData.password}
                   onChange={handleChange}
@@ -270,12 +269,12 @@ const SignUp = () => {
               sx={{ mt: 3, mb: 2 }}
               disabled={loading}
             >
-              {loading ? <CircularProgress size={24} /> : 'Kayıt Ol'}
+              {loading ? <CircularProgress size={24} /> : 'Sign Up'}
             </Button>
             <Grid container justifyContent="flex-end">
               <Grid item>
                 <Link component={RouterLink} to="/signin" variant="body2">
-                  Zaten bir hesabınız var mı? Giriş yapın
+                  {"Already have an account? Sign In"}
                 </Link>
               </Grid>
             </Grid>
@@ -301,16 +300,16 @@ const theme = createTheme({
 // Protected route component
 const ProtectedRoute = ({ children }) => {
   const navigate = useNavigate();
-  const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+  const token = localStorage.getItem('token');
   const username = localStorage.getItem('username');
   
   React.useEffect(() => {
-    if (!isLoggedIn || !username) {
-      navigate('/signin');
+    if (!token || !username) {
+      navigate('/signin', { replace: true });
     }
-  }, [isLoggedIn, username, navigate]);
+  }, [token, username, navigate]);
   
-  if (!isLoggedIn || !username) {
+  if (!token || !username) {
     return null;
   }
   

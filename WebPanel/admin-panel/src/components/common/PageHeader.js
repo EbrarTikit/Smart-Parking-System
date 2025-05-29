@@ -28,14 +28,14 @@ const PageHeader = ({ title, breadcrumbs = [] }) => {
             onClick={handleGoBack}
             sx={{ mr: 1 }}
           >
-            Geri Dön
+            Go Back
           </Button>
           <Button 
             variant="contained" 
             startIcon={<HomeIcon />} 
             onClick={handleGoHome}
           >
-            Ana Sayfa
+            Home Page
           </Button>
         </Box>
       </Box>
@@ -49,7 +49,7 @@ const PageHeader = ({ title, breadcrumbs = [] }) => {
             sx={{ cursor: 'pointer', display: 'flex', alignItems: 'center' }}
           >
             <HomeIcon sx={{ mr: 0.5 }} fontSize="inherit" />
-            Ana Sayfa
+            Home Page
           </Link>
           {breadcrumbs.map((crumb, index) => (
             <Link

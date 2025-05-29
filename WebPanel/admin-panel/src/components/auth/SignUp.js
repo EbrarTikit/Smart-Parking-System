@@ -30,7 +30,7 @@ const SignUp = () => {
     
     // Basit form doğrulama
     if (!formData.username || !formData.email || !formData.password) {
-      setError('Lütfen tüm alanları doldurun');
+      setError('Please fill in all fields');
       return;
     }
     
@@ -46,7 +46,7 @@ const SignUp = () => {
       });
       
       console.log('Kayıt başarılı:', response.data);
-      setSuccess('Kayıt başarılı! Giriş sayfasına yönlendiriliyorsunuz...');
+      setSuccess('Registration successful! Redirecting to login page...');
       
       // 2 saniye sonra giriş sayfasına yönlendir
       setTimeout(() => {
@@ -57,9 +57,9 @@ const SignUp = () => {
       console.error('Kayıt hatası:', error);
       if (error.response) {
         // Sunucu hata mesajını göster
-        setError(error.response.data.message || 'Kayıt sırasında bir hata oluştu');
+        setError(error.response.data.message || 'An error occurred during registration');
       } else {
-        setError('Sunucu bağlantısı kurulamadı');
+        setError('Server connection failed');
       }
     } finally {
       setLoading(false);
@@ -78,10 +78,10 @@ const SignUp = () => {
       >
         <Paper elevation={3} sx={{ padding: 4, width: '100%' }}>
           <Typography component="h1" variant="h5" align="center" gutterBottom>
-            Akıllı Otopark Sistemi
+            Smart Parking System
           </Typography>
           <Typography component="h2" variant="h5" align="center" gutterBottom>
-            Admin Kaydı
+            Admin Registration
           </Typography>
           
           {error && (
@@ -102,7 +102,7 @@ const SignUp = () => {
                 <TextField
                   required
                   fullWidth
-                  label="Kullanıcı Adı"
+                  label="Username"
                   name="username"
                   autoComplete="username"
                   value={formData.username}
@@ -114,7 +114,7 @@ const SignUp = () => {
                 <TextField
                   required
                   fullWidth
-                  label="Email Adresi"
+                  label="Email Address"
                   name="email"
                   autoComplete="email"
                   type="email"
@@ -127,7 +127,7 @@ const SignUp = () => {
                   required
                   fullWidth
                   name="password"
-                  label="Şifre"
+                  label="Password"
                   type="password"
                   autoComplete="new-password"
                   value={formData.password}
@@ -142,12 +142,12 @@ const SignUp = () => {
               sx={{ mt: 3, mb: 2 }}
               disabled={loading}
             >
-              {loading ? <CircularProgress size={24} /> : 'Kayıt Ol'}
+              {loading ? <CircularProgress size={24} /> : 'Sign Up'}
             </Button>
             <Grid container justifyContent="flex-end">
               <Grid item>
                 <Link component={RouterLink} to="/signin" variant="body2">
-                  Zaten bir hesabınız var mı? Giriş yapın
+                  Already have an account? Sign in
                 </Link>
               </Grid>
             </Grid>

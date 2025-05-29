@@ -44,8 +44,8 @@ const SensorList = () => {
       setSensors(response.data);
       setError('');
     } catch (error) {
-      console.error('Sensörler alınırken hata oluştu:', error);
-      setError('Sensörler yüklenirken bir hata oluştu');
+      console.error('Error fetching sensors:', error);
+      setError('An error occurred while loading sensors');
     } finally {
       setLoading(false);
     }
@@ -54,10 +54,9 @@ const SensorList = () => {
   const handleAddSensor = async () => {
     try {
       await addSensor(newSensor);
-      setSuccess('Sensör başarıyla eklendi');
+      setSuccess('Sensor added successfully');
       setDialogOpen(false);
       fetchSensors();
-      // Formu temizle
       setNewSensor({
         parkingId: '',
         controllerId: '',
@@ -65,27 +64,27 @@ const SensorList = () => {
         trigPin: ''
       });
     } catch (error) {
-      console.error('Sensör eklenirken hata oluştu:', error);
-      setError('Sensör eklenirken bir hata oluştu');
+      console.error('Error adding sensor:', error);
+      setError('An error occurred while adding the sensor');
     }
   };
 
   const handleDeleteSensor = async (id) => {
-    if (window.confirm('Bu sensörü silmek istediğinizden emin misiniz?')) {
+    if (window.confirm('Are you sure you want to delete this sensor?')) {
       try {
         await deleteSensor(id);
-        setSuccess('Sensör başarıyla silindi');
+        setSuccess('Sensor deleted successfully');
         fetchSensors();
       } catch (error) {
-        console.error('Sensör silinirken hata oluştu:', error);
-        setError('Sensör silinirken bir hata oluştu');
+        console.error('Error deleting sensor:', error);
+        setError('An error occurred while deleting the sensor');
       }
     }
   };
 
   return (
     <Container maxWidth="lg">
-      <PageHeader title="Sensör Yönetimi" />
+      <PageHeader title="Sensor Management" />
       
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
       {success && <Alert severity="success" sx={{ mb: 2 }}>{success}</Alert>}
@@ -96,7 +95,7 @@ const SensorList = () => {
         onClick={() => setDialogOpen(true)}
         sx={{ mb: 2 }}
       >
-        Yeni Sensör Ekle
+        Add New Sensor
       </Button>
 
       {loading ? (
@@ -107,11 +106,11 @@ const SensorList = () => {
             <TableHead>
               <TableRow>
                 <TableCell>ID</TableCell>
-                <TableCell>Otopark ID</TableCell>
-                <TableCell>Kontrolcü ID</TableCell>
+                <TableCell>Parking ID</TableCell>
+                <TableCell>Controller ID</TableCell>
                 <TableCell>Echo Pin</TableCell>
                 <TableCell>Trig Pin</TableCell>
-                <TableCell>İşlemler</TableCell>
+                <TableCell>Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -128,7 +127,7 @@ const SensorList = () => {
                       color="error"
                       onClick={() => handleDeleteSensor(sensor.id)}
                     >
-                      Sil
+                      Delete
                     </Button>
                   </TableCell>
                 </TableRow>
@@ -139,19 +138,19 @@ const SensorList = () => {
       )}
 
       <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)}>
-        <DialogTitle>Yeni Sensör Ekle</DialogTitle>
+        <DialogTitle>Add New Sensor</DialogTitle>
         <DialogContent>
           <TextField
             autoFocus
             margin="dense"
-            label="Otopark ID"
+            label="Parking ID"
             fullWidth
             value={newSensor.parkingId}
             onChange={(e) => setNewSensor({ ...newSensor, parkingId: e.target.value })}
           />
           <TextField
             margin="dense"
-            label="Kontrolcü ID"
+            label="Controller ID"
             fullWidth
             value={newSensor.controllerId}
             onChange={(e) => setNewSensor({ ...newSensor, controllerId: e.target.value })}
@@ -174,8 +173,8 @@ const SensorList = () => {
           />
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDialogOpen(false)}>İptal</Button>
-          <Button onClick={handleAddSensor} variant="contained">Ekle</Button>
+          <Button onClick={() => setDialogOpen(false)}>Cancel</Button>
+          <Button onClick={handleAddSensor} variant="contained">Add</Button>
         </DialogActions>
       </Dialog>
     </Container>

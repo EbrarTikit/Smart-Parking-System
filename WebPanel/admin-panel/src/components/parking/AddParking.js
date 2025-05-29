@@ -17,7 +17,8 @@ const AddParking = () => {
     longitude: '',
     rows: '',
     columns: '',
-    imageUrl: ''
+    imageUrl: '',
+    description: ''
   });
   
   const [loading, setLoading] = useState(false);
@@ -37,7 +38,7 @@ const AddParking = () => {
     
     // Basic validation
     if (!formData.name || !formData.location || !formData.capacity) {
-      setError('Lütfen zorunlu alanları doldurun: İsim, Konum ve Kapasite');
+      setError('Please fill in the required fields: Name, Location, and Capacity');
       return;
     }
     
@@ -58,10 +59,10 @@ const AddParking = () => {
     try {
       const response = await addParking(parkingData);
       
-      console.log('Otopark ekleme başarılı:', response.data);
-      setSuccess('Otopark başarıyla eklendi!');
+      console.log('Parking added successfully:', response.data);
+      setSuccess('Parking added successfully!');
       
-      // Form verilerini sıfırla
+      // Reset form data
       setFormData({
         name: '',
         location: '',
@@ -73,7 +74,8 @@ const AddParking = () => {
         longitude: '',
         rows: '',
         columns: '',
-        imageUrl: ''
+        imageUrl: '',
+        description: ''
       });
       
       setTimeout(() => {
@@ -81,8 +83,8 @@ const AddParking = () => {
       }, 2000);
       
     } catch (error) {
-      console.error('Otopark ekleme hatası:', error);
-      setError('Otopark eklenirken bir hata oluştu');
+      console.error('Parking addition error:', error);
+      setError('An error occurred while adding the parking');
     } finally {
       setLoading(false);
     }
@@ -92,10 +94,10 @@ const AddParking = () => {
     <Container component="main" maxWidth="md">
       <Box sx={{ marginTop: 4 }}>
         <PageHeader 
-          title="Yeni Otopark Ekle" 
+          title="Add New Parking" 
           breadcrumbs={[
-            { text: 'Otoparklar', link: '/parkings' },
-            { text: 'Yeni Otopark Ekle' }
+            { text: 'Parkings', link: '/parkings' },
+            { text: 'Add New Parking' }
           ]}
         />
         
@@ -118,7 +120,7 @@ const AddParking = () => {
                 <TextField
                   required
                   fullWidth
-                  label="Otopark Adı"
+                  label="Parking Name"
                   name="name"
                   value={formData.name}
                   onChange={handleChange}
@@ -128,7 +130,7 @@ const AddParking = () => {
                 <TextField
                   required
                   fullWidth
-                  label="Konum"
+                  label="Location"
                   name="location"
                   value={formData.location}
                   onChange={handleChange}
@@ -138,7 +140,7 @@ const AddParking = () => {
                 <TextField
                   required
                   fullWidth
-                  label="Kapasite"
+                  label="Capacity"
                   name="capacity"
                   type="number"
                   value={formData.capacity}
@@ -148,7 +150,7 @@ const AddParking = () => {
               <Grid item xs={12} sm={4}>
                 <TextField
                   fullWidth
-                  label="Açılış Saati (ÖR: 08:00)"
+                  label="Opening Hours (e.g. 08:00)"
                   name="openingHours"
                   value={formData.openingHours}
                   onChange={handleChange}
@@ -157,7 +159,7 @@ const AddParking = () => {
               <Grid item xs={12} sm={4}>
                 <TextField
                   fullWidth
-                  label="Kapanış Saati (ÖR: 22:00)"
+                  label="Closing Hours (e.g. 22:00)"
                   name="closingHours"
                   value={formData.closingHours}
                   onChange={handleChange}
@@ -166,7 +168,7 @@ const AddParking = () => {
               <Grid item xs={12} sm={4}>
                 <TextField
                   fullWidth
-                  label="Ücret (Saat Başı)"
+                  label="Rate (per hour)"
                   name="rate"
                   type="number"
                   step="0.01"
@@ -177,7 +179,7 @@ const AddParking = () => {
               <Grid item xs={12} sm={4}>
                 <TextField
                   fullWidth
-                  label="Enlem (Latitude)"
+                  label="Latitude"
                   name="latitude"
                   type="number"
                   step="0.0001"
@@ -188,7 +190,7 @@ const AddParking = () => {
               <Grid item xs={12} sm={4}>
                 <TextField
                   fullWidth
-                  label="Boylam (Longitude)"
+                  label="Longitude"
                   name="longitude"
                   type="number"
                   step="0.0001"
@@ -199,7 +201,7 @@ const AddParking = () => {
               <Grid item xs={12} sm={6}>
                 <TextField
                   fullWidth
-                  label="Satır Sayısı"
+                  label="Number of Rows"
                   name="rows"
                   type="number"
                   value={formData.rows}
@@ -209,7 +211,7 @@ const AddParking = () => {
               <Grid item xs={12} sm={6}>
                 <TextField
                   fullWidth
-                  label="Sütun Sayısı"
+                  label="Number of Columns"
                   name="columns"
                   type="number"
                   value={formData.columns}
@@ -219,10 +221,20 @@ const AddParking = () => {
               <Grid item xs={12}>
                 <TextField
                   fullWidth
-                  label="Resim URL"
+                  label="Image URL"
                   name="imageUrl"
                   value={formData.imageUrl}
                   onChange={handleChange}
+                />
+              </Grid>
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  label="Description"
+                  name="description"
+                  value={formData.description}
+                  onChange={handleChange}
+                  placeholder="Enter detailed information about the parking..."
                 />
               </Grid>
             </Grid>
@@ -231,14 +243,14 @@ const AddParking = () => {
                 variant="outlined"
                 onClick={() => navigate('/dashboard')}
               >
-                İptal
+                Cancel
               </Button>
               <Button
                 type="submit"
                 variant="contained"
                 disabled={loading}
               >
-                {loading ? <CircularProgress size={24} /> : 'Otopark Ekle'}
+                {loading ? <CircularProgress size={24} /> : 'Add'}
               </Button>
             </Box>
           </Box>

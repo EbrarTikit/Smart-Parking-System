@@ -1,23 +1,23 @@
 // services/apiService.js
 import axios from 'axios';
 
-// Servis URL'leri
+// Service URLs
 const AUTH_SERVICE_URL = 'http://localhost:8050/api';
 const PARKING_SERVICE_URL = 'http://localhost:8081/api';
 
-// Axios instance oluştur
+// Create Axios instance
 const api = axios.create({
     baseURL: AUTH_SERVICE_URL,
     headers: {
         'Content-Type': 'application/json'
-    }
+    },
+    timeout: 10000 // 10 seconds timeout
 });
 
-// API istekleri için interceptor
-axios.interceptors.request.use(
+// API request interceptor
+api.interceptors.request.use(
   config => {
-    console.log('API İsteği:', config.method.toUpperCase(), config.url, config.data);
-    // Token yerine kullanıcı bilgilerini header'a ekle
+    console.log('API Request:', config.method.toUpperCase(), config.url, config.data);
     const userId = localStorage.getItem('userId');
     const username = localStorage.getItem('username');
     
@@ -29,33 +29,39 @@ axios.interceptors.request.use(
     return config;
   },
   error => {
-    console.error('API İstek hatası:', error);
+    console.error('API Request error:', error);
     return Promise.reject(error);
   }
 );
 
-axios.interceptors.response.use(
+api.interceptors.response.use(
   response => {
-    console.log('API Yanıtı:', response.status, response.data);
+    console.log('API Response:', response.status, response.data);
     return response;
   },
   error => {
-    console.error('API Yanıt hatası:', 
-      error.response ? 
-      `${error.response.status} - ${JSON.stringify(error.response.data)}` : 
-      error.message
-    );
-    return Promise.reject(error);
+    if (error.code === 'ERR_NETWORK') {
+      console.error('Network error: Cannot reach backend service');
+      return Promise.reject(new Error('Cannot reach server. Please try again later.'));
+    }
+    
+    if (error.response) {
+      console.error('API Response error:', error.response.status, error.response.data);
+      return Promise.reject(error);
+    }
+    
+    console.error('Unexpected error:', error);
+    return Promise.reject(new Error('An unexpected error occurred'));
   }
 );
 
-// Auth API çağrıları
+// Auth API calls
 export const signIn = async (credentials) => {
     try {
         const response = await api.post('/auth/signin', credentials);
-        return response.data;
+        return response;
     } catch (error) {
-        console.error('Giriş hatası:', error);
+        console.error('Login error:', error);
         throw error;
     }
 };
@@ -65,12 +71,12 @@ export const signUp = async (userData) => {
         const response = await api.post('/auth/signup', userData);
         return response.data;
     } catch (error) {
-        console.error('Kayıt hatası:', error);
+        console.error('Registration error:', error);
         throw error;
     }
 };
 
-// Otopark API çağrıları
+// Parking API calls
 export const addParking = (parkingData) => {
     return axios.post(`${PARKING_SERVICE_URL}/admin/parkings`, parkingData);
 };
@@ -84,7 +90,7 @@ export const getParkingById = (id) => {
 };
 
 export const updateParking = (id, parkingData) => {
-  console.log(`Otopark güncelleniyor, ID: ${id}`, parkingData);
+  console.log(`Updating parking, ID: ${id}`, parkingData);
   return axios.put(`${PARKING_SERVICE_URL}/admin/parkings/${id}`, parkingData, {
     headers: {
       'Content-Type': 'application/json'
@@ -93,11 +99,11 @@ export const updateParking = (id, parkingData) => {
 };
 
 export const deleteParking = (id) => {
-  console.log(`Otopark siliniyor, ID: ${id}`);
+  console.log(`Deleting parking, ID: ${id}`);
   return axios.delete(`${PARKING_SERVICE_URL}/admin/parkings/${id}`);
 };
 
-// Layout API çağrıları
+// Layout API calls
 export const getParkingLayout = (parkingId) => {
   return axios.get(`${PARKING_SERVICE_URL}/${parkingId}/layout`);
 };
@@ -110,7 +116,7 @@ export const clearParkingLayout = (parkingId) => {
   return axios.put(`${PARKING_SERVICE_URL}/${parkingId}/clear-layout`);
 };
 
-// Sensör API çağrıları
+// Sensor API calls
 export const addSensor = (sensorData) => {
   return axios.post(`${PARKING_SERVICE_URL}/iot/sensors/add`, sensorData);
 };
@@ -127,12 +133,12 @@ export const getAllSensors = () => {
   return axios.get(`${PARKING_SERVICE_URL}/iot/sensors/get/all`);
 };
 
-// Sensör durumu güncelleme
+// Update sensor status
 export const updateSensorStatus = (sensorData) => {
   return axios.post(`${PARKING_SERVICE_URL}/iot/update/spot`, sensorData);
 };
 
-// Yeni fonksiyon ekleyin
+// Add new function
 export const updateSpotSensor = (parkingId, row, column, sensorId) => {
   return axios.put(`${PARKING_SERVICE_URL}/parkings/${parkingId}/spots/sensor`, {
     row: row,

@@ -45,13 +45,30 @@ def delete_vehicle(db: Session, vehicle_id: int):
 def get_parking_record(db: Session, record_id: int):
     return db.query(models.ParkingRecord).filter(models.ParkingRecord.id == record_id).first()
 
-def get_active_parking_record_by_vehicle(db: Session, vehicle_id: int):
-    return db.query(models.ParkingRecord).filter(
+def get_active_parking_record_by_vehicle(db: Session, vehicle_id: int, parking_id: int = None):
+    """
+    Aracın aktif park kaydını getirir.
+    
+    Args:
+        db: Veritabanı oturumu
+        vehicle_id: Araç ID'si
+        parking_id: Otopark ID'si (belirtilirse sadece bu otoparkta kontrol yapar)
+        
+    Returns:
+        Aktif park kaydı veya None
+    """
+    query = db.query(models.ParkingRecord).filter(
         and_(
             models.ParkingRecord.vehicle_id == vehicle_id,
             models.ParkingRecord.is_active == True
         )
-    ).first()
+    )
+    
+    # Eğer parking_id belirtilmişse, sadece o otoparkta kontrol et
+    if parking_id is not None:
+        query = query.filter(models.ParkingRecord.parking_id == parking_id)
+        
+    return query.first()
 
 def get_parking_records(db: Session, skip: int = 0, limit: int = 100):
     return db.query(models.ParkingRecord).offset(skip).limit(limit).all()

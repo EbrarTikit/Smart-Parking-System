@@ -219,16 +219,20 @@ export const api = {
       console.log(
         `Araç çıkışı isteği gönderiliyor: ${licensePlate}, Otopark ID: ${parkingId}`
       );
-      const response = await fetchWithTimeout(`${API_BASE_URL}/vehicle/exit`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+      const response = await fetchWithTimeout(
+        `${API_BASE_URL}/vehicle/exit`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            license_plate: licensePlate,
+            parking_id: parkingId,
+          }),
         },
-        body: JSON.stringify({
-          license_plate: licensePlate,
-          parking_id: parkingId,
-        }),
-      });
+        30000
+      ); // 30 saniye timeout
 
       if (!response.ok) {
         throw new Error(

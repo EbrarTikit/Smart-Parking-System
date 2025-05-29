@@ -316,7 +316,7 @@
             id="captureInterval"
             min="5"
             max="60"
-            value="20"
+            value="30"
             style="
               width: 70px;
               padding: 5px;
@@ -1556,10 +1556,11 @@ Base64 Uzunluğu: ${base64Length} karakter`;
             `Otomatik çekim başlatıldı: ${interval} saniye aralıkla ${autoMode.value} modu. Plaka tespit edilene kadar devam edecek.`,
             "api"
           );
+          logDebugInfo(`İlk çekim 10 saniye sonra başlayacak...`, "api");
         }
 
-        // İlk çekimi hemen yap
-        setTimeout(autoCapture, 1000);
+        // İlk çekimi 10 saniye sonra yap
+        setTimeout(autoCapture, 10000);
 
         // Belirtilen aralıklarla otomatik çekim yapmaya başla
         autoCapturingInterval = setInterval(autoCapture, interval * 1000);
@@ -1749,7 +1750,9 @@ Base64 Uzunluğu: ${base64Length} karakter`;
 
                 showNotification(
                   `Plaka Tanındı: ${detectedPlate}`,
-                  mode === "entry" ? "Araç Girişi" : "Araç Çıkışı"
+                  `${
+                    mode === "entry" ? "Araç Girişi" : "Araç Çıkışı"
+                  } - 10 saniye sonra yeni çekim başlayacak`
                 );
 
                 console.log("Plaka başarıyla tanındı:", detectedPlate);
@@ -1794,14 +1797,14 @@ Base64 Uzunluğu: ${base64Length} karakter`;
                           sendDirectWebSocketUpdates(data, mode, parkingId);
 
                           // İşlem tamamlandıktan sonra otomatik çekimi yeniden başlat
-                          setTimeout(restartAutoCapture, 3000);
+                          setTimeout(restartAutoCapture, 10000);
                         }, 1000);
                       } else {
                         // WebSocket bağlantısı açıksa doğrudan mesaj gönder
                         sendDirectWebSocketUpdates(data, mode, parkingId);
 
                         // İşlem tamamlandıktan sonra otomatik çekimi yeniden başlat
-                        setTimeout(restartAutoCapture, 3000);
+                        setTimeout(restartAutoCapture, 10000);
                       }
                     } catch (error) {
                       console.error(
@@ -1816,7 +1819,7 @@ Base64 Uzunluğu: ${base64Length} karakter`;
                       }
                       // Hata durumunda WebSocket bağlantısını yeniden kur ve otomatik çekimi yeniden başlat
                       connectWebSocket();
-                      setTimeout(restartAutoCapture, 3000);
+                      setTimeout(restartAutoCapture, 10000);
                     }
                   } else {
                     console.warn(
@@ -1831,7 +1834,7 @@ Base64 Uzunluğu: ${base64Length} karakter`;
                     // WebSocket bağlantısını yeniden kur
                     connectWebSocket();
                     // İşlem tamamlandıktan sonra otomatik çekimi yeniden başlat
-                    setTimeout(restartAutoCapture, 3000);
+                    setTimeout(restartAutoCapture, 10000);
                   }
                 }
               }
@@ -1868,7 +1871,7 @@ Base64 Uzunluğu: ${base64Length} karakter`;
                 "Kamera başarıyla başlatıldı, otomatik çekim başlatılıyor..."
               );
               // Kamera başlatıldıktan sonra otomatik çekimi başlat
-              initializeAutoCapture(parseInt(captureInterval.value) || 20);
+              initializeAutoCapture(parseInt(captureInterval.value) || 30);
             })
             .catch((err) => {
               console.error("Kamera yeniden başlatılırken hata:", err);
@@ -1884,11 +1887,14 @@ Base64 Uzunluğu: ${base64Length} karakter`;
             "Kamera zaten açık, doğrudan otomatik çekim başlatılıyor..."
           );
           // Kamera zaten açıksa doğrudan otomatik çekimi başlat
-          initializeAutoCapture(parseInt(captureInterval.value) || 20);
+          initializeAutoCapture(parseInt(captureInterval.value) || 30);
         }
 
         if (debugMode.checked) {
-          logDebugInfo("Otomatik çekim yeniden başlatıldı", "api");
+          logDebugInfo(
+            "Otomatik çekim yeniden başlatıldı - İlk çekim 10 saniye sonra başlayacak",
+            "api"
+          );
         }
       }
 

@@ -353,12 +353,12 @@ def register_vehicle_entry(
             db_vehicle = create_vehicle(db, vehicle_data)
             logger.info(f"Yeni araç kaydı oluşturuldu: {entry.license_plate}")
         
-        # Aktif park kaydı var mı kontrol et
-        active_record = get_active_parking_record_by_vehicle(db, db_vehicle.id)
+        # Aktif park kaydı var mı kontrol et (aynı otoparkta)
+        active_record = get_active_parking_record_by_vehicle(db, db_vehicle.id, entry.parking_id)
         if active_record:
             response = VehicleEntryResponse(
                 success=False,
-                message=f"Bu araç zaten otoparkta park halinde. Giriş zamanı: {active_record.entry_time}",
+                message=f"Bu araç zaten bu otoparkta park halinde. Giriş zamanı: {active_record.entry_time}",
                 entry_time=active_record.entry_time.isoformat(),
                 vehicle=VehicleSchema.from_orm(db_vehicle),
                 parking_record_id=active_record.id
@@ -378,6 +378,12 @@ def register_vehicle_entry(
             )
             
             return response
+            
+        # Başka bir otoparkta aktif park kaydı var mı kontrol et
+        other_active_record = get_active_parking_record_by_vehicle(db, db_vehicle.id)
+        if other_active_record:
+            # Başka bir otoparkta park halinde, ama bu otoparka giriş yapabilir
+            logger.info(f"Araç başka bir otoparkta park halinde (ID: {other_active_record.parking_id}), ama bu otoparka (ID: {entry.parking_id}) giriş yapabilir.")
         
         # Yeni park kaydı oluştur
         parking_record_data = ParkingRecordCreate(

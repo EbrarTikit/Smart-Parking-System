@@ -68,9 +68,32 @@ A modern and intelligent parking management solution that helps users find and m
   - Safe Args for Navigation
   - Kotlin Parcelize
 
-## 📱 Screenshots
+## App Design
+<!-- First Row -->
+<p align="center">
+  <img src="https://github.com/EbrarTikit/Smart-Parking-System/blob/master/Frontend/screenshots/signup.png" alt="Image 1" width="30%">
+  <img src="https://github.com/EbrarTikit/Smart-Parking-System/blob/master/Frontend/screenshots/signin.png" alt="Image 2" width="30%">
+  <img src="https://github.com/EbrarTikit/Smart-Parking-System/blob/master/Frontend/screenshots/locationpermission.png" alt="Image 3" width="30%">
+</p>
 
+<!-- Second Row -->
+<p align="center">
+  <img src="https://github.com/EbrarTikit/Smart-Parking-System/blob/master/Frontend/screenshots/home.png" alt="Image 4" width="30%">
+  <img src="https://github.com/EbrarTikit/Smart-Parking-System/blob/master/Frontend/screenshots/detail.png" alt="Image 5" width="30%">
+  <img src="https://github.com/EbrarTikit/Smart-Parking-System/blob/master/Frontend/screenshots/layout.png" alt="Image 6" width="30%">
+</p>
 
+<!-- Second Row -->
+<p align="center">
+  <img src="https://github.com/EbrarTikit/Smart-Parking-System/blob/master/Frontend/screenshots/chatbotopening.png" alt="Image 7" width="30%">
+  <img src="https://github.com/EbrarTikit/Smart-Parking-System/blob/master/Frontend/screenshots/chatbot.png" alt="Image 8" width="30%">
+  <img src="https://github.com/EbrarTikit/Smart-Parking-System/blob/master/Frontend/screenshots/profile.png" alt="Image 9" width="30%">
+</p>
+
+<!-- Second Row -->
+<p align="center">
+  <img src="https://github.com/EbrarTikit/Smart-Parking-System/blob/master/Frontend/screenshots/darkmode.png" alt="Image 10" width="30%">
+</p>
 
 ## 🚀 Getting Started
 
